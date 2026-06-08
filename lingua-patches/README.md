@@ -35,6 +35,21 @@ git checkout main && git pull        # clean, no local commits on main
 so the working code is unchanged. This patch series is the portable record /
 backup of that work, owned by the AUNet repo.
 
+## Keeping this series up to date
+
+These patches are a **snapshot**, not a live link — they do not update when
+`lingua/bpebyte` changes. Whenever bpebyte gains commits (or after you commit
+WIP), refresh them:
+
+```bash
+./lingua-patches/refresh.sh
+```
+
+It clears stale patches, recomputes the base from
+`git merge-base upstream/main bpebyte` (so it self-corrects after a rebase onto
+newer upstream), re-exports, and warns about any uncommitted lingua changes that
+won't be captured. Then commit the updated `lingua-patches/`.
+
 ## Reapply onto a fresh / updated upstream checkout
 
 ```bash
