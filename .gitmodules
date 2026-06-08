@@ -1,0 +1,4 @@
+[submodule "lingua"]
+	path = lingua
+	url = git@github.com:hyunW3/lingua.git
+	branch = bpebyte
