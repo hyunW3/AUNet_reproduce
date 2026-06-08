@@ -1,0 +1,67 @@
+From d7d81a5df4031f4dcb1294005ccf5a30492e664d Mon Sep 17 00:00:00 2001
+From: hyunW3 <0176778602@naver.com>
+Date: Sun, 24 May 2026 10:33:23 +0900
+Subject: [PATCH 07/22] docs(status): update with mid-training observations +
+ push state
+
+After 1d 17h of continuous training (step 47k of 180k, ~26%), capture:
+- live loss/grad/throughput metrics and the explanation for the gap
+  vs the paper (compile: false reduces wps from ~225k to ~125k bytes
+  /sec/GPU)
+- checkpointing behaviour as observed (every 2k steps, keep: 1)
+- updated ETA: ~6.5 days total / ~4.5 days remaining
+- the 6 reproduction commits and the SSH-push blocker (need to
+  register ~/.ssh/id_ed25519.pub at github.com/settings/ssh/new)
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+---
+ status.md | 27 +++++++++++++++++++++++++--
+ 1 file changed, 25 insertions(+), 2 deletions(-)
+
+diff --git a/status.md b/status.md
+index f044d0b..401cb5d 100644
+--- a/status.md
++++ b/status.md
+@@ -17,14 +17,37 @@ Update this file after every step. If the session is interrupted, the next sessi
+ - [ ] Step 4 — Training (180k steps, ~3-7 days)
+ - [ ] Step 5 — Evaluation (HellaSwag + ARC-Easy)
+ 
+-**Current step**: Step 4 (training)
+-**Last updated**: 2026-05-22 (Steps 1-3 done; launching Step 4)
++**Current step**: Step 4 (training, ~26% — step 47k of 180k)
++**Last updated**: 2026-05-24 (training running healthy for 1d 17h, no errors)
+ 
+ ### Installed versions
+ - torch 2.7.0+cu128, xformers 0.0.30, triton 3.3.0
+ - lm-eval 0.4.12, datatrove 0.9.0, huggingface_hub 0.36.2
+ - B200 (sm_100) detected, CUDA available
+ 
++### Live training observations (step 47k+, 1d 17h in)
++- loss: 6.05 → 0.69 (smooth decay; warmup ended at step 10k)
++- grad norm: 28 → 0.03 (stable)
++- iter time: 0.79 s / micro-batch × 4 grad_acc ≈ 3.16 s / optimizer step
++- throughput: 125k bytes/sec/GPU on B200 (paper: 225k on H100 — gap explained by `compile: false`)
++- GPU util: 95-100%, mem 132/178 GB, ~850W per B200
++- checkpoints: saved every 2000 steps; `keep: 1` so only the latest survives
++- ETA to step 180k: ~6.5 days total (about 4.5 days remaining as of 2026-05-24)
++
++### Git / push status
++- 6 commits made in `lingua/` (the modified Lingua checkout):
++  1. `eb5ee0c` gitignore additions
++  2. `2c4e172` b200: FA3 disable + DTensor-safe clip_grad
++  3. `8bac5c1` b200: ENABLE_INTRA_NODE_COMM=0 (SymmetricMemory fix)
++  4. `a04e7ac` data: dclm_baseline_1.0_2shards download option
++  5. `517e927` config: aunet2_1.3B_b200.yaml
++  6. `37271de` docs: plan.md + status.md
++- `origin` set to `git@github.com:hyunW3/AUNet_reproduce.git`,
++  old facebook origin renamed to `upstream`.
++- **`git push -u origin main` failed** with `Permission denied (publickey)`:
++  need to register `~/.ssh/id_ed25519.pub` at https://github.com/settings/ssh/new
++  (or switch to HTTPS + PAT).
++
+ ---
+ 
+ ## Step 1 — Environment setup
+-- 
+2.43.0
+

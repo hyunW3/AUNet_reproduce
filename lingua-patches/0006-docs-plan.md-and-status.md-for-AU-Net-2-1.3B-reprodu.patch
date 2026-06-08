@@ -1,0 +1,393 @@
+From e16e869584549fd96d0f01bcc0351f583dbd7910 Mon Sep 17 00:00:00 2001
+From: hyunW3 <0176778602@naver.com>
+Date: Sat, 23 May 2026 14:28:11 +0900
+Subject: [PATCH 06/22] docs: plan.md and status.md for AU-Net 2 1.3B
+ reproduction
+
+- plan.md: full design (target Table 2 row 1, 5-step approach,
+  verification criteria, risks).
+- status.md: live tracker with step checkboxes, 'how to check'
+  probes (so a future session can detect where work stopped),
+  'how to resume' commands per step, and the crash-log archive
+  for the 7 failed launches that preceded the working 8th
+  (working as of step 24000+).
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+---
+ plan.md   | 127 ++++++++++++++++++++++++++++++
+ status.md | 229 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 356 insertions(+)
+ create mode 100644 plan.md
+ create mode 100644 status.md
+
+diff --git a/plan.md b/plan.md
+new file mode 100644
+index 0000000..be9f824
+--- /dev/null
++++ b/plan.md
+@@ -0,0 +1,127 @@
++# Plan: Reproduce AU-Net 2 1.3B (HellaSwag 64.2 / ARC-E 64.4)
++
++## Context
++
++The goal is to reproduce Table 2 row 1 of [Videau et al. 2025 (arXiv:2506.14761)](https://arxiv.org/abs/2506.14761) — **AU-Net 2 1.3B** trained on the DCLM corpus with data-to-model ratio 10 (60B LLaMA tokens ≈ 273B bytes). Target downstream scores:
++
++- HellaSwag: 64.2 ±1.0
++- ARC-Easy: 64.4 ±1.9
++
++Key findings from investigation:
++
++1. **No pretrained checkpoint exists.** Meta did not release weights. Reproduction requires training from scratch.
++2. **The right config is `apps/aunet/configs/2B_1level.yaml`**, despite its "2B" name. Its architecture matches AU-Net 2 in the paper:
++   - `dimensions: [512, 2048]` — byte stage + word stage (paper §3.2: byte=2048/4=512, word=2048)
++   - `layers: [3, 25]` — 2 stages, symmetric encoder/decoder around inner trunk
++   - `lr: 1.65e-3` matches paper's LR scaling law for C=5e20 FLOPs (Table 2 lists 5e20 for AU-Net 2)
++   - `steps: 180000` × global batch 192 × seq_len 8192 ≈ 283B bytes ≈ 62B tokens ✓ matches Table 2 row 1
++3. **AU-Net is byte-level** (`tokenizer: name: bytes`) — no separate tokenizer model needed.
++4. **Eval is via `lm-eval` harness** (already a dependency in `requirements.txt`).
++
++Hardware: 4× NVIDIA B200 (180 GB each), 2.8 TB free on workspace lustre fs.
++
++Estimated cost: ~3-7 days of continuous training + ~500 GB DCLM subset download.
++
++## Approach
++
++### Step 1 — Environment setup
++
++Create an isolated env and install lingua's deps. The repo ships `setup/create_env.sh` but pins versions for Meta's internal cluster, so we'll do a manual install verified for B200 (Blackwell) support.
++
++- Use conda or venv at `/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua/.venv`
++- Install: PyTorch ≥ 2.5 with CUDA 12.4+ (B200 needs Blackwell-capable build), plus everything in `lingua/requirements.txt`
++- Build `terashuf` (used by data prep): cloned and `make`'d automatically by the prep script
++- Critical packages: `torch`, `lm-eval`, `datatrove`, `wandb`, `huggingface_hub`, `xformers`, `omegaconf`
++
++### Step 2 — Download DCLM Baseline 1.0 subset
++
++Use the lingua-provided script with `nchunks` set to limit the download to ~500-600 GB (sufficient for 273B bytes of training).
++
++```bash
++cd /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua
++python setup/download_prepare_hf_data.py \
++    dclm_baseline_1.0 \
++    <memory_gb> \
++    --data_dir /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/data \
++    --seed 42 \
++    --nchunks 32
++```
++
++The script: (a) `snapshot_download`s a subset of parquet files from `mlfoundations/dclm-baseline-1.0`, (b) converts parquet → jsonl via `datatrove`, (c) terashuffles into chunked jsonl. Final layout: `data/dclm_baseline_1.0/dclm_baseline_1.0.chunk.{0..nchunks-1}.jsonl`.
++
++Pick `nchunks` so the resulting shuffled jsonl is ~500 GB. May need to tune by sampling 1-2 chunks first.
++
++### Step 3 — Adapt config for 4× B200
++
++Create `apps/aunet/configs/aunet2_1.3B_b200.yaml` by copying `2B_1level.yaml` with these changes:
++
++| Field | Original | New | Reason |
++|---|---|---|---|
++| `dump_dir` | — | `/NHNHOME/.../AUNet/runs/aunet2_1.3B` | Required, currently absent |
++| `data.root_dir` | `/path/to/data` | `/NHNHOME/.../AUNet/data` | Point to downloaded data |
++| `data.batch_size` | 12 | **48** | Preserves global batch = 192 across 4 GPUs (vs original 16 GPUs × 12) — B200's 180 GB memory accommodates this |
++| `async_eval_gpus` | 8 | **0** | We only have 4 GPUs total — no spare for async eval |
++| `distributed.compile` | true | true | Keep — large speedup |
++| `optim.lr` | 1.65e-3 | unchanged | Matches paper |
++| `steps` | 180000 | unchanged | Hits 60B-token target with global batch 192 |
++
++All other model hyperparameters (dimensions, layers, sliding_windows, etc.) are kept unchanged from `2B_1level.yaml` since they define the AU-Net 2 architecture.
++
++### Step 4 — Training
++
++Launch as a single-node 4-GPU job. Lingua supports `torchrun` directly (the `lingua.stool` path is SLURM-only).
++
++```bash
++cd /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua
++torchrun --nproc-per-node 4 -m apps.aunet.train \
++    config=apps/aunet/configs/aunet2_1.3B_b200.yaml
++```
++
++Run in background; checkpoints dumped every 2000 steps (`checkpoint.dump.every: 2000`). Resumes automatically from the latest checkpoint if interrupted (the train.py code reads existing checkpoints in `dump_dir/checkpoints` at startup; lines 314-317).
++
++Monitor for: (1) OOM at startup with `batch_size=48` — back off to 32 or 24 if needed and proportionally increase steps; (2) loss going to NaN; (3) throughput vs paper's 225k bytes/sec/GPU (B200 should be ≥ this).
++
++### Step 5 — Evaluation
++
++After training completes (or at intermediate checkpoints to track progress):
++
++```bash
++python -m apps.aunet.eval \
++    config=apps/aunet/configs/aunet2_1.3B_b200.yaml \
++    ckpt_dir=/NHNHOME/.../AUNet/runs/aunet2_1.3B/checkpoints/<step>
++```
++
++`eval.py:231` calls `consolidate_checkpoints(cfg.ckpt_dir)` to merge FSDP shards before running `lm-eval`. The harness tasks already configured in `2B_1level.yaml` include `hellaswag` and `arc_easy` — the two we care about.
++
++To save eval time during the run, you can manually trigger eval only at the final step rather than every 50k steps (or set `eval.harness.tasks` to just the two benchmarks).
++
++## Critical files
++
++- `apps/aunet/configs/2B_1level.yaml` — the base config; copy & modify, do not edit in place
++- `apps/aunet/train.py` — training entry point; reads `dump_dir`, instantiates FSDP model, runs loop
++- `apps/aunet/eval.py` — evaluation entry point; consolidates checkpoint and calls lm-eval
++- `apps/aunet/hierarchical.py` — model architecture (no changes needed)
++- `apps/aunet/data/data.py` — data loader (no changes needed)
++- `setup/download_prepare_hf_data.py` — DCLM downloader
++- `lingua/requirements.txt` — Python deps
++
++## Verification
++
++After each step:
++
++- **Env**: `python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"` should report `True NVIDIA B200`. `python -c "import lm_eval, datatrove, xformers"` should succeed.
++- **Data**: `ls /NHNHOME/.../AUNet/data/dclm_baseline_1.0/*.jsonl | wc -l` should equal `nchunks`. Total size from `du -sh` should be ~500 GB. Spot check: `head -1 *.chunk.0.jsonl | jq .text | head -c 200` returns readable English text.
++- **Training start**: First 100 steps should log decreasing loss; `nvidia-smi` should show ~150-170 GB usage per B200; throughput should print bytes/sec/GPU after warmup. If loss is flat or NaN, stop and inspect.
++- **Mid-training sanity**: After ~10% of steps, run eval on a checkpoint — HellaSwag should be in the 45-55 range (vs ~64 at convergence).
++- **Final eval**: Run on the last checkpoint. Compare:
++  - HellaSwag: target 64.2 ± 1.0 (acceptable range: 63.2 - 65.2)
++  - ARC-Easy: target 64.4 ± 1.9 (acceptable range: 62.5 - 66.3)
++
++Numbers outside these ranges suggest a config divergence (likely candidates: wrong global batch, wrong total bytes seen, lr mismatch, dtype issue).
++
++## Risks & open questions
++
++- **DCLM subset coverage**: The paper trained on a stream of DCLM but didn't specify exact subset. Random subset with seed=42 (as in `download_prepare_hf_data.py`) should be statistically equivalent at 60B-token scale.
++- **B200 vs H100 numerics**: Paper used H100. B200 Blackwell tensor cores may use slightly different precision paths; should not affect final downstream accuracy more than ±0.5.
++- **n_views=2 semantics**: Worth verifying in `data/data.py` that this doesn't double-count training tokens. If it does, the 180k-step target should be halved to 90k to match Table 2 row 1.
++- **Torch compile + B200**: `compile: true` may hit Inductor codegen issues on sm_100. Have a fallback to `compile: false` (~30% slower).
+diff --git a/status.md b/status.md
+new file mode 100644
+index 0000000..f044d0b
+--- /dev/null
++++ b/status.md
+@@ -0,0 +1,229 @@
++# AU-Net 2 1.3B Reproduction — Status Tracker
++
++**Plan**: `plan.md` (in this directory) — full design.
++**Target**: Table 2 row 1 of arXiv 2506.14761 — HellaSwag 64.2 / ARC-E 64.4.
++**Hardware**: 4× B200 (180 GB), 2.8 TB free workspace.
++**Started**: 2026-05-22
++
++Update this file after every step. If the session is interrupted, the next session reads this file first to know where to resume.
++
++---
++
++## Overall progress
++
++- [x] Step 1 — Environment setup
++- [x] Step 2 — DCLM data download (2 shards → 16 chunks + val, 397 GB shuffled jsonl, 58.9M docs)
++- [x] Step 3 — Config adapted for 4× B200 (apps/aunet/configs/aunet2_1.3B_b200.yaml)
++- [ ] Step 4 — Training (180k steps, ~3-7 days)
++- [ ] Step 5 — Evaluation (HellaSwag + ARC-Easy)
++
++**Current step**: Step 4 (training)
++**Last updated**: 2026-05-22 (Steps 1-3 done; launching Step 4)
++
++### Installed versions
++- torch 2.7.0+cu128, xformers 0.0.30, triton 3.3.0
++- lm-eval 0.4.12, datatrove 0.9.0, huggingface_hub 0.36.2
++- B200 (sm_100) detected, CUDA available
++
++---
++
++## Step 1 — Environment setup
++
++**Status**: ✅ COMPLETED 2026-05-22
++**Owner action**: install dependencies
++
++### How to check status
++```bash
++# Should print: True NVIDIA B200
++/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua/.venv/bin/python -c \
++    "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"
++
++# Should succeed without ImportError
++/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua/.venv/bin/python -c \
++    "import lm_eval, datatrove, xformers, omegaconf, wandb, huggingface_hub"
++```
++
++### How to resume / start
++```bash
++cd /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua
++python -m venv .venv
++source .venv/bin/activate
++pip install --upgrade pip
++# B200 needs CUDA 12.4+ build of PyTorch
++pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
++pip install -r requirements.txt
++```
++
++### Notes / blockers
++_(empty)_
++
++---
++
++## Step 2 — DCLM data download
++
++**Status**: ✅ COMPLETED 2026-05-22 (~35 min total)
++**Output**: 16 chunks + 1 val file (397 GB jsonl, 58.9M documents) under `/NHNHOME/.../AUNet/data/dclm_baseline_1.0_2shards_shuffled/`
++**`nchunks`**: 16
++**.zst raw files deleted** to free 135 GB
++**Source name in config**: `dclm_baseline_1.0_2shards_shuffled`
++
++### How to check status
++```bash
++# Should print 32 (or chosen nchunks)
++ls /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/data/dclm_baseline_1.0/*.jsonl 2>/dev/null | wc -l
++
++# Should report ~500 GB
++du -sh /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/data/dclm_baseline_1.0/
++
++# Sample first record
++head -1 /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/data/dclm_baseline_1.0/*.chunk.0.jsonl | python -c "import json,sys; print(json.loads(sys.stdin.read())['text'][:200])"
++```
++
++### How to resume / start
++```bash
++cd /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua
++source .venv/bin/activate
++# <memory_gb> = ~64 (RAM available to terashuf), nchunks=32 → ~500 GB
++python setup/download_prepare_hf_data.py \
++    dclm_baseline_1.0 \
++    64 \
++    --data_dir /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/data \
++    --seed 42 \
++    --nchunks 32
++```
++
++The script supports `resume_download=True` in `snapshot_download`, so re-running picks up where it left off. The parquet→jsonl and shuffle steps will re-execute if interrupted (they're cheap relative to download).
++
++### Notes / blockers
++_(empty)_
++
++---
++
++## Step 3 — Config adaptation
++
++**Status**: ✅ COMPLETED 2026-05-22
++**Output file**: `/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua/apps/aunet/configs/aunet2_1.3B_b200.yaml`
++
++### How to check status
++```bash
++test -f /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua/apps/aunet/configs/aunet2_1.3B_b200.yaml && echo present || echo missing
++
++# Verify key fields
++grep -E "batch_size|dump_dir|root_dir|async_eval_gpus|steps" /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua/apps/aunet/configs/aunet2_1.3B_b200.yaml
++```
++
++Expected:
++- `batch_size: 48`
++- `async_eval_gpus: 0`
++- `dump_dir: /NHNHOME/.../AUNet/runs/aunet2_1.3B`
++- `root_dir: /NHNHOME/.../AUNet/data`
++- `steps: 180000`
++
++### How to resume / start
++Copy `2B_1level.yaml` and apply the diff documented in `plan.md` Step 3.
++
++### Notes / blockers
++_(empty)_
++
++---
++
++## Step 4 — Training
++
++**Status**: 🟢 RUNNING (8th launch — PID 655663)
++**Run directory**: `/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/aunet2_1.3B/`
++**Log**: `train.log` (active)
++**Expected wall time**: ~158 hours (~6.6 days). `curr_iter_time=0.80s` reported per micro-batch (×4 grad_acc + opt = 3.16s/step actually observed).
++**Step 623 @ 33min**: loss 6.05 → 1.42, grad norm 28 → 1.6, wps 125k/GPU, mem 132/178 GB, ~855W
++**Per-step time**: 3.16 s (measured from log timestamps)
++**GPU util**: 94-100% across all 4 B200s
++**Throughput**: 500k bytes/sec total ≈ 56% of paper's 225k/H100×16=3.6M; gap is mainly `compile=false`
++
++### B200/torch-2.7 fixes (in order applied)
++1. **FA3 disabled** (train.py:22, eval.py:17) — xformers 0.0.30 ships sm_90 kernels only.
++2. **Custom DTensor-safe clip_grad** (train.py:455-475) — manual `to_local()` + `torch.distributed.all_reduce` (default group) for the L2 grad norm; bypasses DTensor's functional collectives.
++3. **`ENABLE_INTRA_NODE_COMM=0`** in `lingua/distributed.py:88` — *the actual root cause*: Meta's cluster-specific SymmetricMemory backend raises `get_group_info: no group info associated with the group name` on this cluster.
++4. **batch_size 12 + grad_acc 4** — preserves paper's global batch = 192 across 4 GPUs.
++5. **compile=false** + **SAC=false** — kept off after dead-ends; even with INTRA_NODE_COMM=0 these may need their own fixes for B200.
++
++### Crash log archive
++- `train.log.crash1` — FA3 (xformers Hopper-only kernels)
++- `train.log.crash2` — get_group_info in `clip_grad_norm_` under compile
++- `train.log.crash3` — OOM at bs=24, compile=off
++- `train.log.crash4` — SAC + inplace LongTensor mutation
++- `train.log.crash5` — get_group_info in `full_tensor()` under compile=on
++- `train.log.crash6` — get_group_info in `full_tensor()` under compile=off (DTensor path)
++- `train.log.crash7` — get_group_info in `torch.distributed.all_reduce` (default group) — revealed it's not DTensor, it's the env
++
++### How to check status
++```bash
++# Latest checkpoint step
++ls -1 /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/aunet2_1.3B/checkpoints/ 2>/dev/null | sort -n | tail -1
++
++# Is training process alive?
++pgrep -af "apps.aunet.train" || echo "no training process running"
++
++# Tail the log
++tail -50 /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/aunet2_1.3B/train.log 2>/dev/null
++```
++
++### How to resume / start
++```bash
++cd /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua
++source .venv/bin/activate
++# Lingua auto-resumes from latest checkpoint in dump_dir/checkpoints/
++nohup torchrun --nproc-per-node 4 -m apps.aunet.train \
++    config=apps/aunet/configs/aunet2_1.3B_b200.yaml \
++    > /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/aunet2_1.3B/train.log 2>&1 &
++echo "PID: $!"
++```
++
++### Milestones (update as we hit them)
++- [ ] First step completes without OOM
++- [ ] Step 1k — loss decreasing, throughput logged
++- [ ] Step 18k (10%) — intermediate eval HellaSwag ~45-55
++- [ ] Step 90k (50%) — intermediate eval HellaSwag ~58-62
++- [ ] Step 180k (100%) — training complete
++
++### Notes / blockers
++_(empty)_
++
++---
++
++## Step 5 — Evaluation
++
++**Status**: not started
++**Targets**: HellaSwag 64.2 ± 1.0 (63.2-65.2), ARC-Easy 64.4 ± 1.9 (62.5-66.3)
++
++### How to check status
++```bash
++# Results file (lm-eval writes a JSON)
++find /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/aunet2_1.3B -name "results*.json" -mtime -7
++```
++
++### How to resume / start
++```bash
++cd /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua
++source .venv/bin/activate
++LATEST=$(ls -1 /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/aunet2_1.3B/checkpoints/ | sort -n | tail -1)
++python -m apps.aunet.eval \
++    config=apps/aunet/configs/aunet2_1.3B_b200.yaml \
++    ckpt_dir=/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/aunet2_1.3B/checkpoints/$LATEST
++```
++
++### Final results (fill in)
++- HellaSwag: _____ (target 64.2 ± 1.0)
++- ARC-Easy:  _____ (target 64.4 ± 1.9)
++- ✅ match / ❌ off — _____
++
++### Notes / blockers
++_(empty)_
++
++---
++
++## How to resume after abort
++
++1. Read this file top-to-bottom.
++2. The "Current step" line and the unchecked boxes tell you where work stopped.
++3. For each incomplete step, run the "How to check status" block — if it reports success, mark the step done and move on.
++4. For the first step that's actually incomplete, run its "How to resume / start" block.
++5. Update this file's "Current step" and "Last updated" lines, and check off completed milestones.
+-- 
+2.43.0
+

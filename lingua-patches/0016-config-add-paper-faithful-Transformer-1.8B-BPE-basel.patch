@@ -1,0 +1,139 @@
+From 23d7881994a9d8c4890a26c325865f3ca539e6be Mon Sep 17 00:00:00 2001
+From: hyunW3 <0176778602@naver.com>
+Date: Thu, 4 Jun 2026 18:26:51 +0900
+Subject: [PATCH 16/22] config: add paper-faithful Transformer 1.8B BPE
+ baseline (arXiv 2506.14761)
+
+Reproduces the "Transformer 1B BPE" row of Table 10/11 with the actually-reported
+hyperparameters (LR 0.003, WD 0.033, warmup 5000, seq_len 4096, 60000 steps), unlike
+llama_1B_b200.yaml which used scaling-law-derived values (LR 3.9e-3, WD 0.1, seq 2048).
+Same dim-2048/25L/16H architecture = 1.810B total params (1.285B non-embed + 0.525B
+128k untied embeddings). 4-GPU adaptation preserves the paper's exact 1,048,576
+tokens/step via batch 4 x grad_acc 16 x 4 gpus x seq 4096.
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+---
+ apps/main/configs/llama_1.8B_b200.yaml | 111 +++++++++++++++++++++++++
+ 1 file changed, 111 insertions(+)
+ create mode 100644 apps/main/configs/llama_1.8B_b200.yaml
+
+diff --git a/apps/main/configs/llama_1.8B_b200.yaml b/apps/main/configs/llama_1.8B_b200.yaml
+new file mode 100644
+index 0000000..560d42c
+--- /dev/null
++++ b/apps/main/configs/llama_1.8B_b200.yaml
+@@ -0,0 +1,111 @@
++# Transformer BPE "1B model" baseline — PAPER-FAITHFUL reproduction on 4× B200.
++# arXiv 2506.14761, row "Transformer 1B BPE" in Table 10 (training config) + Table 11 (optim).
++# Architecture is the dim-2048 family the paper labels "1B" (≈1.28B non-embedding); with the
++# 128k untied BPE embeddings the model is 1.810B total params — hence "1.8B".
++#   verified: dim 2048 / n_layers 25 / n_heads 16 / head_dim 128 / FFN 5632 / vocab 128256
++#             -> total 1.810B, non-embed 1.285B, embed 0.525B
++#
++# This config differs from llama_1B_b200.yaml, which used SCALING-LAW-DERIVED hyperparameters
++# (LR 3.9e-3, WD 0.1, warmup 3080, seq 2048) instead of the values actually reported for this
++# model. Here we copy Table 10/11 verbatim:
++#   Table 10:  seq_len 4096 | tokens/step 1.0e6 | steps 60000 | grad_acc 1 | batch 4 | 64 GPUs
++#              | total ~60B tokens | FLOPs/token 1.1e10 | total 6.6e20 FLOPs | tiktoken
++#   Table 11:  LR 0.003 | WD 0.033 | beta (0.9, 0.95) | cosine | warmup 5000
++#
++# 4-GPU adaptation: we have 4 GPUs, the paper used 64. We preserve the EXACT global batch and
++# token count by trading the missing GPUs for gradient accumulation:
++#   paper : batch 4 x seq 4096 x 64 gpus x grad_acc  1 = 1,048,576 tokens/step
++#   ours  : batch 4 x seq 4096 x  4 gpus x grad_acc 16 = 1,048,576 tokens/step  (identical)
++#   steps 60000 -> 60000 x 1,048,576 = 62.9B tokens (paper labels this "1.0e6 / 60B").
++# Same total tokens => same total compute (~6.6e20 FLOPs); only wall-clock scales with GPU count.
++#
++# NOT specified in Table 10/11, inherited as documented choices:
++#   - lr_min_ratio 0.01  (paper says "cosine" but gives no floor; matches aunet2_1.3B_b200.yaml)
++#   - clip 1.0           (Table 11 has no clip column; lingua default. NB: sibling repro configs
++#                         use 0.2 — switch if you want to match them instead)
++#   - betas (0.9, 0.95) and scheduler "cosine" are OptimArgs defaults == paper, so left implicit.
++#   - tokenizer: llama3 tiktoken (vocab 128256, already downloaded). Paper used cl_toplang_128k;
++#     both are 128k BPE, negligible for reproduction. Swap the path to match exactly if needed.
++#
++# B200 infra fixes inherited from llama_1B_b200.yaml (compile, TMPDIR=/var/tmp, FA3 disable,
++# ENABLE_INTRA_NODE_COMM=0). Memory note: micro-batch x seq = 4 x 4096 = 16384, which is LOWER
++# than llama_1B_b200's 16 x 2048 = 32768, so activation memory is fine (no SAC needed).
++#
++# Launch:
++#   TMPDIR=/var/tmp torchrun --nproc-per-node 4 --master-port 29503 -m apps.main.train \
++#       config=apps/main/configs/llama_1.8B_b200.yaml
++#
++dump_dir: /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/llama_1.8B_paper
++name: "llama_1.8B_b200"
++steps: 60000
++grad_acc_steps: 16
++probe_freq: null
++
++seed: 777
++optim:
++  lr: 0.003           # Table 11
++  weight_decay: 0.033 # Table 11
++  warmup: 5000        # Table 11
++  lr_min_ratio: 0.01  # not in Table 11 (see header)
++  clip: 1.0           # not in Table 11 (see header)
++  # beta1 0.9 / beta2 0.95 / scheduler cosine are OptimArgs defaults == paper.
++
++distributed:
++  fsdp_type: full_shard
++  compile: true
++  model_dtype: bf16
++  matmul_allow_tf32: false
++  selective_activation_checkpointing: false
++  tp_size: 1
++
++model:
++  dim: 2048
++  n_layers: 25
++  n_heads: 16
++
++data:
++  root_dir: /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/data
++  sources:
++    dclm_baseline_1.0_2shards_shuffled: 1.0
++  batch_size: 4       # micro-batch; global batch via grad_acc 16 x 4 gpus (see header)
++  prefetch_size: 1024
++  seq_len: 4096       # Table 10 (llama_1B_b200.yaml used 2048)
++  n_views: 2
++  load_async: true
++  add_bos: true
++  add_eos: true
++  tokenizer:
++    name: tiktoken
++    path: /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/tokenizer/llama3/tokenizer.model
++
++profiling:
++  run: true
++  mem_warmup: 0
++  mem_steps: 4
++  profile_warmup: 100
++  profile_steps: 4
++
++checkpoint:
++  dump:
++    every: 2000
++    keep: 1
++  eval:
++    every: 9999999
++    keep: 1
++
++logging:
++  freq: 1
++
++# Blocking in-process downstream eval at 30/60/90/100% of steps (HellaSwag/ARC-E acc_norm).
++async_eval_gpus: null
++eval_milestones: [0.30, 0.60, 0.90, 1.0]
++eval:
++  harness:
++    tasks:
++      - hellaswag
++      - arc_easy
++  validation:
++    max_steps: 1000
++  generator:
++    max_tokens: 16384
++    dtype: bf16
+-- 
+2.43.0
+

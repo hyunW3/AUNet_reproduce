@@ -1,0 +1,130 @@
+From 866f01547826adff745f792560b2d3c2d3ebfc03 Mon Sep 17 00:00:00 2001
+From: hyunW3 <0176778602@naver.com>
+Date: Thu, 4 Jun 2026 18:37:10 +0900
+Subject: [PATCH 17/22] config: add llama 1.8B A100 variant + launch script
+ (ece-agpu18, 8x A100-80GB)
+
+8-GPU sibling of llama_1.8B_b200.yaml with /home/hwbae/AUNet paths. Preserves the
+paper's exact 1,048,576 tokens/step via batch 4 x grad_acc 8 x 8 gpus x seq 4096.
+train_llama_1.8B_a100.sh launches via torchrun --nproc-per-node 8 (TMPDIR=/tmp,
+master-port 29506). eval_milestones/async_eval omitted for schema compatibility with
+the remote checkout; run final eval separately via run_eval_llama.sh.
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+---
+ apps/main/configs/llama_1.8B_a100.yaml | 74 ++++++++++++++++++++++++++
+ train_llama_1.8B_a100.sh               | 21 ++++++++
+ 2 files changed, 95 insertions(+)
+ create mode 100644 apps/main/configs/llama_1.8B_a100.yaml
+ create mode 100644 train_llama_1.8B_a100.sh
+
+diff --git a/apps/main/configs/llama_1.8B_a100.yaml b/apps/main/configs/llama_1.8B_a100.yaml
+new file mode 100644
+index 0000000..6600d3d
+--- /dev/null
++++ b/apps/main/configs/llama_1.8B_a100.yaml
+@@ -0,0 +1,74 @@
++# Transformer BPE "1B model" baseline — PAPER-FAITHFUL, on 8x A100-80GB (ece-agpu18).
++# A100 sibling of llama_1.8B_b200.yaml. Paths point to /home/hwbae/AUNet (ece-agpu18 local FS).
++# arXiv 2506.14761 Table 10/11 "Transformer 1B BPE": dim 2048 / 25L / 16H = 1.810B total params,
++# seq_len 4096, LR 0.003, WD 0.033, warmup 5000, betas (0.9,0.95), cosine, 60000 steps, ~60B tokens.
++#
++# 8-GPU adaptation preserves the paper's exact global batch of 1,048,576 tokens/step:
++#   paper : batch 4 x seq 4096 x 64 gpus x grad_acc 1 = 1,048,576
++#   here  : batch 4 x seq 4096 x  8 gpus x grad_acc 8 = 1,048,576  (identical)
++#   steps 60000 -> 62.9B tokens (paper labels "1.0e6 / 60B").
++#
++# A100 notes: /tmp is exec-capable here, so no /var/tmp hack (train_*_a100.sh sets TMPDIR=/tmp).
++# micro-batch x seq = 4 x 4096 = 16384 tokens, well within 80GB under FSDP (bpebyte 1.3B used 6x8192 here).
++# Not in Table 11 (documented choices): lr_min_ratio 0.01, clip 1.0; betas/cosine are OptimArgs defaults.
++#
++# Launch ON ece-agpu18:  bash train_llama_1.8B_a100.sh
++dump_dir: /home/hwbae/AUNet/runs/llama_1.8B_paper
++name: "llama_1.8B_a100"
++steps: 60000
++grad_acc_steps: 8
++probe_freq: null
++
++seed: 777
++optim:
++  lr: 0.003
++  weight_decay: 0.033
++  warmup: 5000
++  lr_min_ratio: 0.01
++  clip: 1.0
++
++distributed:
++  fsdp_type: full_shard
++  compile: true
++  model_dtype: bf16
++  matmul_allow_tf32: false
++  selective_activation_checkpointing: false
++  tp_size: 1
++
++model:
++  dim: 2048
++  n_layers: 25
++  n_heads: 16
++
++data:
++  root_dir: /home/hwbae/AUNet/data
++  sources:
++    dclm_baseline_1.0_2shards_shuffled: 1.0
++  batch_size: 4
++  prefetch_size: 1024
++  seq_len: 4096
++  n_views: 2
++  load_async: true
++  add_bos: true
++  add_eos: true
++  tokenizer:
++    name: tiktoken
++    path: /home/hwbae/AUNet/tokenizer/llama3/tokenizer.model
++
++profiling:
++  run: true
++  mem_warmup: 0
++  mem_steps: 4
++  profile_warmup: 100
++  profile_steps: 4
++
++checkpoint:
++  dump:
++    every: 2000
++    keep: 1
++  eval:
++    every: 9999999
++    keep: 1
++
++logging:
++  freq: 1
+diff --git a/train_llama_1.8B_a100.sh b/train_llama_1.8B_a100.sh
+new file mode 100644
+index 0000000..11be449
+--- /dev/null
++++ b/train_llama_1.8B_a100.sh
+@@ -0,0 +1,21 @@
++#!/bin/bash
++# Train the paper-faithful Transformer 1.8B BPE baseline on 8x A100-80GB (ece-agpu18).
++# Run ON ece-agpu18. arXiv 2506.14761 Table 10/11 "Transformer 1B BPE".
++# global batch = batch 4 x grad_acc 8 x 8 gpus x seq 4096 = 1,048,576 tokens/step (paper-exact).
++cd /home/hwbae/AUNet/lingua
++export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
++source .venv/bin/activate
++# /tmp is exec-capable on this node, so it works for torch.compile / triton caches.
++export TMPDIR=/tmp
++
++model_path=/home/hwbae/AUNet/runs/llama_1.8B_paper/checkpoints
++# lingua auto-resumes from the newest checkpoint in dump_dir/checkpoints if present.
++LATEST=$(find "$model_path" -mindepth 1 -maxdepth 1 -type d -printf "%f\n" 2>/dev/null | sort -n | tail -1)
++if [ -n "$LATEST" ]; then
++    echo "Will auto-resume from: ${model_path}/${LATEST}"
++else
++    echo "No checkpoint found under ${model_path}; starting fresh."
++fi
++
++torchrun --nproc-per-node 8 --master-port 29506 -m apps.main.train \
++    config=apps/main/configs/llama_1.8B_a100.yaml
+-- 
+2.43.0
+

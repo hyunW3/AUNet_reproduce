@@ -1,0 +1,115 @@
+From f50663a6b2b6712348710dca1f29d1e7a12bae72 Mon Sep 17 00:00:00 2001
+From: hyunW3 <0176778602@naver.com>
+Date: Tue, 2 Jun 2026 15:47:57 +0900
+Subject: [PATCH 13/22] eval(aunet): fix 4-GPU harness eval end-to-end
+
+run_eval.sh pointed config= at the training yaml, whose top-level keys
+(steps, grad_acc_steps, ...) are rejected by EvalArgs. Add a dedicated
+eval config and fix several breakages along the eval path so it runs
+distributed on 4 GPUs:
+
+- new eval_aunet2_1.3B_b200.yaml hoisting the training eval: block to top level
+- EvalHarnessLM set self._device (lm-eval LM.device is a read-only property)
+- override EvalHarnessLM.all_gather (base no-op collapses the per-rank count
+  tensor to a scalar, breaking lm-eval's distributed request padding)
+- json.dumps results/validation with handle_non_serializable (results dict
+  contains a function object)
+- run_eval.sh: launch via torchrun --nproc-per-node 4, and pin
+  TORCHINDUCTOR/TRITON cache dirs to the project fs (default TMPDIR is noexec,
+  so mapping cuda_utils.so failed)
+
+Verified: HellaSwag acc_norm 0.626, ARC-E acc 0.687; all 4 GPUs at 100% peak util.
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+---
+ apps/aunet/configs/eval_aunet2_1.3B_b200.yaml | 14 ++++++++++++++
+ apps/aunet/eval.py                            | 13 ++++++++++---
+ run_eval.sh                                   | 11 +++++++++--
+ 3 files changed, 33 insertions(+), 5 deletions(-)
+ create mode 100644 apps/aunet/configs/eval_aunet2_1.3B_b200.yaml
+
+diff --git a/apps/aunet/configs/eval_aunet2_1.3B_b200.yaml b/apps/aunet/configs/eval_aunet2_1.3B_b200.yaml
+new file mode 100644
+index 0000000..3d51303
+--- /dev/null
++++ b/apps/aunet/configs/eval_aunet2_1.3B_b200.yaml
+@@ -0,0 +1,14 @@
++# Eval config for AU-Net 2 1.3B (B200 run).
++# Mirrors the `eval:` block of aunet2_1.3B_b200.yaml, hoisted to top level so it
++# maps onto EvalArgs (apps/aunet/eval.py). ckpt_dir is supplied on the CLI by run_eval.sh.
++name: "aunet2_1.3B_b200_eval"
++dump_dir: /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/aunet2_1.3B/eval
++harness:
++  tasks:
++    - hellaswag
++    - arc_easy
++validation:
++  max_steps: 1000
++generator:
++  max_tokens: 16384
++  dtype: bf16
+diff --git a/apps/aunet/eval.py b/apps/aunet/eval.py
+index 916dda6..cd59f47 100644
+--- a/apps/aunet/eval.py
++++ b/apps/aunet/eval.py
+@@ -11,6 +11,7 @@ from lm_eval.api.instance import Instance
+ from lm_eval.api.model import LM
+ from typing import Any, List, Optional, Tuple, Union
+ from lm_eval import simple_evaluate
++from lm_eval.utils import handle_non_serializable
+ from omegaconf import OmegaConf
+ import torch
+ # B200/Blackwell (sm_100): disable xformers flash-attn3 (sm_90 only kernels in 0.0.30)
+@@ -114,7 +115,13 @@ class EvalHarnessLM(LM):
+         self.accelerator = MockAccelerator()
+         self._rank = get_global_rank()
+         self._world_size = get_world_size()
+-        self.device = generator.device
++        self._device = generator.device
++
++    def all_gather(self, tensor):
++        # lm-eval's distributed request padding calls lm.all_gather and expects a
++        # [world_size]-shaped tensor. The LM base class default is a no-op, which
++        # collapses a 0-dim count tensor to a scalar (breaking max()/indexing).
++        return self.accelerator.gather(tensor)
+ 
+     def generate_until(self, requests: List[Instance]) -> List[str]:
+         prompts, gen_args = zip(*[req.args for req in requests])
+@@ -255,11 +262,11 @@ def launch_eval(cfg: EvalArgs):
+         val_results = eval_on_val(generator, cfg.validation, train_cfg)
+     if get_global_rank() == 0:
+         with open(Path(cfg.dump_dir) / "results.json", "w") as f:
+-            f.write(json.dumps(results))
++            f.write(json.dumps(results, default=handle_non_serializable))
+         logger.info(f"All evaluation results: {results['results']}")
+         if val_results is not None:
+             with open(Path(cfg.dump_dir) / "validation.json", "w") as f:
+-                f.write(json.dumps(val_results))
++                f.write(json.dumps(val_results, default=handle_non_serializable))
+             logger.info(f"All validation results: {val_results}")
+     if cfg.metric_log_dir and get_global_rank() == 0:
+         metric_log_path = Path(cfg.metric_log_dir) / "metrics.eval.jsonl"
+diff --git a/run_eval.sh b/run_eval.sh
+index b7bd78e..574f537 100644
+--- a/run_eval.sh
++++ b/run_eval.sh
+@@ -1,7 +1,14 @@
+ #!/bin/bash
+ cd /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua
+ source .venv/bin/activate
++# Keep Triton/Inductor compile caches on the project filesystem. The default TMPDIR
++# (/tmp/claude-*) is mounted noexec, so mapping the generated cuda_utils.so fails with
++# "failed to map segment from shared object".
++export TORCHINDUCTOR_CACHE_DIR=/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/aunet2_1.3B/.cache/torchinductor
++export TRITON_CACHE_DIR=/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/aunet2_1.3B/.cache/triton
++mkdir -p "$TORCHINDUCTOR_CACHE_DIR" "$TRITON_CACHE_DIR"
+ LATEST=$(ls -1 /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/aunet2_1.3B/checkpoints/ | sort -n | tail -1)
+-python -m apps.aunet.eval \
+-    config=apps/aunet/configs/aunet2_1.3B_b200.yaml \
++echo $LATEST
++torchrun --nproc-per-node 4 -m apps.aunet.eval \
++    config=apps/aunet/configs/eval_aunet2_1.3B_b200.yaml \
+     ckpt_dir=/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/aunet2_1.3B/checkpoints/$LATEST
+-- 
+2.43.0
+

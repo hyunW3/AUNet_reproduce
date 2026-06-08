@@ -1,0 +1,178 @@
+From 6fe2a60d43cb4313679a668890f1f3e055e37eca Mon Sep 17 00:00:00 2001
+From: hyunW3 <0176778602@naver.com>
+Date: Mon, 8 Jun 2026 01:33:01 +0900
+Subject: [PATCH 18/22] bpebyte: hyperparameter screen configs (lr 2e-3, larger
+ global batch)
+
+Compute-matched screen (each ~94B bytes) vs the baseline (HellaSwag 64.8 / ARC-E 64.0):
+- bpebyte_screen_base : lr 1.65e-3, global batch 192, 60k steps (control)
+- bpebyte_screen_lr2e3: lr 2e-3,    global batch 192, 60k steps (isolates LR)
+- bpebyte_screen_bb384: lr 2e-3,    global batch 384, 30k steps (isolates batch; same tokens)
+Winner gets full-trained at 180k.
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+---
+ apps/aunet/configs/bpebyte_screen_base.yaml  | 45 ++++++++++++++++++++
+ apps/aunet/configs/bpebyte_screen_bb384.yaml | 45 ++++++++++++++++++++
+ apps/aunet/configs/bpebyte_screen_lr2e3.yaml | 45 ++++++++++++++++++++
+ 3 files changed, 135 insertions(+)
+ create mode 100644 apps/aunet/configs/bpebyte_screen_base.yaml
+ create mode 100644 apps/aunet/configs/bpebyte_screen_bb384.yaml
+ create mode 100644 apps/aunet/configs/bpebyte_screen_lr2e3.yaml
+
+diff --git a/apps/aunet/configs/bpebyte_screen_base.yaml b/apps/aunet/configs/bpebyte_screen_base.yaml
+new file mode 100644
+index 0000000..e77a50a
+--- /dev/null
++++ b/apps/aunet/configs/bpebyte_screen_base.yaml
+@@ -0,0 +1,45 @@
++dump_dir: /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/bpebyte_screen/base
++name: bpebyte_screen_base
++steps: 60000
++grad_acc_steps: 4
++probe_freq: null
++seed: 777
++optim: {lr: 0.00165, warmup: 3333, weight_decay: 0.1, lr_min_ratio: 0.01, clip: 0.2}
++distributed: {fsdp_type: full_shard, compile: true, model_dtype: bf16, matmul_allow_tf32: false,
++  selective_activation_checkpointing: false, tp_size: 1, compile_cache_size_limit: 16}
++model:
++  dimensions: [512, 2048]
++  layers: [3, 25]
++  head_dims: [64, 128]
++  residuals: [true]
++  sliding_windows: [512, 4096]
++  max_seqlens: [-1, 3200]
++  block: {rope_theta: 500000.0, multiple_of: 256}
++  lambda_level: 0.0
++  pooling_type: simple_indexed_matmul
++data:
++  root_dir: /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/data
++  sources: {dclm_baseline_1.0_2shards_shuffled: 1.0}
++  batch_size: 12
++  prefetch_size: 1024
++  seq_len: 8192
++  n_views: 2
++  load_async: true
++  add_bos: true
++  add_eos: true
++  tokenizer: {name: bytes}
++  regex:
++    strategy: {bpe_br: 1@1}
++    bpe_tokenizer_path: /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/tokenizer/llama3/tokenizer.model
++profiling: {run: false}
++checkpoint:
++  dump: {every: 2000, keep: 1}
++  eval: {every: 9999999, keep: 1}
++logging: {freq: 1}
++async_eval_gpus: null
++eval_milestones: [0.3, 0.6, 0.9, 1.0]
++eval:
++  harness:
++    tasks: [hellaswag, arc_easy]
++  validation: {max_steps: 1000}
++  generator: {max_tokens: 16384, dtype: bf16}
+diff --git a/apps/aunet/configs/bpebyte_screen_bb384.yaml b/apps/aunet/configs/bpebyte_screen_bb384.yaml
+new file mode 100644
+index 0000000..9f1b695
+--- /dev/null
++++ b/apps/aunet/configs/bpebyte_screen_bb384.yaml
+@@ -0,0 +1,45 @@
++dump_dir: /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/bpebyte_screen/bb384
++name: bpebyte_screen_bb384
++steps: 30000
++grad_acc_steps: 8
++probe_freq: null
++seed: 777
++optim: {lr: 0.002, warmup: 1667, weight_decay: 0.1, lr_min_ratio: 0.01, clip: 0.2}
++distributed: {fsdp_type: full_shard, compile: true, model_dtype: bf16, matmul_allow_tf32: false,
++  selective_activation_checkpointing: false, tp_size: 1, compile_cache_size_limit: 16}
++model:
++  dimensions: [512, 2048]
++  layers: [3, 25]
++  head_dims: [64, 128]
++  residuals: [true]
++  sliding_windows: [512, 4096]
++  max_seqlens: [-1, 3200]
++  block: {rope_theta: 500000.0, multiple_of: 256}
++  lambda_level: 0.0
++  pooling_type: simple_indexed_matmul
++data:
++  root_dir: /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/data
++  sources: {dclm_baseline_1.0_2shards_shuffled: 1.0}
++  batch_size: 12
++  prefetch_size: 1024
++  seq_len: 8192
++  n_views: 2
++  load_async: true
++  add_bos: true
++  add_eos: true
++  tokenizer: {name: bytes}
++  regex:
++    strategy: {bpe_br: 1@1}
++    bpe_tokenizer_path: /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/tokenizer/llama3/tokenizer.model
++profiling: {run: false}
++checkpoint:
++  dump: {every: 2000, keep: 1}
++  eval: {every: 9999999, keep: 1}
++logging: {freq: 1}
++async_eval_gpus: null
++eval_milestones: [0.3, 0.6, 0.9, 1.0]
++eval:
++  harness:
++    tasks: [hellaswag, arc_easy]
++  validation: {max_steps: 1000}
++  generator: {max_tokens: 16384, dtype: bf16}
+diff --git a/apps/aunet/configs/bpebyte_screen_lr2e3.yaml b/apps/aunet/configs/bpebyte_screen_lr2e3.yaml
+new file mode 100644
+index 0000000..e0ff815
+--- /dev/null
++++ b/apps/aunet/configs/bpebyte_screen_lr2e3.yaml
+@@ -0,0 +1,45 @@
++dump_dir: /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/bpebyte_screen/lr2e3
++name: bpebyte_screen_lr2e3
++steps: 60000
++grad_acc_steps: 4
++probe_freq: null
++seed: 777
++optim: {lr: 0.002, warmup: 3333, weight_decay: 0.1, lr_min_ratio: 0.01, clip: 0.2}
++distributed: {fsdp_type: full_shard, compile: true, model_dtype: bf16, matmul_allow_tf32: false,
++  selective_activation_checkpointing: false, tp_size: 1, compile_cache_size_limit: 16}
++model:
++  dimensions: [512, 2048]
++  layers: [3, 25]
++  head_dims: [64, 128]
++  residuals: [true]
++  sliding_windows: [512, 4096]
++  max_seqlens: [-1, 3200]
++  block: {rope_theta: 500000.0, multiple_of: 256}
++  lambda_level: 0.0
++  pooling_type: simple_indexed_matmul
++data:
++  root_dir: /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/data
++  sources: {dclm_baseline_1.0_2shards_shuffled: 1.0}
++  batch_size: 12
++  prefetch_size: 1024
++  seq_len: 8192
++  n_views: 2
++  load_async: true
++  add_bos: true
++  add_eos: true
++  tokenizer: {name: bytes}
++  regex:
++    strategy: {bpe_br: 1@1}
++    bpe_tokenizer_path: /NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/tokenizer/llama3/tokenizer.model
++profiling: {run: false}
++checkpoint:
++  dump: {every: 2000, keep: 1}
++  eval: {every: 9999999, keep: 1}
++logging: {freq: 1}
++async_eval_gpus: null
++eval_milestones: [0.3, 0.6, 0.9, 1.0]
++eval:
++  harness:
++    tasks: [hellaswag, arc_easy]
++  validation: {max_steps: 1000}
++  generator: {max_tokens: 16384, dtype: bf16}
+-- 
+2.43.0
+

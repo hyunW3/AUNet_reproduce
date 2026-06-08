@@ -1,0 +1,46 @@
+From 0b645421dc2aeb241a1cd655c7a63e74cf11821b Mon Sep 17 00:00:00 2001
+From: hyunW3 <0176778602@naver.com>
+Date: Sat, 23 May 2026 14:27:37 +0900
+Subject: [PATCH 03/22] b200: default ENABLE_INTRA_NODE_COMM=0 (SymmetricMemory
+ group lookup)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Meta's intra-node SymmetricMemory backend assumes a cluster-specific
+group registration. On this host, every collective (FSDP2 DTensor
+full_tensor(), and even plain torch.distributed.all_reduce) raises:
+
+  RuntimeError: get_group_info: no group info associated with the
+                group name
+
+at first use. The error path lives in
+include/torch/csrc/distributed/c10d/SymmetricMemory.hpp; disabling
+intra-node comm forces the standard NCCL path, which works fine
+across the 4× B200 box.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+---
+ lingua/distributed.py | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/lingua/distributed.py b/lingua/distributed.py
+index b819cee..81295a2 100644
+--- a/lingua/distributed.py
++++ b/lingua/distributed.py
+@@ -84,8 +84,10 @@ class EnvironmentArgs:
+     MKL_SERVICE_FORCE_INTEL: str = "GNU"
+     OMP_NUM_THREADS: str = "1"
+     MKL_NUM_THREADS: str = "1"
+-    # faster intra-node collectives, seems to be a cluster specific flag
+-    ENABLE_INTRA_NODE_COMM: str = "1"
++    # faster intra-node collectives, seems to be a cluster specific flag.
++    # Disabled: SymmetricMemory group registration fails on this cluster
++    # ("get_group_info: no group info associated with the group name" during all_reduce).
++    ENABLE_INTRA_NODE_COMM: str = "0"
+     # avoids OOMs with long context
+     TORCH_NCCL_AVOID_RECORD_STREAMS: str = "1"
+     # increasing NCCL timeout time before having some NCCL error 22 should give a 16s timeout
+-- 
+2.43.0
+
