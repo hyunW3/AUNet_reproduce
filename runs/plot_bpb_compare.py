@@ -17,6 +17,7 @@ already bytes; Llama's is subword tokens x bytes_per_token.
 """
 import json
 import math
+import statistics
 from pathlib import Path
 
 import matplotlib
@@ -26,21 +27,36 @@ import matplotlib.pyplot as plt
 RUNS = Path("/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs")
 AUNET = RUNS / "aunet2_1.3B" / "metrics.jsonl"
 LLAMA = RUNS / "llama_1B_dm10" / "metrics.jsonl"
+AUNET_VAL = RUNS / "aunet2_1.3B" / "eval" / "validation.json"
+LLAMA_VAL = RUNS / "llama_1B_dm10" / "eval" / "validation.json"
 OUT = RUNS / "bpb_compare.png"
+OUT_FLOPS = RUNS / "bpb_vs_flops.png"
 
 LN2 = math.log(2.0)
 BYTES_PER_TOKEN_LLAMA = 4.5483  # measured on 5000 DCLM docs with llama3 tiktoken (see measure_bpt)
 
 
 def load(path, bytes_per_token):
-    """Return (bytes_seen[billions], bpb) deduped by global_step (last write wins)."""
+    """Return dict of arrays deduped by global_step (last write wins).
+
+    Keys: gb (bytes seen, billions), bpb (training loss as bits/byte),
+    zflops (cumulative compute, zettaflops = 1e21 FLOPs).
+
+    Cumulative FLOPs = flops_per_token * total_tokens, where flops_per_token is
+    derived per-run as median(speed/FLOPS / speed/wps) (both are logged; FLOPS is
+    throughput = wps * flops_per_token, so the ratio recovers the constant).
+    """
     by_step = {}
+    fpt_ratios = []
     with open(path) as f:
         for line in f:
             try:
                 d = json.loads(line)
             except json.JSONDecodeError:
                 continue
+            F, w = d.get("speed/FLOPS"), d.get("speed/wps")
+            if F and w:
+                fpt_ratios.append(F / w)
             loss = d.get("loss/out")
             tok = d.get("optim/total_tokens")
             step = d.get("global_step")
@@ -48,11 +64,22 @@ def load(path, bytes_per_token):
                 continue
             bpb = loss / (LN2 * bytes_per_token)
             bytes_seen = tok * bytes_per_token
-            by_step[step] = (bytes_seen, bpb)
+            by_step[step] = (bytes_seen, bpb, tok)
+    flops_per_token = statistics.median(fpt_ratios)
     steps = sorted(by_step)
-    gb = [by_step[s][0] / 1e9 for s in steps]
-    bpb = [by_step[s][1] for s in steps]
-    return gb, bpb
+    return {
+        "gb": [by_step[s][0] / 1e9 for s in steps],
+        "bpb": [by_step[s][1] for s in steps],
+        "zflops": [by_step[s][2] * flops_per_token / 1e21 for s in steps],
+        "flops_per_token": flops_per_token,
+    }
+
+
+def heldout_bpb(val_json):
+    """Held-out BPB = -nll_per_byte / ln2 (nll_per_byte is mean log-prob per UTF-8 byte)."""
+    d = json.load(open(val_json))
+    src = next(iter(d.values()))
+    return -src["nll_per_byte"] / LN2
 
 
 def ema(xs, alpha=0.01):
@@ -65,19 +92,21 @@ def ema(xs, alpha=0.01):
 
 def main():
     # AU-Net: byte tokenizer, so bytes_per_token = 1 (loss/out is already nats/byte).
-    a_gb, a_bpb = load(AUNET, bytes_per_token=1.0)
-    l_gb, l_bpb = load(LLAMA, bytes_per_token=BYTES_PER_TOKEN_LLAMA)
+    a = load(AUNET, bytes_per_token=1.0)
+    l = load(LLAMA, bytes_per_token=BYTES_PER_TOKEN_LLAMA)
+    a["ema"] = ema(a["bpb"], 0.01)
+    l["ema"] = ema(l["bpb"], 0.01)
 
-    a_ema = ema(a_bpb, 0.01)
-    l_ema = ema(l_bpb, 0.01)
+    # Held-out BPB on the shared dclm *.val.jsonl set, identical UTF-8 byte accounting.
+    a_ho = heldout_bpb(AUNET_VAL)
+    l_ho = heldout_bpb(LLAMA_VAL)
 
+    # ---- Figure 1: BPB vs training bytes seen ----
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 9))
-
-    # Panel 1: BPB vs training bytes seen (fair shared axis)
-    ax1.plot(a_gb, a_bpb, color="#a0c4ff", lw=0.3, alpha=0.4)
-    ax1.plot(a_gb, a_ema, color="#1f4ed8", lw=1.8, label=f"AU-Net 2 1.3B (byte)  — final BPB {a_ema[-1]:.3f}")
-    ax1.plot(l_gb, l_bpb, color="#ffadad", lw=0.3, alpha=0.4)
-    ax1.plot(l_gb, l_ema, color="#c81e1e", lw=1.8, label=f"Llama 1B (subword)  — final BPB {l_ema[-1]:.3f}")
+    ax1.plot(a["gb"], a["bpb"], color="#a0c4ff", lw=0.3, alpha=0.4)
+    ax1.plot(a["gb"], a["ema"], color="#1f4ed8", lw=1.8, label=f"AU-Net 2 1.3B (byte)  — train BPB {a['ema'][-1]:.3f}")
+    ax1.plot(l["gb"], l["bpb"], color="#ffadad", lw=0.3, alpha=0.4)
+    ax1.plot(l["gb"], l["ema"], color="#c81e1e", lw=1.8, label=f"Llama 1B (subword)  — train BPB {l['ema'][-1]:.3f}")
     ax1.set_xlabel("training data seen (GB, bytes)")
     ax1.set_ylabel("Bits Per Byte (BPB)")
     ax1.set_ylim(0.7, 2.2)
@@ -85,23 +114,54 @@ def main():
     ax1.grid(True, alpha=0.3)
     ax1.legend(loc="upper right", fontsize=10)
 
-    # Panel 2: zoomed to the overlapping byte range, log-y for late-training detail
-    xmax = min(a_gb[-1], l_gb[-1])
-    ax2.plot(a_gb, a_ema, color="#1f4ed8", lw=1.8, label="AU-Net 2 1.3B (byte)")
-    ax2.plot(l_gb, l_ema, color="#c81e1e", lw=1.8, label="Llama 1B (subword)")
+    xmax = min(a["gb"][-1], l["gb"][-1])
+    ax2.plot(a["gb"], a["ema"], color="#1f4ed8", lw=1.8, label="AU-Net 2 1.3B (byte)")
+    ax2.plot(l["gb"], l["ema"], color="#c81e1e", lw=1.8, label="Llama 1B (subword)")
     ax2.set_xlim(0, xmax)
     ax2.set_xlabel(f"training data seen (GB, bytes) — overlap region 0..{xmax:.1f} GB")
     ax2.set_ylabel("BPB (EMA α=0.01)")
     ax2.set_ylim(0.7, 1.4)
     ax2.grid(True, alpha=0.3)
     ax2.legend(loc="upper right", fontsize=10)
-
     plt.tight_layout()
     plt.savefig(OUT, dpi=120)
+
+    # ---- Figure 2: BPB vs cumulative compute (FLOPs), with held-out BPB markers ----
+    fig2, (bx1, bx2) = plt.subplots(2, 1, figsize=(11, 9))
+    bx1.plot(a["zflops"], a["bpb"], color="#a0c4ff", lw=0.3, alpha=0.4)
+    bx1.plot(a["zflops"], a["ema"], color="#1f4ed8", lw=1.8, label="AU-Net 2 1.3B (byte) — train BPB")
+    bx1.plot(l["zflops"], l["bpb"], color="#ffadad", lw=0.3, alpha=0.4)
+    bx1.plot(l["zflops"], l["ema"], color="#c81e1e", lw=1.8, label="Llama 1B (subword) — train BPB")
+    # held-out BPB as stars at each run's final compute
+    bx1.scatter([a["zflops"][-1]], [a_ho], color="#1f4ed8", marker="*", s=240, zorder=5,
+                edgecolor="white", label=f"AU-Net held-out BPB {a_ho:.3f}")
+    bx1.scatter([l["zflops"][-1]], [l_ho], color="#c81e1e", marker="*", s=240, zorder=5,
+                edgecolor="white", label=f"Llama held-out BPB {l_ho:.3f}")
+    bx1.set_xlabel("cumulative training compute (ZFLOPs = 1e21 FLOPs)")
+    bx1.set_ylabel("Bits Per Byte (BPB)")
+    bx1.set_ylim(0.7, 2.2)
+    bx1.set_title("BPB vs compute — AU-Net (byte) vs Llama transformer (subword); ★ = held-out BPB")
+    bx1.grid(True, alpha=0.3)
+    bx1.legend(loc="upper right", fontsize=9)
+
+    fxmax = min(a["zflops"][-1], l["zflops"][-1])
+    bx2.plot(a["zflops"], a["ema"], color="#1f4ed8", lw=1.8, label="AU-Net 2 1.3B (byte)")
+    bx2.plot(l["zflops"], l["ema"], color="#c81e1e", lw=1.8, label="Llama 1B (subword)")
+    bx2.set_xlim(0, fxmax)
+    bx2.set_xlabel(f"cumulative compute (ZFLOPs) — overlap region 0..{fxmax:.2f}")
+    bx2.set_ylabel("BPB (EMA α=0.01)")
+    bx2.set_ylim(0.7, 1.4)
+    bx2.grid(True, alpha=0.3)
+    bx2.legend(loc="upper right", fontsize=10)
+    plt.tight_layout()
+    plt.savefig(OUT_FLOPS, dpi=120)
+
     print(f"saved: {OUT}")
-    print(f"AU-Net : points={len(a_gb):>6}  bytes_seen={a_gb[-1]:7.1f} GB  final BPB(EMA)={a_ema[-1]:.4f}  raw last={a_bpb[-1]:.4f}")
-    print(f"Llama  : points={len(l_gb):>6}  bytes_seen={l_gb[-1]:7.1f} GB  final BPB(EMA)={l_ema[-1]:.4f}  raw last={l_bpb[-1]:.4f}")
-    print(f"(llama bytes_per_token = {BYTES_PER_TOKEN_LLAMA})")
+    print(f"saved: {OUT_FLOPS}")
+    print(f"AU-Net : bytes={a['gb'][-1]:6.1f} GB  compute={a['zflops'][-1]:.3f} ZFLOP  "
+          f"train BPB(EMA)={a['ema'][-1]:.4f}  HELD-OUT BPB={a_ho:.4f}  (fpt={a['flops_per_token']:.3e})")
+    print(f"Llama  : bytes={l['gb'][-1]:6.1f} GB  compute={l['zflops'][-1]:.3f} ZFLOP  "
+          f"train BPB(EMA)={l['ema'][-1]:.4f}  HELD-OUT BPB={l_ho:.4f}  (fpt={l['flops_per_token']:.3e})")
 
 
 def measure_bpt(n_docs=5000):
