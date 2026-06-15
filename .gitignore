@@ -1,0 +1,9 @@
+runs/
+
+# large data / model artifacts (downloaded or generated, not source)
+data/
+tokenizer/
+
+# rendered animation media (regenerate from viz/*.py)
+viz/*.gif
+viz/*.mp4
