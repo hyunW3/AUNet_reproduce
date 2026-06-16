@@ -158,6 +158,10 @@ cd lingua
 bash eval_bpebyte_online.sh runs/bpebyte_br_bt_online_1.3B/checkpoints/0000180000
 ```
 
+> conda 환경을 사용하는 서버(Section 1)에서는 먼저 `conda activate aunet_eval_cu121`로 환경을 활성화해야 합니다.
+> 위 checkpoint 경로는 예시이며, 실제로는 사용하는 서버에 존재하는 checkpoint 디렉터리(`params.json`이 있는
+> `.../checkpoints/<step>` 또는 그 안의 `consolidated/`)를 지정해야 합니다.
+
 평가 스크립트에서 사용하는 config는 다음 경로에 있습니다.
 
 ```text

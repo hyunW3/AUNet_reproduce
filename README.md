@@ -141,6 +141,10 @@ cd lingua
 bash eval_bpebyte_online.sh runs/bpebyte_br_bt_online_1.3B/checkpoints/0000180000
 ```
 
+> On a conda host (Section 1), activate the env first: `conda activate aunet_eval_cu121`.
+> The checkpoint path above is illustrative — point it at a checkpoint dir that exists on your
+> machine (one holding `params.json`, e.g. `.../checkpoints/<step>` or its `consolidated/` subdir).
+
 The evaluation config used by the script is:
 
 ```text
