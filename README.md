@@ -1,0 +1,154 @@
+# AU-Net / BPEByte Online Training & Evaluation Setup
+
+This guide explains how to set up the environment, train the BPEByte online model, and run evaluation.
+
+## 0. Check CUDA / Driver Compatibility
+
+Before creating the environment, check the target machine:
+
+```bash
+nvidia-smi
+```
+
+Look at:
+
+* `CUDA Version`
+* GPU model
+
+Example reference machine:
+
+* `snu55`
+* NVIDIA driver: `535`
+* CUDA compatibility: around `12.2`
+* GPU: Ampere A5000, `sm_86`
+
+Use the following rule:
+
+* If the driver supports **CUDA < 12.6**, use the **cu121 setup** below.
+* If the driver supports **CUDA 12.6 / 12.8 or higher**, you can skip the cu121 downgrade and use the default setup:
+
+```bash
+bash setup/create_env.sh
+```
+
+This default setup uses the stock Torch 2.7+cu128 environment.
+
+---
+
+## 1. Environment Setup for cu121
+
+Use this setup for machines similar to `snu55`, where the driver is older and does not support CUDA 12.6/12.8.
+
+This creates a fresh conda environment instead of cloning an existing one, so it is safe to rerun.
+
+```bash
+# Adjust this path if your conda installation is elsewhere
+source "$HOME/miniconda3/etc/profile.d/conda.sh"
+
+conda create -y -n aunet_eval_cu121 python=3.11
+conda activate aunet_eval_cu121
+```
+
+Install driver-matched PyTorch and xFormers first:
+
+```bash
+pip install --index-url https://download.pytorch.org/whl/cu121 \
+    torch==2.5.1 xformers==0.0.28.post3
+```
+
+Install the remaining dependencies:
+
+```bash
+pip install ninja
+pip install -r requirements.txt
+pip install lm-eval==0.4.12
+```
+
+Verify that CUDA works:
+
+```bash
+python -c "import torch, xformers; print(torch.__version__, torch.version.cuda, xformers.__version__); torch.zeros(1).cuda(); print('CUDA OK')"
+```
+
+Expected output should include:
+
+```text
+CUDA OK
+```
+
+---
+
+## 2. Training
+
+Before training, update the following paths in:
+
+```text
+apps/aunet/configs/bpebyte_br_bt_online_1.3B.yaml
+```
+
+Required fields to check:
+
+```yaml
+dump_dir: ...
+root_dir: ...
+bpe_tokenizer_path: ...
+include_path: ...
+```
+
+Then start training:
+
+```bash
+cd lingua
+source .venv/bin/activate
+
+torchrun --nproc-per-node 4 --master-port 29501 \
+    -m apps.aunet.train \
+    config=apps/aunet/configs/bpebyte_br_bt_online_1.3B.yaml
+```
+
+---
+
+## 3. Single-Letter Likelihood Evaluation
+
+The single-letter likelihood evaluation is also referred to as **method 2**.
+
+The corresponding config is located at:
+
+```text
+lingua/eval_tasks/gen_mc/arc_easy_gen_ll.yaml
+```
+
+Use this config when measuring single-letter likelihood for ARC-Easy style multiple-choice evaluation.
+
+---
+
+## 4. Evaluation Only
+
+To evaluate a trained checkpoint, use:
+
+```bash
+cd lingua
+bash eval_bpebyte_online.sh ${trained_model_ckpt_path}
+```
+
+Example:
+
+```bash
+cd lingua
+bash eval_bpebyte_online.sh runs/bpebyte_br_bt_online_1.3B/checkpoints/0000180000
+```
+
+The evaluation config used by the script is:
+
+```text
+/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua/apps/aunet/configs/eval_online_hs_arc_b200.yaml
+```
+
+---
+
+## Notes
+
+* Use the cu121 setup only when the target machine has an older driver, such as `snu55`.
+* Install `torch` and `xformers` before `requirements.txt`; otherwise, dependencies may pull incompatible CUDA builds.
+* `lm-eval==0.4.12` is pinned to match the `snu55` evaluation environment.
+* For machines with newer drivers supporting CUDA 12.6/12.8, prefer the default setup script instead of the cu121 environment.
