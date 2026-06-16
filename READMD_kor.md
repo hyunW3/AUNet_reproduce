@@ -130,13 +130,15 @@ torchrun --nproc-per-node 4 --master-port 29501 \
 
 Single-letter likelihood 평가는 내부적으로 **방식 2**라고 부르는 평가 방식입니다.
 
-관련 config 파일은 다음 위치에 있습니다.
+평가 config 파일은 다음 위치에 있습니다.
 
 ```text
-lingua/eval_tasks/gen_mc/arc_easy_gen_ll.yaml
+lingua/apps/aunet/configs/eval_gen_mc_ll_b200.yaml
 ```
 
-ARC-Easy와 같은 multiple-choice task에서 각 선택지의 single-letter likelihood를 측정할 때 사용합니다.
+이 config는 HellaSwag와 ARC-Easy에 대해 선택지 letter들의 P(letter | prompt)를 계산해 argmax로 정답을
+고르는 방식입니다 (`lingua/eval_tasks/gen_mc/`에 정의된 `hellaswag_gen_ll` / `arc_easy_gen_ll` task). 생성을
+하지 않으므로 online bt 디코딩이 불안정해도 동작합니다. Section 5의 평가 스크립트가 사용하는 config와 동일합니다.
 
 ---
 

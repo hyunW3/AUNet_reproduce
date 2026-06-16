@@ -112,13 +112,16 @@ torchrun --nproc-per-node 4 --master-port 29501 \
 
 The single-letter likelihood evaluation is also referred to as **method 2**.
 
-The corresponding config is located at:
+The eval config is located at:
 
 ```text
-lingua/eval_tasks/gen_mc/arc_easy_gen_ll.yaml
+lingua/apps/aunet/configs/eval_gen_mc_ll_b200.yaml
 ```
 
-Use this config when measuring single-letter likelihood for ARC-Easy style multiple-choice evaluation.
+It scores P(letter | prompt) over the option letters (argmax) for both HellaSwag and ARC-Easy —
+the `hellaswag_gen_ll` / `arc_easy_gen_ll` tasks defined under `lingua/eval_tasks/gen_mc/`. Because
+it never generates, it works even when the online bt decode is flaky. This is the same config the
+evaluation script in Section 4 uses.
 
 ---
 
