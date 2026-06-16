@@ -151,6 +151,21 @@ The evaluation config used by the script is:
 lingua/apps/aunet/configs/eval_gen_mc_ll_b200.yaml
 ```
 
+### Evaluating a checkpoint trained on another host
+
+A checkpoint bakes the absolute `bpe_tokenizer_path` from its training config into `params.json`.
+If you evaluate a checkpoint trained on a **different** machine (e.g. a B200 checkpoint with a
+`/NHNHOME/...` path) on this host, the model load fails because that path does not exist here.
+Override it with the local tokenizer path (anything after `--` is passed through to the eval):
+
+```bash
+bash eval_bpebyte_online.sh ${trained_model_ckpt_path} -- \
+    regex_bpe_tokenizer_path=$HOME/AUNet_eval/tokenizer/llama3/tokenizer.model
+```
+
+A checkpoint trained on **this** host (Section 2, where you set `bpe_tokenizer_path`) does not need
+the override.
+
 ---
 
 ## Notes

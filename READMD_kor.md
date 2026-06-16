@@ -168,6 +168,20 @@ bash eval_bpebyte_online.sh runs/bpebyte_br_bt_online_1.3B/checkpoints/000018000
 lingua/apps/aunet/configs/eval_gen_mc_ll_b200.yaml
 ```
 
+### 다른 서버에서 학습한 checkpoint를 평가할 때
+
+checkpoint의 `params.json`에는 학습 시 사용한 절대 경로 `bpe_tokenizer_path`가 그대로 저장됩니다.
+**다른** 서버에서 학습한 checkpoint(예: `/NHNHOME/...` 경로가 박힌 B200 checkpoint)를 이 서버에서 평가하면
+해당 경로가 존재하지 않아 모델 로딩이 실패합니다. 이 경우 로컬 tokenizer 경로로 override 합니다(`--` 뒤의
+인자는 평가에 그대로 전달됩니다).
+
+```bash
+bash eval_bpebyte_online.sh ${trained_model_ckpt_path} -- \
+    regex_bpe_tokenizer_path=$HOME/AUNet_eval/tokenizer/llama3/tokenizer.model
+```
+
+**이** 서버에서 직접 학습한 checkpoint(Section 2에서 `bpe_tokenizer_path`를 지정한 경우)는 override가 필요 없습니다.
+
 ---
 
 ## 6. 주의사항
