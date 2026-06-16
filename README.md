@@ -141,7 +141,7 @@ bash eval_bpebyte_online.sh runs/bpebyte_br_bt_online_1.3B/checkpoints/000018000
 The evaluation config used by the script is:
 
 ```text
-/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua/apps/aunet/configs/eval_online_hs_arc_b200.yaml
+lingua/apps/aunet/configs/eval_gen_mc_ll_b200.yaml
 ```
 
 ---
