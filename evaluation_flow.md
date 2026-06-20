@@ -322,6 +322,44 @@ sentinel+summarize structure. Run via `apps/aunet/configs/eval_cute_b200.yaml`
 headline byte-vs-BPE probe — BLT-Entropy beats BPE Llama 3 by 25+ points and hits
 99.9% on both spelling tasks.
 
+### Noisy-question HellaSwag — realistic typos (`apps/aunet/eval_typo.py`)
+A third robustness probe, complementing the BLT-strategy suite above. Where that
+suite uses *aggressive, unnatural* transforms (antspeak/drop/randomcase/repeat/
+uppercase), this corrupts the **question (stem) only** with *realistic typos* —
+misspellings and missing characters of the kind a human types — and leaves the
+endings **clean**. It is the input-corruption analogue of CUTE: CUTE asks "can you
+manipulate characters", this asks "are you robust when the input characters are
+corrupted". For a byte/char model a typo changes a few bytes; for a BPE model it
+shatters the token sequence — so the clean-vs-noisy acc_norm gap is the
+byte-robustness signal.
+
+Four single-character edit **ops** (grounded in Belinkov & Bisk 2018, "Synthetic
+and Natural Noise Both Break NMT"): `delete` (missing char), `swap` (transpose two
+adjacent — the most common real typo), `key` (substitute a QWERTY-adjacent key —
+fat-finger misspelling), `insert` (insert an adjacent key). Each under two
+**severity modes**: `word` (one edit on an **interior** char, first & last
+preserved — the "Cmabrigde" effect — on a `WORD_RATE`≈0.30 fraction of eligible
+words, len≥4) and `char` (each alpha char corrupted w.p. `CHAR_RATE`≈0.15,
+anywhere). → **4 × 2 = 8 prompt-only variants**. Scoring is the **identical**
+multiple_choice loglikelihood → acc_norm path as clean `hellaswag` (a pure
+task-side transform on `query`), reusing the deterministic `_seed` from
+`eval_noise.py`.
+
+The **`hellaswag_typo`** sentinel expands to the 8 variants
+(`eval.py:expand_typo_tasks`, cloned from stock `hellaswag` — no `include_path`),
+and `summarize_typo` injects `hellaswag_typo_avg` plus per-op
+(`hellaswag_typo_<delete|swap|key|insert>`) and per-mode
+(`hellaswag_typo_<word|char>`) means. Kept on a **separate aggregate** so it does
+**not** alter the BLT-exact `hellaswag_noise_avg`. Run via
+`apps/aunet/configs/eval_hellaswag_typo_b200.yaml` (lists clean `hellaswag` for the
+gap reference). Worked example on `"The man carefully removes the snow"`:
+
+```
+word/delete : The man carefully reoves the snow      (one interior char dropped/word)
+word/swap   : The man carefully reomves the snow     (adjacent interior chars transposed)
+char/key    : Hhe mab carefully remkvrs the snpw      (per-char QWERTY-adjacent subs)
+```
+
 ### Not yet implemented (full Table 3)
 Phonology-G2P (Suvarna et al. 2024) is documented above but not wired in — it
 needs its own dataset/prompts. Add as a follow-up for the complete Table 3.
