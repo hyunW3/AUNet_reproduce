@@ -297,11 +297,34 @@ score (the byte-robustness gap) and against BLT's 64.3.
 > (`aunet2_1.3B_b200.yaml`) on purpose — 15 extra tasks would ~8× the per-
 > milestone eval cost. It lives in the standalone eval config only.
 
+### CUTE (`apps/aunet/eval_cute.py` + `eval_tasks/gen_mc/cute_*.yaml`)
+The character-awareness half of Table 3 is now wired in. CUTE (Edman et al. 2024,
+the `leukas/cute` HF dataset) is **14 character-manipulation subtasks**, 1000
+examples each, grouped as **composition** (`spell`, `spell_inverse`,
+`contains_char`, `contains_word`), **orthographic similarity** (`orth`, `sem`),
+and **sequence manipulation** (`ins`/`del`/`sub`/`swap` × `char`/`word`). Each
+example is a **self-contained prompt** (its own 4 in-context demos + a `Question:`
+line) with a gold `answer`; BLT used these original prompts with no prompt
+engineering, so they run **0-shot** from lm-eval's view.
+
+Implemented as plain `generate_until` YAML tasks in the gen-mc include dir (base
+`_cute_common.yaml`): `doc_to_text` appends ` Answer:` as the generation cue (the
+in-context demos render answers as `Answer: "<ans>"`), the `extract-quote` regex
+filter pulls the first double-quoted span (surrounding spaces stripped — the CUTE
+`" glad "` format — but inner spaces kept, since `spell` golds like `t h e` are
+space-separated), and `exact_match` (ignore case + punctuation) scores it. The
+**`cute`** sentinel in `harness.tasks` expands to the 14 `cute_<split>` tasks
+(`eval.py:expand_cute_tasks`), and `summarize_cute` injects the aggregates
+**`cute_avg`** plus the three category means (`cute_composition`,
+`cute_orthographic`, `cute_sequence`) — mirroring the `hellaswag_noise_gen`
+sentinel+summarize structure. Run via `apps/aunet/configs/eval_cute_b200.yaml`
+(heavy: 14×1000 generations; `harness.limit` for a smoke run). This is the
+headline byte-vs-BPE probe — BLT-Entropy beats BPE Llama 3 by 25+ points and hits
+99.9% on both spelling tasks.
+
 ### Not yet implemented (full Table 3)
-CUTE (14 char-manipulation subtasks) and Phonology-G2P are documented above but
-not wired in — they need their own datasets/prompts (CUTE ships on HuggingFace;
-BLT used the original prompts, no prompt engineering). Add as a follow-up if we
-want the complete Table 3 rather than just noised HellaSwag.
+Phonology-G2P (Suvarna et al. 2024) is documented above but not wired in — it
+needs its own dataset/prompts. Add as a follow-up for the complete Table 3.
 
 > Source: *BLT: Patches Scale Better Than Tokens*, Table 1 (benchmark suite),
 > Table 3 + §6.1 (noise strategies & protocol), §6.1 CUTE/G2P paragraphs.
