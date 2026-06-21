@@ -100,17 +100,29 @@ Answer:
 
 ### WinoGrande
 
-**Prompt (doc_to_text):**
+_WinoGrande uses a **non-standard** lm-eval API: it fills the blank `_` with each option to form two
+candidate **contexts**, then scores the **shared suffix** after the blank under each; argmax over the
+two suffix-loglikelihoods is the prediction. (lm-eval repurposes `doc_to_text` to return the gold
+index and `doc_to_target` the suffix — so a naïve "doc_to_text = prompt" dump prints the index "1".)_
+
+**Sentence (blank `_` to be resolved):**
 
 ```
-1
+Sarah was a much better surgeon than Maria so _ always got the easier cases.
+options: option1="Sarah"  option2="Maria"   gold=option2
 ```
 
-**Choices (model scores each as a continuation; argmax = prediction):**
+**Two candidate contexts (each scores the shared suffix below):**
 
 ```
 [0] Sarah was a much better surgeon than Maria so Sarah
-[1] Sarah was a much better surgeon than Maria so Maria
+[1] Sarah was a much better surgeon than Maria so Maria   ← gold
+```
+
+**Shared suffix scored under each context (higher loglikelihood wins):**
+
+```
+always got the easier cases.
 ```
 
 ### MMLU (abstract_algebra)

@@ -112,17 +112,28 @@ Answer:
 
 ### WinoGrande
 
-**Prompt (doc_to_text):**
+_Non-standard lm-eval API: fill the blank `_` with each option → two candidate **contexts**, score the
+**shared suffix** under each, argmax wins. (`doc_to_text` is repurposed to the gold index, hence a
+naïve dump shows "1"; the real eval scores suffix-given-context and is correct — acc 61.6, n=1267.)_
+
+**Sentence (blank `_`):**
 
 ```
-1
+Sarah was a much better surgeon than Maria so _ always got the easier cases.
+options: "Sarah" / "Maria"   gold = Maria
 ```
 
-**Choices (model scores each as a continuation; argmax = prediction):**
+**Two candidate contexts (each scores the shared suffix):**
 
 ```
 [0] Sarah was a much better surgeon than Maria so Sarah
-[1] Sarah was a much better surgeon than Maria so Maria
+[1] Sarah was a much better surgeon than Maria so Maria   ← gold
+```
+
+**Shared suffix scored under each (higher loglikelihood wins):**
+
+```
+always got the easier cases.
 ```
 
 ### MMLU (abstract_algebra)
@@ -149,12 +160,72 @@ Answer:
 
 ## CUTE — character manipulation (generation — generate_until → exact_match)
 
-| metric | Llama 1.8B | AU-Net2 | root_greedy |
-| --- | --- | --- | --- |
-| CUTE avg | 18.4 | 23.9 | 20.6 |
-| composition | 32.6 | 59.3 | 44.5 |
-| orthographic | 47.1 | 41.0 | 45.3 |
-| sequence | 4.1 | 1.9 | 2.4 |
+All 14 subtasks (exact_match %), grouped by CUTE category; **bold** category rows are the means.
+
+| category | subtask | Llama 1.8B | AU-Net2 | root_greedy |
+|---|---|---|---|---|
+| **composition** | **_mean_** | **32.6** | **59.3** | **44.5** |
+|  | spell | 18.6 | 88.4 | 22.1 |
+|  | spell_inverse | 11.2 | 48.5 | 56.8 |
+|  | contains_char | 53.4 | 50.8 | 49.5 |
+|  | contains_word | 47.0 | 49.6 | 49.8 |
+| **orthographic** | **_mean_** | **47.1** | **41.0** | **45.3** |
+|  | orth | 47.3 | 37.0 | 38.1 |
+|  | sem | 46.9 | 45.0 | 52.5 |
+| **sequence** | **_mean_** | **4.1** | **1.9** | **2.4** |
+|  | ins_char | 8.1 | 1.7 | 2.4 |
+|  | ins_word | 14.5 | 6.4 | 7.5 |
+|  | del_char | 1.1 | 0.0 | 0.0 |
+|  | del_word | 1.2 | 1.5 | 0.5 |
+|  | sub_char | 0.3 | 0.8 | 2.3 |
+|  | sub_word | 6.3 | 3.6 | 5.1 |
+|  | swap_char | 0.4 | 0.0 | 0.0 |
+|  | swap_word | 0.8 | 1.4 | 1.4 |
+| **CUTE avg** | **(all 14)** | **18.4** | **23.9** | **20.6** |
+
+Notes: AU-Net2's composition lead is driven by **spell** (88.4 — emit the bytes of a word). root_greedy's
+**spell_inverse** (56.8) leads. Llama 1.8B leads **orthographic** (orth 47.3) and most **sequence** ops
+(ins/del/swap of chars/words) — sequence is near-floor for all three at 1.3B scale.
+
+### Examples by category
+
+*Self-contained few-shot prompts; the model must emit the manipulated string (generate_until → exact_match).*
+
+**composition** — `spell` (emit a word's letters, space-separated):
+
+```
+Spell out the word, putting spaces between each letter, based on the following examples:
+    1. Spell out the word " alphabet ". Answer: " a l p h a b e t "
+    2. Spell out the word " hello ". Answer: " h e l l o "
+    3. Spell out the word " zebra ". Answer: " z e b r a "
+    4. Spell out the word " tongue ". Answer: " t o n g u e "
+    Question: Spell out the word " the ".
+→ Answer: t h e
+```
+
+**orthographic** — `orth` (pick the word closer in Levenshtein distance):
+
+```
+Select the word that is closer in Levenshtein distance to the given word based on the following examples:
+    1. Closer in Levenshtein distance to "bold": "cold", "brave". Answer: "cold"
+    2. Closer in Levenshtein distance to "computer": "completed", "laptop". Answer: "completed"
+    3. Closer in Levenshtein distance to "happy": "glad", "apply". Answer: "apply"
+    4. Closer in Levenshtein distance to "camp": "ramp", "tent". Answer: "ramp"
+    Question: Closer in Levenshtein distance to " is ": " gis ", " are ".
+→ Answer: gis
+```
+
+**sequence** — `swap_char` (swap two specified letters in a word):
+
+```
+Swap the positions of two specified letters in a given word, based on the following examples:
+    1. Swap " l " and " b " in " alphabet ". Answer: " abphalet "
+    2. Swap " h " and " e " in " hello ". Answer: " ehllo "
+    3. Swap " z " and " a " in " zebra ". Answer: " aebrz "
+    4. Swap " u " and " e " in " tongue ". Answer: " tongeu "
+    Question: Swap " e " and " h " in " the ".
+→ Answer: teh
+```
 
 ### Examples
 
@@ -223,12 +294,33 @@ Answer whether the specified letter is in the given word, based on the following
 No
 ```
 
-## HellaSwag-typo (likelihood — acc_norm; clean vs typo-avg)
+## HellaSwag-typo (likelihood — acc_norm)
 
-| metric | Llama 1.8B | AU-Net2 | root_greedy |
-| --- | --- | --- | --- |
-| hellaswag clean | 55.8 | **57.8** | **57.5** |
-| hellaswag_typo_avg | 49.7 | **52.1** | **52.1** |
+Typos applied to the **prompt/context only** (answers kept clean), scored by acc_norm. **2 modes × 4
+ops = 8 cases**, plus per-op / per-mode means and the overall avg. **bold** = per-mode / avg rows.
+
+- **char mode** (harsh): every alphabetic char independently corrupted w.p. **0.15**, anywhere (no first/last protection).
+- **word mode** (realistic): **0.30** of eligible words (alpha, len≥4) get **one interior edit**, first & last letters preserved ("Cmabrigde" effect).
+- ops: **delete** (drop a char) · **swap** (transpose adjacent) · **key** (QWERTY-adjacent substitution, fat-finger) · **insert** (QWERTY-adjacent insertion).
+
+| case | Llama 1.8B | AU-Net2 | root_greedy |
+|---|---|---|---|
+| clean (`hellaswag`) | 55.8 | **57.8** | 57.5 |
+| delete_char | 46.2 | 47.3 | **48.9** |
+| swap_char | 48.3 | **52.8** | 51.8 |
+| key_char | 44.0 | 46.3 | **46.9** |
+| insert_char | 46.8 | **50.0** | 49.4 |
+| delete_word | 53.4 | **55.0** | 54.4 |
+| swap_word | 53.3 | **55.2** | 55.1 |
+| key_word | 52.5 | 54.4 | **54.8** |
+| insert_word | 53.3 | **55.4** | 55.1 |
+| **char mean** | 46.3 | 49.1 | **49.3** |
+| **word mean** | 53.1 | **55.0** | 54.9 |
+| **typo_avg (8)** | 49.7 | **52.1** | **52.1** |
+
+Pattern: **char mode is much harsher** than word mode for all three (every char at risk vs one
+protected interior edit); **`key` is the single hardest op**. Byte models (AU-Net2, root_greedy) are
+**more typo-robust** — higher clean *and* higher typo-avg, and a smaller relative drop.
 
 ### Example: clean vs. keyboard-adjacent typo
 
@@ -339,27 +431,37 @@ Answre:
 
 *Experiment A (cut-point ΔBPC): score the same text with an aligned vs mid-token boundary cut; byte≈0, BPE>0. Experiment B (pbp_mc ΔAcc): commit a trailing space into the MCQ prompt; byte=0, BPE flips answers.*
 
-#### Example A: cut-point ΔBPC
+#### Example A: cut-point ΔBPC — what it measures
 
-**Prefix (context):**
-
-```
-Founding Fathers
-
-From Conservapedia
-(Redirected from Founding fathers)
-Jump to: navigation, search
-Portrait of George Washington by Gilbert Stuart.
-
-The Founding Fathers are the leaders who founded the United States, especially the 40 dignitaries who signed the U.S. Constitution at the Constitutional Convention of 1787, and the 56 signers of the D …[truncated]
-```
-
-**Continuation word + boundary:**
+**Setup.** Take one string and split it into three parts — `prefix`, `boundary`, `word` — where the
+natural text is `prefix + boundary + word`. The `word` is scored under **two cuts of the same string**,
+and we compare the cost of those identical `word` bytes:
 
 ```
-boundary=' '  word='Franklin'
-ΔBPC(this sample) = 2.479  (aligned -2.479 vs misaligned -0.000)
+item:  prefix = "The capital of France is"   boundary = " "   word = "Paris"
+natural text = "The capital of France is Paris"
+
+aligned     : score "Paris" with the boundary NOT committed (natural cut)
+              logP(word) = logP(" Paris" | prefix) − logP(" " | prefix)      # telescopes → exact
+misaligned  : score "Paris" with the boundary COMMITTED into the prompt (mid-token cut)
+              prompt = "The capital of France is "   (note the trailing space)  → predict "Paris"
+
+BPC = −logP(word) / (len(word_bytes) · ln2)
+ΔBPC = BPC(misaligned) − BPC(aligned)      # ≥ 0; larger = more boundary-sensitive
 ```
+
+**Why the two cuts differ for BPE but not bytes.** A BPE tokenizer normally encodes `" Paris"` as a
+**single** token (leading space included). Committing the trailing space into the prompt forces the
+continuation to be tokenized as `"Paris"` **without** its usual leading space — a rarer token
+sequence the model scores lower → BPC rises → **ΔBPC > 0**. This is the classic "never end your
+prompt with a trailing space" failure. A **byte** model consumes the identical raw bytes either way
+(the space is just byte 0x20 in the stream), so the two conditionals are byte-identical → **ΔBPC = 0
+exactly**.
+
+**Result (this run):** Llama 1.8B ΔBPC_en = **+1.18** (strong boundary sensitivity); AU-Net2 /
+online-bt / root_greedy ≈ **0.000** (cut-invariant by construction). Same effect in code
+(`for i in |range(10):`, Llama +0.84) and Chinese (mid-`北|京`, +0.11). _(The corpus-scale strata in
+`runs/pbp_items.jsonl` use real DCLM/code/FLORES text; the curated items above isolate the mechanism.)_
 
 ### pbp_mc per-task ΔAcc (corpus-scale, limit 2000)
 
