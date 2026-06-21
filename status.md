@@ -20,8 +20,57 @@ Update this file after every step. If the session is interrupted, the next sessi
 - [x] Phase 2b — BPEByte br_bt 1.3B (`runs/bpebyte_br_bt_1.3B`, ckpt 180000) — HS 64.8 / ARC-E 64.0
 - [ ] **Phase 3 (CURRENT) — BPEByte hyperparameter SCREEN: 3 configs, sequential** ← see next section
 
-**Current step**: Phase 3 screen run 1/3 (`base`) training — driver PID 2159279
-**Last updated**: 2026-06-08 11:35 KST — base at step 19,010 / 60,000 (31.7%)
+**Current step**: Post-reproduction — 1.3B 4-model benchmark comparison DONE; eval-efficiency infra (seg-cache + parallel precompute) running; 760M matched-scale training queued. See "Current status & plan (2026-06-21)" below.
+**Last updated**: 2026-06-21 ~01:00 KST
+
+---
+
+## Current status & plan (2026-06-21)
+
+The AU-Net2 1.3B reproduction (Steps 1–5) is done. Work since has been a **4-model 1.3B
+comparison** (Llama 1B / AU-Net2 / BPEByte online-bt / BPEByte root_greedy), a **BLT-style
+robustness + character-awareness suite**, an **eval-efficiency overhaul**, and a queued **760M
+matched-scale run**.
+
+### Done
+- **1.3B consolidated benchmark table** → `runs/consolidated_1.3B_table.md`. 0-shot full:
+  HS/ARCe/BoolQ/PIQA/Wino + MMLU + ARC-C + MBPP/HEval + CUTE. Llama edges binary tasks;
+  online-bt leads HS(64.3)/ARC-C(37.8); root_greedy leads ARC-e(65.9); **byte models beat BPE
+  on CUTE** (AU-Net2 23.9 / root_greedy 20.6 vs Llama 18.4) — the character-level win.
+  Byte MBPP/HEval = N/A (online byte decode times out on long code-gen; it's generation, not
+  cache-fixable). online-bt CUTE 0.0 = degenerate decode.
+- **1.3B v4 root_greedy** trained @180k (HS 63.0 / ARC-e 65.9, leak-free).
+- **Trunk warm-start** ablation (100M + 500M): scale-dependent — hurts strong br_bt at 100M
+  (+0.02) but helps it most at 500M (−0.17); byte-warm ties/beats subword at 500M. See
+  `runs/tokwarm/RESULT.md`, `trunk_warmup_poc.md`.
+- **HellaSwag-typo** (8 ops × char/word) on 4 models — gate **passed** (root_greedy 52.1 >
+  Llama 50.1, = AU-Net2 52.1).
+- **CUTE in BLT Table-3 format** → `runs/cute_table3_format.md` (HellaSwag-Noise / Phonology-G2P
+  rows pending the cache-backed eval below).
+- **Eval infra:** OMP/RAYON thread caps (killed 68-thread/proc oversubscription); disk-backed
+  **segmentation cache** (`regex_cutting.py`, validated reproducible, 21–71×/seq); **parallel
+  precompute** (`precompute_segcache.py`, 100% key-match w/ real eval); real **PhonologyBench**
+  G2P + **CMUdict**(dropped); corpus-scale **PBP** items (en/code/zh, 6k).
+
+### Running / queued
+1. **All-prompts precompute** (`run_precompute.sh` via `pack_evals.sh`) — one seg-cache per byte
+   model covering all 15 loglikelihood tasks. GPU-free, parallel.
+2. **Cache-backed eval packing** (`pack_evals.sh`, GPU-packing scheduler) — noise (HellaSwag-Noise
+   + PhonologyBench-G2P), pbp/pbp_mc (ΔBPC en/code/zh + ΔAcc), typo_ds (boolq/piqa/arc typo,
+   re-run cache-backed) on the 3 byte models. Then run `run_760M_chain.sh`.
+3. **760M matched-scale training** (`run_760M_chain.sh`) — Llama → AU-Net2 → root_greedy,
+   Chinchilla-optimal iso-text (Llama 7800 steps / byte 44000 steps), smoke-guarded, 4× B200.
+   Configs: `apps/{main,aunet}/configs/{llama_760M_b200,aunet2_760M_b200,bpebyte_root_greedy_760M_b200}.yaml`
+   (679.6M shared core verified).
+
+### Reporting (as each finishes)
+noisy-downstream drop table · robustness rows (fills cute_table3_format.md TODOs) · PBP ΔBPC/ΔAcc ·
+per-doc root_greedy-vs-online-bt diagnostic (`runs/rootgreedy_diag.md`) · 760M milestone evals.
+
+### Pipeline scripts (backed up in /tmp/pipeline_backup/)
+`pack_evals.sh` (precompute→pack), `run_precompute.sh`, `run_robustness.sh`, `run_pbp.sh`,
+`run_760M_chain.sh`, `run_postcute.sh` (orchestrator, done). Note: these live in the `lingua`
+submodule and are git-untracked — a `git clean` there wipes them (happened once; restore from backup).
 
 ---
 
