@@ -22,6 +22,30 @@ Headline table: `consolidated_1.3B_table.md`. BLT-format: `cute_table3_format.md
 | WinoGrande acc | 61.6 | 61.5 | 59.3 |
 | MMLU acc | 24.7 | 26.3 | 24.5 |
 
+## Core reasoning — 5-shot (likelihood — option loglikelihood → acc/acc_norm)
+
+5-shot, fair & truncation-free (0% for all three, verified), full sets, fixed root_greedy code
+(BOS/A.1/window). `num_fewshot=5`; ARC-Challenge/MMLU not re-run at 5-shot (`—`). Single run, no seeds.
+
+| metric | Llama 1.8B | AU-Net2 | root_greedy |
+| --- | --- | --- | --- |
+| HellaSwag acc | 47.2 | 49.0 | 48.5 |
+| HellaSwag acc_norm | 62.9 | 63.7 | 63.7 |
+| ARC-Easy acc | 70.9 | 70.8 | 70.5 |
+| ARC-Easy acc_norm | 70.3 | 72.4 | 71.9 |
+| ARC-Challenge acc | — | — | — |
+| ARC-Challenge acc_norm | — | — | — |
+| BoolQ acc | 65.6 | 59.1 | 65.5 |
+| PIQA acc | 74.2 | 74.2 | 73.7 |
+| PIQA acc_norm | 75.6 | 74.1 | 74.4 |
+| WinoGrande acc | 62.6 | 63.6 | 64.1 |
+| MMLU acc | — | — | — |
+
+5-bench acc_norm/acc mean (HellaSwag·ARC-Easy·BoolQ·PIQA·WinoGrande): **root_greedy 67.9 > Llama 67.4
+> AU-Net2 66.6**. At 0-shot the order is reversed (Llama 65.6 > AU-Net2 65.0 > root_greedy 64.4), so
+**root_greedy overtakes the 1.8B subword baseline at 5-shot** with the strongest few-shot scaling.
+AU-Net2 is held back by a **BoolQ collapse to 59.1 (~chance)** — suspiciously low, needs a seed-repeat.
+
 ### Examples
 
 *Scoring: the prompt is fixed; each choice is appended and scored by total log-prob; the argmax choice is the prediction (acc). `acc_norm` divides by byte/char length.*
