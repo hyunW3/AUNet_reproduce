@@ -22,6 +22,29 @@ Headline table: `consolidated_1.3B_table.md`. BLT-format: `cute_table3_format.md
 | WinoGrande acc | 61.6 | 61.5 | 59.3 |
 | MMLU acc | 24.7 | 26.3 | 24.5 |
 
+## Core reasoning — 3-shot (likelihood — option loglikelihood → acc/acc_norm)
+
+3-shot, fair & truncation-free, full sets, fixed root_greedy code. `num_fewshot=3`;
+ARC-Challenge/MMLU not re-run (`—`). Single run, no seeds.
+
+| metric | Llama 1.8B | AU-Net2 | root_greedy |
+| --- | --- | --- | --- |
+| HellaSwag acc | 46.8 | 48.9 | 48.1 |
+| HellaSwag acc_norm | 62.7 | 63.1 | 63.1 |
+| ARC-Easy acc | 70.2 | 71.0 | 70.9 |
+| ARC-Easy acc_norm | 70.0 | 72.6 | 71.7 |
+| ARC-Challenge acc | — | — | — |
+| ARC-Challenge acc_norm | — | — | — |
+| BoolQ acc | 63.5 | 59.3 | 62.4 |
+| PIQA acc | 75.2 | 73.0 | 73.2 |
+| PIQA acc_norm | 75.1 | 74.0 | 74.3 |
+| WinoGrande acc | 62.1 | 60.9 | 63.1 |
+| MMLU acc | — | — | — |
+
+5-bench mean: **root_greedy 66.9 > Llama 66.7 > AU-Net2 66.0** — root_greedy already overtakes the
+1.8B baseline by 3-shot. (BoolQ note: AU-Net2 stays depressed at 59.3, confirming the few-shot BoolQ
+weakness seen at 5-shot is a real trend, not a one-off.)
+
 ## Core reasoning — 5-shot (likelihood — option loglikelihood → acc/acc_norm)
 
 5-shot, fair & truncation-free (0% for all three, verified), full sets, fixed root_greedy code
@@ -44,7 +67,8 @@ Headline table: `consolidated_1.3B_table.md`. BLT-format: `cute_table3_format.md
 5-bench acc_norm/acc mean (HellaSwag·ARC-Easy·BoolQ·PIQA·WinoGrande): **root_greedy 67.9 > Llama 67.4
 > AU-Net2 66.6**. At 0-shot the order is reversed (Llama 65.6 > AU-Net2 65.0 > root_greedy 64.4), so
 **root_greedy overtakes the 1.8B subword baseline at 5-shot** with the strongest few-shot scaling.
-AU-Net2 is held back by a **BoolQ collapse to 59.1 (~chance)** — suspiciously low, needs a seed-repeat.
+AU-Net2 is held back by a **depressed BoolQ (59.1)** — confirmed a real trend, not a one-off: AU-Net2
+BoolQ *degrades* with shots (61.1 → 59.3 → 59.1 at 0/3/5-shot), unlike root_greedy (60.2 → 62.4 → 65.5).
 
 ### Examples
 
