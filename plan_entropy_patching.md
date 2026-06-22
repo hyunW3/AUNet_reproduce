@@ -367,5 +367,21 @@ Per scale, the byte-model family (each = one `data.regex` swap on the shared tru
 5. Run the 100M leg → verify wiring + BPB + train==generate; roll out 300M → 760M → 1.3B per §6.6;
    evaluate per §6.7 with seeds/CIs. Emit the entropy-model stamp + θ/rule + its one-time train-FLOPs
    and per-byte generation overhead into eval JSON (fairness accounting, same gap the audit flagged).
-</content>
-</invoke>
+
+## 9. Entropy-model training-budget study (low / mid / high)
+
+To probe how the *entropy model's own* training budget affects patch quality and downstream AU-Net
+results, we train ONE nested entropy run and harvest three checkpoints (same seed + data order, so the
+three are exact training-prefix variants — a clean controlled comparison):
+
+| model | step ckpt    | bytes (≈) | × Chinchilla (N=47.99M) |
+|-------|--------------|-----------|--------------------------|
+| LOW   | `0000002300` | 4.8B      | 5×  |
+| MID   | `0000004600` | 9.6B      | 10× (default; what the 4 patcher configs point at) |
+| HIGH  | `0000009200` | 19.3B     | 20× (fits one 25GB DCLM chunk, minimal looping) |
+
+Run: `apps/main/configs/entropy_byte_50M_a5000.yaml` (snu55, 4×A5000), `steps 9200, dump every 2300,
+keep 4`. θ is calibrated **per model** (the entropy distribution shifts with training) **and per
+`newline_reset`** setting, targeting 4.5 bytes/patch. The MID θ fills the 4 patcher configs; LOW/HIGH θ
+are recorded for budget-ablation runs (separate per-budget patcher configs are TBD). See
+[[snu55-entropy-training]] for the live run state.
