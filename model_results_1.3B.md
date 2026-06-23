@@ -70,6 +70,52 @@ weakness seen at 5-shot is a real trend, not a one-off.)
 AU-Net2 is held back by a **depressed BoolQ (59.1)** — confirmed a real trend, not a one-off: AU-Net2
 BoolQ *degrades* with shots (61.1 → 59.3 → 59.1 at 0/3/5-shot), unlike root_greedy (60.2 → 62.4 → 65.5).
 
+## MMLU — HellaSwag-style (cloze: score the full answer TEXT, not the A/B/C/D letter)
+
+New task `mmlu_text` (`lingua/eval_tasks/mmlu_text/`, group over all 57 subjects; driver
+`run_eval_mmlu_text.sh`). Pure cloze prompt `"{{question}}\nAnswer:"` with **no options listed**;
+each of the 4 full answer strings is scored as the continuation, argmax of length-normalized
+loglikelihood — exactly the HellaSwag protocol. This is a deliberate departure from standard
+letter-MMLU (which scores `P(letter)` and is kept as `mmlu`). `acc_bytes` ≈ `acc_norm` (answers
+are near-pure ASCII). Full sets (57 subjects, size-weighted), single run, se ≈ 0.004.
+
+acc_norm (headline, per-codepoint) across 0/3/5-shot:
+
+| MMLU-text acc_norm | Llama 1.8B | AU-Net2 | root_greedy |
+| --- | --- | --- | --- |
+| 0-shot | 33.70 | 33.66 | 33.84 |
+| 3-shot | 35.27 | 35.07 | 35.24 |
+| 5-shot | 35.16 | 34.90 | 34.43 |
+
+acc_bytes (per-UTF-8-byte; ≈ acc_norm since answers are near-pure ASCII):
+
+| MMLU-text acc_bytes | Llama 1.8B | AU-Net2 | root_greedy |
+| --- | --- | --- | --- |
+| 0-shot | 33.71 | 33.68 | 33.87 |
+| 3-shot | 35.28 | 35.09 | 35.30 |
+| 5-shot | 35.19 | 34.89 | 34.49 |
+
+Reference — stock letter-MMLU `acc` (scores `P(A/B/C/D)`), 5-shot: Llama **24.7**, AU-Net2 **26.3**,
+root_greedy **24.5**.
+
+**The format change is the headline.** Stock letter-MMLU pins all three models at the **chance
+floor** (~24–26). Scoring the real answer text instead lifts every model to **~34–35** — a
+**+9–11 pt** swing of knowledge that the "A/B/C/D" token format completely buries. At 1.3B these
+models *do* hold MMLU content; they just can't express it through a single letter.
+
+**Between models it is a statistical tie at every shot count** (all spreads ≤ ~1.3 se):
+- 0-shot: all three within 0.2 pt (~33.7).
+- 3-shot: root_greedy 35.24 ≈ Llama 35.27 ≈ AU-Net2 35.07 — byte ties the 1.8B subword baseline.
+- 5-shot: Llama 35.16 ≥ AU-Net2 34.90 ≥ root_greedy 34.43 — a ≤0.7 pt edge to subword
+  (root_greedy↔Llama ≈ 1.3 se, not significant).
+
+**Few-shot saturates by 3-shot, then plateaus.** All three peak at 3-shot and dip slightly at
+5-shot (Llama 35.27→35.16, AU-Net2 35.07→34.90, root_greedy 35.24→34.43). The byte model's 3→5
+dip is the largest (−0.8 pt, ~1.4 se) but stays within noise; it is consistent with the byte
+model gaining less from very long few-shot prompts (cf. the C.5 truncation/long-context note).
+Net: the byte model is fully competitive on knowledge-MMLU once the letter bottleneck is removed,
+and the letter-vs-text gap (~10 pt) dwarfs all between-model gaps (~1 pt).
+
 ### Examples
 
 *Scoring: the prompt is fixed; each choice is appended and scored by total log-prob; the argmax choice is the prediction (acc). `acc_norm` divides by byte/char length.*
