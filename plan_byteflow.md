@@ -91,11 +91,37 @@ z = [h_{s₁}, …, h_{s_K}] · W_proj  ∈ ℝ^{K×d_global}
 
 Top-K is chosen *by the paper* to keep a **static computation graph** (exactly K tokens every example → no ragged tensors, no OOM). **No learnable boundary parameters and no auxiliary loss** — selection is a deterministic forward op; gradients flow only through the *gathered* `h_{sᵢ}`. Trained with plain next-byte cross-entropy (reported BPB).
 
-### 1.3 Reported config & results `[VERIFY against PDF]`
+### 1.3 Verified config & results (from PDF, pages 6–7, 16–20)
 
-- Scales: **600M / 50B tok** and **1.3B / 500B tok**; data **FineWeb-Edu-100B**; seq_len 8192; AdamW (β 0.9/0.95), lr ~1e-3 cosine, bf16, clip 1.0.
-- ε² "model-dependent"; K default ~3200 `[VERIFY]`; d_local 512–2048; d_global 1536–2048; E (local) 6; G (global) 20–24; B (upsample bins) 16.
-- Claimed: ByteFlow **beats LLaMA-BPE** (val BPB 0.86 vs 0.89 @600M; 0.76 vs 0.79 @1.3B) and byte baselines (MambaByte/LlamaByte/SpaceByte), "matches/exceeds AU-Net." Ablation: coding-rate BPB 0.86 < cosine-sim 0.92 < entropy 0.91 @600M `[ALL VERIFY]`.
+Now read from the actual PDF (`pdftotext` of the saved arXiv PDF). Corrections to earlier extractor guesses:
+- **Exact coding rate (eq 25):** `R_ε(h_{1:T}) = ½ log det(I + (d_local/ε²)·h_{1:T} h_{1:T}ᵀ)` — full-prefix Frobenius/Gram log-det.
+- **L2 approximation (eqs 26–29, the streaming form):** first-order `log det(I+A) ≈ tr(A)` ⇒ `R_ε ≈ (d_local/2ε²)·‖h_{1:T}‖²_F` ⇒ **`ΔR_t ∝ ‖h_t‖²`** (per-token squared norm). This is the faithful streaming score → our `l2_*` mode, NOT the diagonal+window thing.
+- **Architecture (Table 5, p18):** BFlowNet is Hierarchical 2-level, `[6,20]`@600M / `[6,24]`@1.3B layers, hidden `[512,1536]`/`[512,2048]`, **Canon ✓**, max seq `8192→3200→8192`. Upsampling = **multi-linear, B=16 bins** (eqs 14–17), `s_t = h_t + g_{chunk(t)}W_{bin(t)}`. Decoder is **symmetric (SWA + Canon)**.
+- **Training (pp 19–20):** FineWeb-Edu-100B (~500B byte tokens); LR **4e-4** cosine; warmup 10K (ByteFlow)/5K (baseline); AdamW β 0.9/0.95, wd 0.1, clip 0.2/1.0; bf16, TF32 off; RoPE **θ=5e5** (ByteFlow) / 1e4 (baseline); `multiple_of=256`; FSDP full_shard, 8×A100, tp=1; up to **1.95M steps** (ByteFlow) / 950K (baseline). **λ in the rate–distortion objective is *scheduled* to target a desired compression ratio** (≈ our threshold/quantile-to-ratio calibration). ε² has no fixed value — set via the λ/ratio schedule.
+- Results (Fig 2): ByteFlow Net beats Llama-BPE and all byte baselines on val BPB at 600M & 1.3B (BPB curves; exact table numbers from the earlier extractor remain `[VERIFY]`).
+- **Canon ablation (p20):** removing Canon costs **−1.85 pts @600M, −2.13 pts @1.3B** avg acc — Canon is a load-bearing component.
+
+### 1.4 Fidelity audit of OUR implementation vs the paper (what's missing)
+
+| Component | Paper (BFlowNet) | Our impl | Impact |
+|---|---|---|---|
+| **Coding-rate score** | L2 approx `ΔR_t ∝ ‖h_t‖²` (eq 29) or full log-det (eq 25) | had defaulted to `logdet_quantile` (diagonal+window — **our invention, not in paper**) | **Direct confound in the 100M run.** FIXED: configs switched to `l2_quantile` (= eq 29). |
+| **Canon layer** (causal conv1d, k=4) in encoder **and** decoder | ✓ (ablated as +1.85/+2.13 pts) | ✗ (plain `CausalTransformer`) | Missing for ALL our models (fair internally), but faithful BFlowNet needs it; likely a real quality lever. |
+| **Encoder depth E** | 6 | 3 (repo AU-Net convention) | Matched to our AU-Net peer, so fair internally; diverges from paper. |
+| **Upsampling** | multi-linear, B=16 bins + residual | `simple_indexed_matmul` (max_pos=16) + repeat + residual | ≈ equivalent (16-bin position-indexed linear). OK. |
+| **Selection** | global Top-K (+ "rolling top-k" at inference) | causal threshold (leak-free) / `global_topk` ablation | Intentional (project leak policy); `global_topk` available for faithful repro. |
+| **RoPE θ / max_seqlens / B** | 5e5 / 8192→3200→8192 / 16 | 5e5 / [-1,3200] / 16 | ✓ match. |
+
+**Net:** the 100M run's biggest infidelity was the **score mode** (now fixed to `l2_quantile`); the biggest *remaining* missing piece is the **Canon layer** (encoder+decoder causal conv, k=4).
+
+**Exact coding-rate mode implemented (2026-06-24).** `coding_rate.py` now has `score_type="exact"` (modes `exact_quantile` / `exact_fixed_tau` / `exact_global_topk`) computing the *exact* full-prefix log-det marginal (eqs 11–12) via the matrix-determinant lemma + a Sherman-Morrison rank-1 inverse scan: `ΔR_t = ½ log(1 + (d/ε²)·h_tᵀ M_{t-1}⁻¹ h_t)`, `M_t = I_d + (d/ε²)Σ_{s≤t}h_s h_sᵀ`. Verified against brute-force `logdet` to 3e-5; causal/leak-free; calibrates to target ratio. Cost is **O(T·d²) sequential in T** (`@torch.compiler.disable`d Python time-loop) → ~6.2× slower throughput than the L2 approx; small-scale ablation only.
+
+**Two 100M reruns launched 2026-06-24 (matched bs24×ga8, 1672 steps), to supersede the non-faithful logdet_quantile result:**
+- **l2_quantile** — ece-agpu18 GPU0,4,5,7, compile=true, `runs/byteflow_100M_l2`. ETA ~2h.
+- **exact_quantile** — ece-agpu11 GPU4–7, compile=false, `runs/byteflow_100M_exact`. ETA ~12h (sequential scan). eps2=0.5.
+Both vs baselines v2_online 0.798 / v1_committed 0.904 / v4_root_greedy 0.931 (the leak-free peer). The earlier logdet_quantile run (~0.98) is non-faithful and should be disregarded.
+
+**Bug fixed mid-run (2026-06-24): l2_quantile threshold collapse.** `‖h_t‖²` has a non-stationary scale (representation norms grow during training), so a global EMA threshold can't track it — the first l2 run collapsed to ~no boundaries (nbtoks ~100, ratio ~1800). The paper sidesteps this via rank-based Top-K (scale-free); a threshold needs scale-handling. Two fixes in `coding_rate.py`: (1) `_ema_tau` now tracks a **direct EMA of the batch (1-p) quantile** (not the std-scaled Robbins-Monro, which diverged); (2) the **l2 score is normalized by its causal trailing-window mean** → scale-invariant local coding rate. Verified stable under growing norms (ratio 4.25-4.77) + leak-free. Relaunched l2 healthy (nbtoks 62k @ step 50, warming to target). NOTE: the exact-mode score (log-det) is naturally bounded/stationary, so it never collapsed.
 
 ---
 
@@ -176,29 +202,26 @@ Selection is hard (threshold/argtopk) → non-differentiable, **same as AU-Net's
 
 Backbone unchanged. Add a model-side boundary module + thread a config flag. Files (all under `lingua/apps/aunet/`):
 
-### 3.1 New: `coding_rate.py` (boundary module)
+### 3.1 New: `coding_rate.py` (boundary module) — IMPLEMENTED
+
+`lingua/apps/aunet/coding_rate.py` defines `CodingRateArgs` (dataclass) and `CodingRateChunker(nn.Module)`. Entry point (`@torch.no_grad`, mirrors `get_pool_mask`):
 
 ```python
-# lingua/apps/aunet/coding_rate.py
-def coding_rate_boundaries(h, target_ratio, eps2, mode="l2_quantile",
-                           ema_state=None, max_seqlen=None):
-    """
-    h: [B, T, d_local] causal encoder output (encoders[0]).
-    returns level_mask: [B, T] int (1 at promoted positions, 0 else; pos 0 forced 1).
-    Causal: score_t uses only h[:, :t+1].
-    """
-    # L2 form: cumulative squared-norm energy is a prefix quantity -> ΔR_t cheap & causal.
-    cum = (h.float() ** 2).sum(-1).cumsum(1)          # [B,T] = ‖h₁:ₜ‖²  (∝ Rε, eq.32)
-    dR  = cum - torch.nn.functional.pad(cum, (1,0))[:, :-1]   # ΔRₜ (eq.12, L2)
-    # optional: dR = log1p((d_local/eps2) * per_step_outer)   # full log-det (eq.11) ablation
-    tau = ema_quantile(dR, 1 - 1/target_ratio, ema_state)     # causal EMA quantile
-    mask = (dR >= tau).int()
-    mask[:, 0] = 1                                              # always-keep BOS (force_first)
-    return mask  # capping to max_seqlen handled downstream by get_pool_mask
+level_mask = chunker(h, nb_levels)   # h: [B,T,d_local] from encoders[0]; -> [B,T] long
+# value = nb_levels at promoted positions, 0 elsewhere; level_mask[:,0]=nb_levels (BOS)
 ```
 
-- `mode`: `l2_quantile` (primary), `l2_fixed_tau`, `logdet_quantile` (ablation), `topk_per_seq` (non-causal ablation).
-- The full log-det (eq.11) is computed via the rank-1 prefix update of `det(I + α hhᵀ)` so it stays O(T·d), not O(T·d³).
+**Score** `dR_t` (per position, causal, vectorized O(T·d)):
+- `l2_*`: `dR_t = ‖h_t‖²` (separable energy, eq.32 proxy).
+- `logdet_*`: diagonal coding-rate marginal `dR_t = ½ Σ_f log(1 + α·h_{t,f}²/(1+α·g_{t-1,f}))`, `α=d_local/eps2`, where **`g_{t-1,f}` is a boxcar window of the last `window` bytes** — *not* the unbounded prefix. (Critical fix found in testing: the cumulative prefix makes `g` grow without bound so `dR_t` decays with t → a non-stationary score that piles all boundaries at the sequence start. The boxcar keeps it stationary, causal, and numerically stable. The exact non-diagonal log-det marginal would need an O(T·d²) sequential Sherman-Morrison recursion — intractable for training; the diagonal+window form is the principled cheap stand-in.)
+
+**Selection** (`mode`):
+- `logdet_quantile` / `l2_quantile` — causal threshold; `tau` tracked by a cross-batch online quantile (Robbins–Monro), updated *after* the decision so it never sees the current sequence's future. **Calibrates exactly to `target_ratio`.** Primary/recommended.
+- `logdet_fixed_tau` / `l2_fixed_tau` — causal threshold at constant `tau`.
+- `rolling_topk` — per-sequence trailing-window threshold (`mean+z·std` over last `window` scores), commit-monotone (no eviction, §2.4a). Causal. Realized ratio is z-controlled and *approximate* (the log-det score isn't Gaussian) — measure and tune `target_ratio`/`window` to hit budget.
+- `global_topk` — per-sequence top-k over the whole sequence. **Non-causal (leaks); diagnostic only.**
+
+Verified in a standalone test (`B,T,d=4,4096,512`): `*_quantile` hit 4.5 bytes/chunk; perturbing future bytes leaves all boundaries in `[0,t)` unchanged for every mode **except** `global_topk` (which changes them → confirms the intended leak); eval is deterministic. NOTE: the `rolling_evict`, `buffer_k`, `topk`, `eval_mode` fields are wired into `CodingRateArgs` but the per-prefix `eval_mode` scoring split (§3.4) is consumed by the eval path, still TODO.
 
 ### 3.2 `hierarchical.py` — compute mask inside forward
 
@@ -210,16 +233,17 @@ for encoder, trans, mask in zip(self.encoders, self.transitions, masks):
     x = encoder(x, attn_impl="fmha")
     residuals.append(x); x = trans.down(x, mask, ...)
 ```
-Coding-rate path (only the first level is dynamic; deeper levels, if any, can stay data-side or recurse):
+Coding-rate path — IMPLEMENTED exactly as below (single dynamic level, asserted in `__init__`; deeper levels would stay data-side):
 ```python
 x = self.tok_embeddings(token_values)
-x0 = self.encoders[0](x, attn_impl="fmha")        # h₁:ₜ — needed for boundaries
-if self.coding_rate.enabled:
-    level_mask = coding_rate_boundaries(x0, self.coding_rate.target_ratio,
-                                        self.coding_rate.eps2, self.coding_rate.mode,
-                                        self._cr_ema, max_seqlen=self.max_seqlens[1])
+enc0_out = None
+if self.coding_rate is not None:                  # run encoder[0] up front: h₁:ₜ needed for boundaries
+    enc0_out = self.encoders[0](x, attn_impl="fmha")
+    level_mask = self.coding_rate(enc0_out, nb_levels=len(self.encoders))
 masks, _, nb_toks = self.get_pool_mask(level_mask, [...], force_first=True)
-# then proceed with x0 as the level-0 features feeding trans.down (avoid recompute)
+for i, (encoder, trans, mask) in enumerate(zip(self.encoders, self.transitions, masks)):
+    x = enc0_out if (i == 0 and enc0_out is not None) else encoder(x, attn_impl="fmha")  # reuse, no recompute
+    residuals.append(x); x = trans.down(x, mask, encoder.rope_embeddings.freqs_cis)
 ```
 - `committed_patch_idx` / `patch_read_delay` machinery (`hierarchical.py:376–397`) stays at default 0; the causal threshold means the committed view == the training view, so no rollback path is needed (unlike streaming byte-trie, `[[byte-generate-until-hang]]`).
 - Generation: feed bytes one at a time, maintain the cumulative `‖h₁:ₜ‖²` and EMA τ as parser state → commit a boundary exactly when `score_t ≥ τ`. Mirrors `ByteTrieIncrementalParser` (`data/byte_trie.py:184`) but state is two scalars per stream, not a trie cursor.
@@ -231,10 +255,11 @@ Add a `coding_rate:` block to `HierarchicalArgs` (`hierarchical.py:33`) — mode
 model:
     coding_rate:
         enabled: true
-        mode: l2_quantile        # l2_quantile | l2_fixed_tau | logdet_quantile | rolling_topk | global_topk
+        mode: logdet_quantile    # l2_quantile | l2_fixed_tau | logdet_quantile | logdet_fixed_tau | rolling_topk | global_topk
         target_ratio: 4.5        # bytes/chunk; matches BPEByte token budget for iso-FLOPs
         eps2: 0.5                # [VERIFY default from PDF]; only used by logdet modes
-        ema_decay: 0.99          # quantile-tracker decay (l2_quantile)
+        window: 512              # boxcar window for logdet energy g_{t-1} (keeps dR_t stationary); ~ encoder SWA window
+        ema_decay: 0.99          # quantile-tracker decay (*_quantile)
         tau: null                # only for l2_fixed_tau
         rolling_evict: commit    # rolling_topk: commit (monotone, no eviction; DEFAULT) | exact (evicts; diagnostic-only, §2.4a)
         buffer_k: null           # rolling_topk buffer size; default ≈ seq_len/target_ratio (≈1820), NOT max_seqlens[1] (§2.4); train==infer
@@ -341,9 +366,24 @@ Per scale, on the **identical backbone + identical budget**, three boundary mech
 ## 8. Next actions
 
 1. `[VERIFY]` Re-extract ByteFlow §3 (eqs 11–18, 32) + §4–5 hyperparams/results from the PDF; correct §1.3 here.
-2. Implement `lingua/apps/aunet/coding_rate.py` (§3.1) + `forward` hook (§3.2) + `HierarchicalArgs.coding_rate` (§3.3).
-3. Measure BPEByte bytes/chunk on a DCLM val shard → fix `target_ratio` per scale (§4.3).
-4. Create the 4 `byteflow_*.yaml` configs (§4.4); add a 100M smoke (25 steps) to `run_ablation_100M.sh`.
-5. Run 100M → 300M → 760M → 1.3B (§5), then ablations (§6).
+2. ✅ **DONE** — `lingua/apps/aunet/coding_rate.py` (§3.1) + `forward` hook (§3.2) + `HierarchicalArgs.coding_rate` (§3.3) implemented and unit-tested (boundaries calibrate to ratio, leak-free except `global_topk`, deterministic eval). Remaining sub-tasks: streaming-generation parser (§3.2 last bullet), and the `eval_mode` per-prefix scoring split for the top-k family (§3.4).
+3. Measure BPEByte bytes/chunk on a DCLM val shard → fix `target_ratio` per scale (§4.3). **(open)**
+4. ✅ **DONE** — created `configs/byteflow_{100M,300M,760M_b200,1.3B_b200}.yaml` (each cloned from its BPEByte root_greedy partner; `data.regex` swapped to the cheap `word1` whitespace placeholder since the model overwrites `level_mask`; `model.coding_rate` block added) + launch scripts `train_byteflow_{760M,1.3B}.sh` (ports 29520/29521). YAMLs validated: keys match `CodingRateArgs`, no leftover `bpe_*` keys, OmegaConf structured round-trip OK (unknown keys rejected at load). Still open: 100M/300M legs in `run_ablation_100M.sh` / `runs/cmp_300M/orch.sh`; a 25-step smoke gate; and a train-args assertion that exactly one of {`regex` online, `coding_rate`} is active.
+5. Run 100M → 300M → 760M → 1.3B (§5), then ablations (§6). **(100M DONE — see below; 300M/760M/1.3B open)**
+
+**First 100M comparison (2026-06-24, ece-agpu18, 4×A100, `byteflow_100M.yaml`, `logdet_quantile`/ratio 4.5/eps2 0.5/window 512, compile=true, 1672 steps, global batch matched to the ablation):** the run completed cleanly (final ckpt 1672). Final training loss (per-byte CE ≈ BPB proxy), realized ratio ~4.48 bytes/chunk (matched → fair on compute):
+
+| Model (100M, 1672 steps, same backbone/budget) | final loss | causal/leak-free |
+|---|---|---|
+| BPEByte v2_online (bt+before_root) | **0.798** | leak risk |
+| BPEByte v1_committed | 0.904 | leak-free |
+| BPEByte v4_root_greedy | **0.931** | leak-free (ByteFlow's true peer) |
+| **ByteFlow coding-rate (ours)** | **~0.98** (rank0 0.997, cross-rank mean ~0.982) | leak-free |
+
+**Result: as-implemented coding-rate chunking is BEHIND BPEByte** — ~+0.05 vs its leak-free peer v4_root_greedy, ~+0.18 vs the leaky v2. Honest first-cut negative. Likely contributors, in priority order to investigate: (a) **cold-start** — boundaries derive from the encoder, which is ~random at init, so early steps segment near-randomly while BPEByte has correct boundaries from step 0; at only 1672 steps this is costly (try a boundary warmup / start from whitespace and anneal to coding-rate, or warm-start the encoder). (b) **Untuned hyperparameters** — eps2/window/target_ratio/score-form are placeholders; no sweep done (§6 ablations 2–4). (c) **per-rank τ** (not all-reduced) adds segmentation noise across ranks (loss spread 0.966–0.997). (d) the diagonal+windowed log-det is an approximation of the true MCR2 marginal. Run dir: `ece-agpu18:/home/hwbae/AUNet/runs/byteflow_100M` (ckpt + train.log retained).
+
+**Smoke test (2026-06-24, ece-agpu18, 1×A100, `byteflow_100M.yaml`, `compile=false`, bs4):** ✅ end-to-end pass — model builds with the chunker, trains 20 steps, **loss 3.35→2.97**, no NaN, checkpoint saves, clean shutdown. Realized **~4.0–4.2 bytes/chunk** (`nbtoks` 7731→8404 vs 32768 bytes; EMA τ still warming toward 4.5). One bug fixed: `coding_rate.tau_init` must be a **float** buffer, not bool — the trainer's `check_model_value_range` does `max()-min()` over buffers, unsupported on bool. NOTE the ece repo (`/home/hwbae/AUNet`, branch `main`, submodule `e500b7d`) is a separate checkout; the `hierarchical.py` base there is byte-identical to ours (diff = only the coding_rate additions), so the edited file was copied over directly.
+
+**Smoke test 2 (2026-06-24, ece-agpu18, 4×A100 FSDP, `compile=true`, bs4/gpu):** ✅ pass — torch.compile builds the chunker with **no graph breaks / recompiles / errors**, all 4 ranks train to step 15 (loss ~3.34–3.41), checkpoint saves cleanly across ranks, clean exit. This clears both prior caveats: **`compile=true` over the chunker** and **multi-GPU FSDP with the scalar `tau_buf`/`tau_init` buffers** both work. Per-rank `nbtoks` ~6.0–6.6k (ratio ~5–5.5 at step 10–15; EMA τ still warming, and it's per-rank — see below). Remaining nit: τ is calibrated **per-rank** (local-batch quantile, not all-reduced), so ranks drift slightly; harmless for a soft threshold but worth an all-reduce if exact ratio parity matters.
 
 Related memory: `[[aunet-project-state]]`, `[[cmp-300M-scope]]`, `[[causal-segmentation-leak-tradeoff]]`, `[[byte-generate-until-hang]]`, `[[bpebyte-rootgreedy-audit]]`, `[[next-100m-aunet-llama]]`.

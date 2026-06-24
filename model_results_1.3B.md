@@ -25,7 +25,8 @@ Headline table: `consolidated_1.3B_table.md`. BLT-format: `cute_table3_format.md
 ## Core reasoning — 3-shot (likelihood — option loglikelihood → acc/acc_norm)
 
 3-shot, fair & truncation-free, full sets, fixed root_greedy code. `num_fewshot=3`;
-ARC-Challenge/MMLU not re-run (`—`). Single run, no seeds.
+ARC-Challenge added 2026-06-24 (acc/acc_norm); letter-MMLU not re-run at few-shot (see MMLU-text
+0/3/5-shot below). Single run, no seeds.
 
 | metric | Llama 1.8B | AU-Net2 | root_greedy |
 | --- | --- | --- | --- |
@@ -33,8 +34,8 @@ ARC-Challenge/MMLU not re-run (`—`). Single run, no seeds.
 | HellaSwag acc_norm | 62.7 | 63.1 | 63.1 |
 | ARC-Easy acc | 70.2 | 71.0 | 70.9 |
 | ARC-Easy acc_norm | 70.0 | 72.6 | 71.7 |
-| ARC-Challenge acc | — | — | — |
-| ARC-Challenge acc_norm | — | — | — |
+| ARC-Challenge acc | 35.7 | 36.1 | 35.5 |
+| ARC-Challenge acc_norm | 38.2 | 37.9 | 39.4 |
 | BoolQ acc | 63.5 | 59.3 | 62.4 |
 | PIQA acc | 75.2 | 73.0 | 73.2 |
 | PIQA acc_norm | 75.1 | 74.0 | 74.3 |
@@ -48,7 +49,8 @@ weakness seen at 5-shot is a real trend, not a one-off.)
 ## Core reasoning — 5-shot (likelihood — option loglikelihood → acc/acc_norm)
 
 5-shot, fair & truncation-free (0% for all three, verified), full sets, fixed root_greedy code
-(BOS/A.1/window). `num_fewshot=5`; ARC-Challenge/MMLU not re-run at 5-shot (`—`). Single run, no seeds.
+(BOS/A.1/window). `num_fewshot=5`; ARC-Challenge added 2026-06-24 (acc/acc_norm); letter-MMLU not
+re-run at few-shot (see MMLU-text 0/3/5-shot below). Single run, no seeds.
 
 | metric | Llama 1.8B | AU-Net2 | root_greedy |
 | --- | --- | --- | --- |
@@ -56,8 +58,8 @@ weakness seen at 5-shot is a real trend, not a one-off.)
 | HellaSwag acc_norm | 62.9 | 63.7 | 63.7 |
 | ARC-Easy acc | 70.9 | 70.8 | 70.5 |
 | ARC-Easy acc_norm | 70.3 | 72.4 | 71.9 |
-| ARC-Challenge acc | — | — | — |
-| ARC-Challenge acc_norm | — | — | — |
+| ARC-Challenge acc | 34.6 | 36.9 | 35.8 |
+| ARC-Challenge acc_norm | 38.5 | 39.5 | 39.9 |
 | BoolQ acc | 65.6 | 59.1 | 65.5 |
 | PIQA acc | 74.2 | 74.2 | 73.7 |
 | PIQA acc_norm | 75.6 | 74.1 | 74.4 |
