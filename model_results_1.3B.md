@@ -6,6 +6,113 @@ Models: **Llama 1.8B** (BPE, `llama_1.8B_paper` @60k) · AU-Net2 (byte, word pat
 Headline table: `consolidated_1.3B_table.md`. BLT-format: `cute_table3_format.md`.
 **Scoring mode** is noted per section: _likelihood_ = option-loglikelihood argmax (acc/acc_norm) or BPC; _generation_ = generate_until + exact_match.
 
+> **Note.** The `root_greedy` column throughout this doc is the **new-code** run (`bpebyte_br_greedy_root_1.3B` @180k, training commit `0fbc3ee` + new eval). Its full comparison against the old training code and the old eval/2nd-mask is the 2×2 below.
+
+## 2×2: training-code × eval-fix (root_greedy 1.3B, new code)
+
+All four cells are the **same `root_greedy` 1.3B model family** @180k, byte-normalized eval, read from the canonical full-dataset eval dirs. The 2×2 isolates two independent code changes:
+
+- **Training code** (`new/*` vs `old/*`): NEW = non-sliding `max(8192,len)` streaming-parser window (commit `0fbc3ee`); OLD = original 4096-sliding window (`_oldseg_` run).
+- **Eval fix / 2nd-position mask** (`*/new` vs `*/old`): NEW peels leading special tokens → BOS@0 mask=1, trie on real bytes; OLD (`OLD_EVAL_NO_BOS_PEEL=1`) feeds BOS to the trie → spurious 2nd-position boundary, BOS@0 unset.
+
+Columns are **train/eval** code: `new/new`, `new/old`, `old/new`, `old/old`. `Δtrain = new/new − old/new` (eval held new); `Δevalfix = new/new − new/old` (train held new). All full datasets.
+
+| benchmark (0-shot) | new/new | new/old | old/new | old/old | Δtrain | Δevalfix |
+| --- | --- | --- | --- | --- | --- | --- |
+| HellaSwag acc_norm | 62.47 | 62.77 | 62.82 | 63.05 | -0.35 | -0.30 |
+| ARC-Easy acc_norm | 66.84 | 66.08 | 65.57 | 65.99 | +1.26 | +0.76 |
+| ARC-Challenge acc_norm | 37.54 | 36.77 | 36.60 | 36.52 | +0.94 | +0.77 |
+| BoolQ acc | 62.05 | 61.90 | 60.21 | 60.00 | +1.83 | +0.15 |
+| PIQA acc_norm | 74.32 | 74.76 | 73.78 | 73.61 | +0.54 | -0.44 |
+| WinoGrande acc | 61.09 | 61.56 | 59.75 | 59.98 | +1.34 | -0.47 |
+| MMLU acc | 25.49 | 25.47 | 24.51 | 24.49 | +0.98 | +0.01 |
+| MMLU-text acc_norm | 34.14 | 34.51 | 33.93 | 34.08 | +0.21 | -0.37 |
+
+**5-bench mean** (HS-norm, ARC-E-norm, BoolQ, PIQA-norm, Wino), full sets:
+| shot | new/new | new/old | old/new | old/old | Δtrain | Δevalfix |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0-shot | 65.35 | 65.41 | 64.43 | 64.53 | +0.93 | -0.06 |
+| 3-shot | 66.66 | 66.92 | 66.87 | 66.71 | -0.22 | -0.26 |
+| 5-shot | 67.03 | 66.82 | 67.88 | 67.83 | -0.85 | +0.20 |
+
+**Robustness aggregates** (limit=2000 by design):
+| metric | new/new | new/old | old/new | old/old | Δtrain | Δevalfix |
+| --- | --- | --- | --- | --- | --- | --- |
+| HellaSwag-typo avg (acc_norm) | 51.88 | 52.07 | 51.56 | 52.06 | +0.32 | -0.19 |
+| HellaSwag-noise avg (acc_norm) | 42.34 | 42.56 | 41.88 | 42.16 | +0.46 | -0.22 |
+
+**Mean |Δ| over the 8 headline 0-shot benchmarks:** training-code = **0.93** pts, eval-fix = **0.41** pts.
+
+**Takeaway.** The eval-fix/2nd-position-mask has only a **small, direction-inconsistent effect for root_greedy** (mean |Δevalfix| ≈ 0.41 pt; per-benchmark shifts ±0.3–0.8, both signs, all within single-run stderr; no systematic winner — `new/new`≈`new/old` and `old/new`≈`old/old`). In root placement the BOS-peel rarely changes the realized segmentation, but the front-of-sequence mask difference does perturb a few patch boundaries, so it is not bit-identical. The more consistent difference is the **training-code window fix** (mean |Δtrain| ≈ 0.93 pt): new code is modestly better on 0-shot knowledge/reasoning (BoolQ +1.8, MMLU +1.0, ARC-C/E ~+1) and most few-shot, while old code edges 5-shot BoolQ/WinoGrande. Net 5-bench means stay within ~1 pt across all four cells. (All single runs, no seeds — treat sub-1-pt gaps as noise.)
+
+## 2×2 train/eval breakdown by shot
+
+Columns are **train/eval** code (all = `root_greedy` 1.3B @180k, byte-normalized, full datasets, canonical eval dirs): `new/new` = new-train/new-eval · `new/old` = new-train/OLD-eval · `old/new` = OLD-train/new-eval · `old/old` = OLD-train/OLD-eval. Comparing `new/new`↔`new/old` and `old/new`↔`old/old` isolates the **eval-fix/2nd-mask**; `new/new`↔`old/new` and `new/old`↔`old/old` isolates the **training-code window**. Metric per row in the label (acc_norm, or acc for BoolQ/WinoGrande/MMLU-letter). MMLU-letter only at 0-shot. Single runs, no seeds.
+
+### 0-shot
+
+**Averages**
+
+| aggregate | new/new | new/old | old/new | old/old |
+| --- | --- | --- | --- | --- |
+| 5-bench mean (HS, ARC-E, BoolQ, PIQA, Wino) | 65.35 | 65.41 | 64.43 | 64.53 |
+| all-8 mean (5-bench + ARC-C+ MMLU-letter + MMLU-text) | 52.99 | 52.98 | 52.15 | 52.22 |
+
+**Individual benchmarks**
+
+| benchmark | new/new | new/old | old/new | old/old |
+| --- | --- | --- | --- | --- |
+| HellaSwag (acc_norm) | 62.47 | 62.77 | 62.82 | 63.05 |
+| ARC-Easy (acc_norm) | 66.84 | 66.08 | 65.57 | 65.99 |
+| ARC-Challenge (acc_norm) | 37.54 | 36.77 | 36.60 | 36.52 |
+| BoolQ (acc) | 62.05 | 61.90 | 60.21 | 60.00 |
+| PIQA (acc_norm) | 74.32 | 74.76 | 73.78 | 73.61 |
+| WinoGrande (acc) | 61.09 | 61.56 | 59.75 | 59.98 |
+| MMLU-letter (acc) | 25.49 | 25.47 | 24.51 | 24.49 |
+| MMLU-text (acc_norm) | 34.14 | 34.51 | 33.93 | 34.08 |
+
+### 3-shot
+
+**Averages**
+
+| aggregate | new/new | new/old | old/new | old/old |
+| --- | --- | --- | --- | --- |
+| 5-bench mean (HS, ARC-E, BoolQ, PIQA, Wino) | 66.66 | 66.92 | 66.87 | 66.71 |
+| all-7 mean (5-bench + ARC-C + MMLU-text) | 58.51 | 58.67 | 58.43 | 58.30 |
+
+**Individual benchmarks**
+
+| benchmark | new/new | new/old | old/new | old/old |
+| --- | --- | --- | --- | --- |
+| HellaSwag (acc_norm) | 63.51 | 63.54 | 63.16 | 63.15 |
+| ARC-Easy (acc_norm) | 71.38 | 71.38 | 71.55 | 71.38 |
+| ARC-Challenge (acc_norm) | 41.30 | 41.04 | 39.33 | 39.33 |
+| BoolQ (acc) | 62.63 | 63.15 | 62.32 | 62.63 |
+| PIQA (acc_norm) | 74.43 | 74.16 | 74.43 | 73.88 |
+| WinoGrande (acc) | 61.33 | 62.35 | 62.90 | 62.51 |
+| MMLU-text (acc_norm) | 35.00 | 35.06 | 35.31 | 35.19 |
+
+### 5-shot
+
+**Averages**
+
+| aggregate | new/new | new/old | old/new | old/old |
+| --- | --- | --- | --- | --- |
+| 5-bench mean (HS, ARC-E, BoolQ, PIQA, Wino) | 67.03 | 66.82 | 67.88 | 67.83 |
+| all-7 mean (5-bench + ARC-C + MMLU-text) | 58.82 | 58.64 | 59.22 | 59.23 |
+
+**Individual benchmarks**
+
+| benchmark | new/new | new/old | old/new | old/old |
+| --- | --- | --- | --- | --- |
+| HellaSwag (acc_norm) | 63.76 | 63.61 | 63.65 | 63.71 |
+| ARC-Easy (acc_norm) | 71.76 | 71.42 | 72.14 | 71.84 |
+| ARC-Challenge (acc_norm) | 41.89 | 41.72 | 40.70 | 40.96 |
+| BoolQ (acc) | 62.81 | 62.78 | 65.41 | 65.60 |
+| PIQA (acc_norm) | 74.21 | 74.10 | 74.32 | 74.05 |
+| WinoGrande (acc) | 62.59 | 62.19 | 63.85 | 63.93 |
+| MMLU-text (acc_norm) | 34.71 | 34.61 | 34.50 | 34.55 |
+
 ## Core reasoning (likelihood — option loglikelihood → acc/acc_norm)
 
 | metric | Llama 1.8B | AU-Net2 | root_greedy |
