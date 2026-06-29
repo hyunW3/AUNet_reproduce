@@ -537,6 +537,8 @@ PBP cut-point ΔBPC; corpus-scale pbp_mc; and the online-bt supplement. Static e
 after the markers and are preserved across regenerations.*
 
 > **`BPEByte root_greedy` rows in the auto-block below were manually refreshed to new-code (180k, `bpebyte_br_greedy_root_1.3B`) to match the rest of the doc** (was old-code `_oldseg_`). Likelihood-scored robustness barely moved (HS-Noise +0.1, HS-typo avg −0.2; PBP ΔBPC ≈ 0). If `gen_report.py` is re-run, point its root_greedy source at the new-code eval dirs or it will revert these to old-code. Llama 1.8B / AU-Net2 columns unchanged.
+>
+> **Sample size:** the HellaSwag-Noise, HellaSwag-typo, and noisy-downstream tables use **n=2000** (first 2000 docs, `harness.limit=2000`); their "clean" baselines therefore sit below the full-set 0-shot numbers (e.g. HS-typo clean 56.8 vs full-set HellaSwag 62.5). Compare clean→noise/typo within each table, not against the Core reasoning tables.
 
 <!-- AUTO_BEGIN robustness/boundary (gen_report.py) -->
 

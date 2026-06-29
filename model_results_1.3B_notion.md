@@ -446,6 +446,8 @@ No
 
 ### HellaSwag-Noise (likelihood, acc_norm avg over 15 variants) + Phonology-G2P (generation, exact_match)
 
+_n=2000 (first 2000 docs, `harness.limit=2000`)._
+
 - [ ]  Phonology-G2P 는 파악이 필요함.
 
 | Model | HS-Noise avg | Phonology-G2P |
@@ -555,7 +557,7 @@ Converts all characters to uppercase.
 
 ## HellaSwag-typo (likelihood — acc_norm - 이것도 우리가 만든거)
 
-Typos applied to the **prompt/context only** (answers kept clean), scored by acc_norm. **2 modes × 4 ops = 8 cases**, plus per-op / per-mode means and the overall avg. **bold** = per-mode / avg rows.
+Typos applied to the **prompt/context only** (answers kept clean), scored by acc_norm. **2 modes × 4 ops = 8 cases**, plus per-op / per-mode means and the overall avg. **bold** = per-mode / avg rows. **All rows use the first 2000 HellaSwag docs (`harness.limit=2000`)** — so the clean baseline here (56.8) is below the full-set 0-shot HellaSwag (62.5); compare clean→typo within this table, not against the Core 0-shot table.
 
 - **char mode** (harsh): every alphabetic char independently corrupted w.p. **0.15**, anywhere (no first/last protection).
 - **word mode** (realistic): **0.30** of eligible words (alpha, len≥4) get **one interior edit**, first & last letters preserved ("Cmabrigde" effect).
@@ -591,6 +593,8 @@ Roof shingle removal: A man is sktting ob z roof. He
 ```
 
 ### Other benchmarks
+
+_clean → typo-avg, n=2000 (first 2000 docs, `harness.limit=2000`); clean here is below the full-set 0-shot numbers._
 
 | Model | boolq (acc) | piqa (acc_norm) | arc_easy (acc_norm) | arc_challenge (acc_norm) |
 | --- | --- | --- | --- | --- |
