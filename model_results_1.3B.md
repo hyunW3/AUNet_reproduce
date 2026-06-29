@@ -536,6 +536,8 @@ HellaSwag-typo per op; Phonology-G2P; noisy-downstream (avg **and** per typo-op 
 PBP cut-point ΔBPC; corpus-scale pbp_mc; and the online-bt supplement. Static examples & notes follow
 after the markers and are preserved across regenerations.*
 
+> **`BPEByte root_greedy` rows in the auto-block below were manually refreshed to new-code (180k, `bpebyte_br_greedy_root_1.3B`) to match the rest of the doc** (was old-code `_oldseg_`). Likelihood-scored robustness barely moved (HS-Noise +0.1, HS-typo avg −0.2; PBP ΔBPC ≈ 0). If `gen_report.py` is re-run, point its root_greedy source at the new-code eval dirs or it will revert these to old-code. Llama 1.8B / AU-Net2 columns unchanged.
+
 <!-- AUTO_BEGIN robustness/boundary (gen_report.py) -->
 
 ## Robustness & boundary (auto-updated 2026-06-22 15:50)
@@ -546,7 +548,7 @@ after the markers and are preserved across regenerations.*
 |-------|-------------|---------------|
 | Llama 1.8B | 37.6 | 0.45 |
 | AU-Net2 | 41.5 | 0.00 |
-| BPEByte root_greedy | 42.2 | 0.10 |
+| BPEByte root_greedy | 42.3 | 0.10 |
 
 #### HellaSwag-Noise per strategy (acc_norm, BLT Table 12 layout)
 
@@ -554,7 +556,7 @@ after the markers and are preserved across regenerations.*
 |---|---|---|---|---|---|---|
 | Llama 1.8B | 31.0 | 36.8 | 34.2 | 38.2 | 48.0 | 37.6 |
 | AU-Net2 | 33.5 | 38.1 | 44.3 | 38.7 | 53.1 | 41.5 |
-| BPEByte root_greedy | 32.7 | 38.9 | 44.2 | 41.0 | 54.1 | 42.2 |
+| BPEByte root_greedy | 34.0 | 38.3 | 44.4 | 41.0 | 53.9 | 42.3 |
 
 #### HellaSwag-Noise per strategy × target (acc_norm)
 
@@ -570,11 +572,11 @@ after the markers and are preserved across regenerations.*
 | AU-Net2 | Randomcase | 47.3 | 40.2 | 45.4 |
 | AU-Net2 | Repeat | 47.4 | 34.2 | 34.4 |
 | AU-Net2 | Uppercase | 53.7 | 50.5 | 55.2 |
-| BPEByte root_greedy | Antspeak | 32.4 | 31.1 | 34.7 |
-| BPEByte root_greedy | Drop | 49.7 | 33.8 | 33.2 |
-| BPEByte root_greedy | Randomcase | 48.8 | 40.1 | 43.8 |
-| BPEByte root_greedy | Repeat | 49.3 | 36.3 | 37.4 |
-| BPEByte root_greedy | Uppercase | 54.7 | 51.5 | 56.1 |
+| BPEByte root_greedy | Antspeak | 34.6 | 31.4 | 36.1 |
+| BPEByte root_greedy | Drop | 48.8 | 33.7 | 32.5 |
+| BPEByte root_greedy | Randomcase | 47.2 | 40.5 | 45.6 |
+| BPEByte root_greedy | Repeat | 49.5 | 36.2 | 37.2 |
+| BPEByte root_greedy | Uppercase | 54.5 | 51.4 | 55.9 |
 
 ### HellaSwag-typo per op (acc_norm; question/stem corrupted, choices clean)
 
@@ -582,7 +584,7 @@ after the markers and are preserved across regenerations.*
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Llama 1.8B | 55.8 | 46.2 | 48.3 | 44.0 | 46.8 | 53.4 | 53.3 | 52.5 | 53.3 | 46.3 | 53.1 | 49.7 |
 | AU-Net2 | 57.8 | 47.3 | 52.8 | 46.3 | 50.0 | 55.0 | 55.2 | 54.4 | 55.4 | 49.1 | 55.0 | 52.1 |
-| BPEByte root_greedy | 57.5 | 48.9 | 51.8 | 46.9 | 49.4 | 54.4 | 55.1 | 54.8 | 55.1 | 49.3 | 54.9 | 52.1 |
+| BPEByte root_greedy | 56.8 | 48.3 | 51.8 | 47.0 | 48.5 | 54.6 | 55.4 | 53.8 | 55.5 | 48.9 | 54.8 | 51.9 |
 
 ### Noisy downstream (clean → typo-avg; drop in pts; per-benchmark metric in header)
 
@@ -590,7 +592,7 @@ after the markers and are preserved across regenerations.*
 |---|---|---|---|---|
 | Llama 1.8B | 63.2→59.2 (-4.1) | 74.9→72.6 (-2.3) | 65.1→54.5 (-10.7) | 35.2→30.8 (-4.5) |
 | AU-Net2 | 60.5→59.3 (-1.2) | 74.1→72.5 (-1.6) | 65.1→57.7 (-7.5) | 36.0→31.8 (-4.2) |
-| BPEByte root_greedy | 59.1→59.8 (+0.8) | 73.2→72.3 (-0.9) | 66.0→59.4 (-6.6) | 36.5→32.6 (-3.9) |
+| BPEByte root_greedy | 62.3→60.2 (-2.1) | 74.4→72.3 (-2.0) | 66.5→60.0 (-6.5) | 37.3→33.5 (-3.8) |
 
 #### Noisy downstream — boolq per typo-op (acc)
 
@@ -598,7 +600,7 @@ after the markers and are preserved across regenerations.*
 |---|---|---|---|---|---|---|---|---|---|
 | Llama 1.8B | 58.9 | 57.2 | 56.9 | 57.7 | 61.4 | 60.4 | 60.4 | 60.6 | 59.2 |
 | AU-Net2 | 58.0 | 59.3 | 57.0 | 59.1 | 60.1 | 60.9 | 60.0 | 60.4 | 59.3 |
-| BPEByte root_greedy | 59.6 | 59.8 | 59.4 | 60.2 | 59.7 | 60.1 | 60.3 | 59.8 | 59.8 |
+| BPEByte root_greedy | 59.5 | 59.5 | 59.2 | 59.9 | 61.8 | 61.0 | 60.2 | 60.9 | 60.2 |
 
 #### Noisy downstream — piqa per typo-op (acc_norm)
 
@@ -606,7 +608,7 @@ after the markers and are preserved across regenerations.*
 |---|---|---|---|---|---|---|---|---|---|
 | Llama 1.8B | 71.7 | 71.4 | 70.9 | 70.9 | 74.2 | 73.8 | 73.7 | 74.0 | 72.6 |
 | AU-Net2 | 72.0 | 72.5 | 71.1 | 71.9 | 72.5 | 73.8 | 73.0 | 73.0 | 72.5 |
-| BPEByte root_greedy | 71.3 | 72.3 | 70.5 | 72.0 | 72.6 | 73.6 | 72.9 | 73.6 | 72.3 |
+| BPEByte root_greedy | 71.4 | 71.9 | 70.5 | 72.0 | 73.4 | 73.1 | 73.2 | 73.2 | 72.3 |
 
 #### Noisy downstream — arc_easy per typo-op (acc_norm)
 
@@ -614,7 +616,7 @@ after the markers and are preserved across regenerations.*
 |---|---|---|---|---|---|---|---|---|---|
 | Llama 1.8B | 49.0 | 51.6 | 47.2 | 50.0 | 60.7 | 59.7 | 58.1 | 59.5 | 54.5 |
 | AU-Net2 | 53.2 | 57.1 | 48.4 | 53.1 | 63.3 | 63.0 | 60.3 | 62.9 | 57.7 |
-| BPEByte root_greedy | 54.0 | 59.3 | 50.9 | 55.8 | 64.2 | 64.5 | 61.6 | 64.5 | 59.4 |
+| BPEByte root_greedy | 55.6 | 59.9 | 51.8 | 57.5 | 64.5 | 64.0 | 62.4 | 64.6 | 60.0 |
 
 #### Noisy downstream — arc_challenge per typo-op (acc_norm)
 
@@ -622,7 +624,7 @@ after the markers and are preserved across regenerations.*
 |---|---|---|---|---|---|---|---|---|---|
 | Llama 1.8B | 28.0 | 30.3 | 27.6 | 29.5 | 33.1 | 33.2 | 31.7 | 32.8 | 30.8 |
 | AU-Net2 | 30.1 | 32.6 | 28.2 | 31.0 | 33.3 | 34.4 | 31.6 | 32.9 | 31.8 |
-| BPEByte root_greedy | 30.2 | 33.9 | 28.7 | 31.1 | 34.2 | 35.0 | 33.1 | 34.7 | 32.6 |
+| BPEByte root_greedy | 31.8 | 33.2 | 30.7 | 31.9 | 35.0 | 35.8 | 32.9 | 36.6 | 33.5 |
 
 ### PBP — cut-point ΔBPC (lower=more cut-invariant) & MCQ-boundary ΔAcc
 
@@ -630,7 +632,7 @@ after the markers and are preserved across regenerations.*
 |-------|-------------|---------|-----------|---------|-----------------|
 | Llama 1.8B | +0.710 | +1.184 | +0.837 | +0.110 | -8.92 |
 | AU-Net2 | +0.000 | +0.000 | -0.000 | +0.000 | -0.03 |
-| BPEByte root_greedy | +0.000 | -0.000 | +0.000 | -0.000 | +0.16 |
+| BPEByte root_greedy | +0.000 | +0.000 | -0.000 | -0.000 | -0.16 |
 
 #### pbp_mc per-task ΔAcc (corpus-scale, limit 2000)
 
@@ -638,7 +640,7 @@ after the markers and are preserved across regenerations.*
 |---|---|---|---|---|
 | Llama 1.8B | -22.55 | -2.56 | -1.65 | -60.00 |
 | AU-Net2 | +0.00 | -0.09 | +0.00 | +0.00 |
-| BPEByte root_greedy | +0.00 | +0.43 | +0.05 | +0.00 |
+| BPEByte root_greedy | -0.20 | -0.09 | -0.20 | +0.00 |
 
 ## Supplements — BPEByte online-bt
 
