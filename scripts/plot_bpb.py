@@ -17,7 +17,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-RUNS = Path("/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs")
+REPO = Path(__file__).resolve().parent.parent   # repo root (script lives in scripts/)
+RUNS = REPO / "runs"
 LN2 = math.log(2.0)
 BPT = 4.5376  # measured bytes/token, llama3 tiktoken on DCLM (matches model_results_760M.md)
 
@@ -60,7 +61,7 @@ for k in ("bpebyte_new", "aunet_word", "llama"):
 ax.set_xlabel("training bytes seen (GB)"); ax.set_ylabel("BPB (bits / byte)")
 ax.set_title("760M matched-compute — BPB vs bytes seen (lower = better)")
 ax.set_ylim(0.90, 1.05); ax.grid(alpha=0.25); ax.legend(frameon=False, fontsize=9)
-fig.tight_layout(); fig.savefig("reports/bpb_compare.png", dpi=140); plt.close(fig)
+fig.tight_layout(); fig.savefig(REPO / "reports/bpb_compare.png", dpi=140); plt.close(fig)
 
 # ---- Plot 2: new vs old code BPEByte (the change of interest) ----
 fig, (axL, axR) = plt.subplots(1, 2, figsize=(11, 4.6), gridspec_kw={"width_ratios": [2, 1]})
@@ -82,7 +83,7 @@ axR.axhline(fin["bpebyte_new"], color="#2f6db5", ls="--", lw=0.9)
 axR.axhline(fin["bpebyte_old"], color="#b23b3b", ls="--", lw=0.9)
 fig.suptitle(f"Down-projection / eval-fix impact: new code reaches lower BPB ({fin['bpebyte_new']:.4f} < {fin['bpebyte_old']:.4f})",
              fontsize=10, y=1.02)
-fig.tight_layout(); fig.savefig("reports/bpebyte_newold_bpb.png", dpi=140, bbox_inches="tight"); plt.close(fig)
+fig.tight_layout(); fig.savefig(REPO / "reports/bpebyte_newold_bpb.png", dpi=140, bbox_inches="tight"); plt.close(fig)
 
 print("final BPB:", {k: round(v, 4) for k, v in fin.items()})
 print("new-old ΔBPB:", round(d, 4))
