@@ -36,7 +36,7 @@ Root keeps only `README.md`, `READMD_kor.md`, this tracker, and `TRAINING_SCRIPT
 | 760M matched-scale (4 models, new vs old code) | ✅ done → `reports/model_results_760M.md` |
 | 100M boundary-scheme ablation (ratio-40) | ✅ done → `reports/100M_ablation.md` |
 | 300M 4-model comparison | 📋 planned (scope below); ece 8×A100 |
-| **Multilingual B4 pilot** (en/fi/zh/code, 4 families, 100M r40) | ⚠️ training completed 06-30 on ece-agpu11+18, **final losses look anomalous (~0.025) — needs verification** → `reports/b4_pilot_estimate.md` |
+| **Multilingual B4 pilot** (en/fi/zh/code, 4 families, 100M r40) | ⏸️ **PAUSED 2026-06-30** (user). Training done (final losses anomalous ~0.025, unverified); downstream eval + fertility figure + 760M follow-on NOT proceeding. Data/configs kept on ece for resume → `reports/b4_pilot_estimate.md` |
 | Down-pool ablation (start vs last_byte) | ✅ done; last_byte −0.062 BPB but **leak-shaped → dropped** → `PoC/PoC_down_pooling.md` |
 | Scaling laws / FLOPs | 📋 plan committed → `scaling_laws/` |
 | Paper outline + acceptance plan | ✅ draft → `plans/paper_outline.html` |
