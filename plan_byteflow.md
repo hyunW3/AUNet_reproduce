@@ -123,6 +123,21 @@ Both vs baselines v2_online 0.798 / v1_committed 0.904 / v4_root_greedy 0.931 (t
 
 **Bug fixed mid-run (2026-06-24): l2_quantile threshold collapse.** `‖h_t‖²` has a non-stationary scale (representation norms grow during training), so a global EMA threshold can't track it — the first l2 run collapsed to ~no boundaries (nbtoks ~100, ratio ~1800). The paper sidesteps this via rank-based Top-K (scale-free); a threshold needs scale-handling. Two fixes in `coding_rate.py`: (1) `_ema_tau` now tracks a **direct EMA of the batch (1-p) quantile** (not the std-scaled Robbins-Monro, which diverged); (2) the **l2 score is normalized by its causal trailing-window mean** → scale-invariant local coding rate. Verified stable under growing norms (ratio 4.25-4.77) + leak-free. Relaunched l2 healthy (nbtoks 62k @ step 50, warming to target). NOTE: the exact-mode score (log-det) is naturally bounded/stationary, so it never collapsed.
 
+**l2_quantile FINAL (2026-06-24, completed, ckpt 1672):** loss **~0.99** (rank0 1.007 / mean 0.99), ratio settled ~4.5. **Verdict: faithful L2 (~0.99) ≈ non-faithful logdet (0.997)** — the score-mode fix barely moved the loss — and both remain **~0.06 behind the leak-free BPEByte peer v4_root_greedy (0.931)**, behind v1 (0.904), and well behind leaky v2 (0.798). So at 100M/1672 steps coding-rate chunking underperforms byte-trie boundaries, and L2-vs-logdet fidelity is not the cause. **exact_quantile FINAL (2026-06-25, completed, ckpt 1672):** loss **~1.00** (rank0 1.027 / cross-rank mean 1.005). **exact ≈ L2 ≈ logdet**, all three within the ~0.04 cross-rank noise — confirming the paper's Appendix B claim that the L2 approximation faithfully matches the exact log-det, and proving the score form is NOT why coding-rate loses.
+
+### 100M final result — all coding-rate score variants vs BPEByte (rank0 final loss; matched backbone/budget/ratio≈4.5; graph `byteflow_100M_loss.png`)
+
+| Model | final loss (rank0) | cross-rank mean | causal/leak-free |
+|---|---|---|---|
+| BPEByte v2_online (bt+before_root) | **0.798** | — | leak risk |
+| BPEByte v1_committed | 0.904 | — | leak-free |
+| **BPEByte v4_root_greedy** | **0.931** | — | leak-free (peer) |
+| ByteFlow logdet_quantile (diag+window) | 0.997 | ~0.99 | leak-free |
+| ByteFlow l2_quantile (L2 approx, eq 29) | 1.007 | ~0.99 | leak-free |
+| ByteFlow exact log-det (eqs 11-12) | 1.027 | ~1.005 | leak-free |
+
+**Conclusions.** (1) **Score fidelity is irrelevant**: logdet ≈ L2 ≈ exact (all ~1.00, tied within noise). (2) **Coding-rate chunking underperforms BPEByte byte-trie boundaries** at 100M/1672 steps by **~0.07 BPB vs the leak-free peer v4 (0.931)** and ~0.2 vs leaky v2. The cause is therefore NOT the approximation — candidates remain: **cold-start** (boundaries derive from a randomly-initialized encoder, so segmentation is meaningless early; BPEByte has correct boundaries from step 0), **missing Canon layer** (§1.4; ablated as ~2 pts in the paper), and **undertraining** (1672 steps; the paper trains ~1.95M). Highest-leverage next test: boundary warmup / encoder warm-start to kill the cold-start penalty, and/or add Canon.
+
 ---
 
 ## 2. The integration problem (why this isn't a one-line data mode)

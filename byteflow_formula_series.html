@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ByteFlow Coding-Rate Chunking — Formula Series</title>
+<script>
+window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$','$$'],['\\[','\\]']] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<style>
+  :root { --fg:#1b1f24; --muted:#5a6472; --line:#e3e7ec; --accent:#2452d6; --code:#f5f7fa; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         color:var(--fg); max-width:920px; margin:0 auto; padding:2.2rem 1.4rem 5rem; line-height:1.55; }
+  h1 { font-size:1.7rem; margin:0 0 .3rem; }
+  h2 { font-size:1.25rem; margin:2.4rem 0 .6rem; padding-bottom:.3rem; border-bottom:2px solid var(--line); }
+  h3 { font-size:1.05rem; margin:1.4rem 0 .4rem; color:var(--accent); }
+  .sub { color:var(--muted); margin:0 0 1.4rem; font-size:.95rem; }
+  .card { border:1px solid var(--line); border-radius:10px; padding:1rem 1.2rem; margin:1rem 0; background:#fff; }
+  .card.exact   { border-left:5px solid #c0392b; }
+  .card.diag    { border-left:5px solid #7f8c8d; }
+  .card.l2      { border-left:5px solid #2452d6; }
+  .tag { display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+         padding:.12rem .5rem; border-radius:999px; color:#fff; margin-bottom:.4rem; }
+  .tag.exact{background:#c0392b;} .tag.diag{background:#7f8c8d;} .tag.l2{background:#2452d6;}
+  code { background:var(--code); padding:.1rem .35rem; border-radius:4px; font-size:.9em; }
+  table { border-collapse:collapse; width:100%; margin:1rem 0; font-size:.92rem; }
+  th,td { border:1px solid var(--line); padding:.5rem .65rem; text-align:left; vertical-align:top; }
+  th { background:#f0f3f8; }
+  .note { background:#fff8e6; border:1px solid #f0e0a8; border-radius:8px; padding:.9rem 1.1rem; margin:1.2rem 0; }
+  .ok { color:#1e8a4c; font-weight:600; } .bad { color:#c0392b; font-weight:600; }
+  .pipe { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:#f5f7fa; border:1px solid var(--line);
+          border-radius:8px; padding:1rem 1.1rem; white-space:pre; overflow-x:auto; font-size:.8rem; line-height:1.5; }
+  .codeblk { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:#0f1622; color:#d6deeb;
+             border-radius:8px; padding:.9rem 1.1rem; overflow-x:auto; font-size:.8rem; line-height:1.55; margin:.8rem 0; }
+  .codeblk .c { color:#5f7e97; } .codeblk .k { color:#c792ea; } .codeblk .f { color:#82aaff; } .codeblk .s { color:#addb67; }
+  .step { display:flex; gap:.7rem; margin:.55rem 0; }
+  .step .n { flex:0 0 1.6rem; height:1.6rem; border-radius:50%; background:var(--accent); color:#fff; font-size:.8rem;
+             font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .step .b { flex:1; } .step .b b { color:var(--accent); }
+  footer { margin-top:3rem; color:var(--muted); font-size:.85rem; border-top:1px solid var(--line); padding-top:1rem; }
+</style>
+</head>
+<body>
+
+<h1>ByteFlow Coding-Rate Chunking — Formula Series</h1>
+<p class="sub">Exact lossy coding rate (eqs 11–12), its two approximations, the differences between them,
+and a retrospective on why <code>logdet_quantile</code> was used first.
+Source: <em>ByteFlow: Language Modeling through Adaptive Byte Compression without a Tokenizer</em>
+(arXiv 2603.03583), §3 + Appendices A/B.</p>
+
+<h2>0. Setup &amp; notation</h2>
+<div class="card">
+<p>The local encoder produces contextualized byte representations</p>
+$$ h_{1:t} \in \mathbb{R}^{t \times d}, \qquad d \equiv d_{\text{local}}, $$
+<p>with rows $h_1,\dots,h_t$, each $h_s\in\mathbb{R}^{d}$. Symbols used throughout:</p>
+<ul>
+  <li>$\varepsilon^2$ — noise-variance parameter (sensitivity of the coding rate).</li>
+  <li>$\alpha \equiv \dfrac{d}{\varepsilon^2}$ — scale factor.</li>
+  <li>$G_t \equiv \displaystyle\sum_{s\le t} h_s h_s^{\top} \in \mathbb{R}^{d\times d}$ — un-normalized Gram / second-moment matrix
+      (diagonal = per-feature energy; off-diagonals = cross-feature correlations).</li>
+  <li>$M_t \equiv I_d + \alpha\,G_t$ — regularized second-moment matrix; $M_t = M_{t-1} + \alpha\, h_t h_t^{\top}$ (rank-1 update).</li>
+</ul>
+<p>Selection (all modes): a position is a chunk boundary when its <em>marginal</em> coding rate $\Delta R_t$ is high.
+The <code>_quantile</code> suffix means selection is a causal threshold $\tau$ tracked as an EMA of the batch
+$(1-p)$ quantile, $p = 1/\text{target\_ratio}$ — identical across the three variants below.
+<strong>Only the score $\Delta R_t$ differs.</strong></p>
+</div>
+
+<h2>1. The target — exact lossy coding rate</h2>
+<div class="card">
+<p><strong>Coding rate of a prefix (eq 11):</strong></p>
+$$ R_\varepsilon(h_{1:t}) \;=\; \tfrac{1}{2}\,\log\det\!\Big(I_{d} + \tfrac{d}{\varepsilon^{2}}\, h_{1:t}^{\top} h_{1:t}\Big)
+   \;=\; \tfrac12 \log\det\!\big(I_d + \alpha\,G_t\big) \;=\; \tfrac12\log\det M_t. $$
+<p>(Eq 11 is written with the $t\times t$ form $\det\!\big(I_t+\alpha\,h_{1:t}h_{1:t}^{\top}\big)$; by
+<strong>Sylvester's identity</strong> $\det(I_t+AB)=\det(I_d+BA)$ it equals the $d\times d$ form above, which is tractable since $d\ll t$.)</p>
+<p><strong>Marginal coding rate at position $t$ (eq 12):</strong></p>
+$$ \Delta R_t \;=\; R_\varepsilon(h_{1:t}) - R_\varepsilon(h_{1:t-1}). $$
+<p>Intuition: $R_\varepsilon$ is large when $h_{1:t}$ spans many diverse directions; $\Delta R_t$ is the
+information gained by adding byte $t$ — large $\Delta R_t \Rightarrow$ natural segmentation boundary.</p>
+</div>
+
+<h2>2. The three implementations</h2>
+
+<div class="card exact">
+<span class="tag exact">exact_quantile — paper eqs 11–12</span>
+<h3>Full log-det, full prefix</h3>
+<p>Compute $\Delta R_t$ exactly via the <strong>matrix-determinant lemma</strong>
+$\det(M_{t-1}+\alpha h_t h_t^{\top}) = \det(M_{t-1})\,(1+\alpha\,h_t^{\top}M_{t-1}^{-1}h_t)$:</p>
+$$ \boxed{\;\Delta R_t \;=\; \tfrac12\,\log\!\Big(1 + \alpha\, h_t^{\top} M_{t-1}^{-1} h_t\Big)\;}
+   \qquad M_{t-1} = I_d + \alpha\,G_{t-1}. $$
+<p>Streamed by a <strong>Sherman–Morrison rank-1 inverse scan</strong> maintaining $P_t \equiv M_t^{-1}$, $P_0=I_d$:</p>
+$$ v_t = P_{t-1} h_t,\quad q_t = h_t^{\top} v_t,\quad \Delta R_t = \tfrac12\log(1+\alpha q_t),\quad
+   P_t = P_{t-1} - \frac{\alpha\, v_t v_t^{\top}}{1+\alpha q_t}. $$
+<p>Keeps the <strong>full $d\times d$ $M^{-1}$</strong> (off-diagonals included) over the <strong>full prefix</strong> $[1{:}t]$ —
+so it measures how many independent <em>directions</em> the representation already occupies (is $h_t$ a genuinely new
+direction, or one already used?). Causal. Cost $O(T d^2)$, <strong>sequential in $t$</strong> (~6× slower).
+Verified against brute-force <code>logdet</code> to $3\times10^{-5}$.</p>
+</div>
+
+<div class="card diag">
+<span class="tag diag">logdet_quantile — non-paper variant</span>
+<h3>Diagonal log-det, trailing window</h3>
+<p>Two simplifications of §2-exact: (i) keep only the <strong>diagonal</strong> of the Gram (drop off-diagonal
+cross-feature terms ⇒ a sum of independent per-feature scalars); (ii) replace the full prefix with a
+<strong>trailing boxcar window</strong> of $W$ bytes.</p>
+$$ \Delta R_t \;\approx\; \tfrac12\sum_{f=1}^{d}\log\!\Big(1 + \frac{\alpha\, h_{t,f}^{2}}{1 + \alpha\, g_{t-1,f}}\Big),
+   \qquad g_{t-1,f} = \!\!\sum_{t-W \le s < t}\!\! h_{s,f}^{2}. $$
+<p>Equivalent to replacing $M_{t-1}^{-1}$ in the exact form by the <strong>diagonal</strong>
+$\operatorname{diag}\!\big(1+\alpha\,g_{t-1,f}\big)^{-1}$. Fully vectorized, $O(T d)$. The window $W$ was added to keep
+the score stationary (the cumulative prefix energy grows without bound, making $\Delta R_t$ decay with $t$).
+<strong>Cannot see directional redundancy across features</strong> — only per-feature energy novelty.</p>
+</div>
+
+<div class="card l2">
+<span class="tag l2">l2_quantile — paper eq 29 (Appendix B)</span>
+<h3>L2 / Frobenius approximation</h3>
+<p>First-order matrix-log expansion $\log\det(I+A)=\operatorname{tr}\log(I+A)\approx\operatorname{tr}(A)$
+applied to $A=\alpha\,h_{1:t}^{\top}h_{1:t}$, with $\operatorname{tr}(h_{1:t}^{\top}h_{1:t})=\|h_{1:t}\|_F^2$:</p>
+$$ R_\varepsilon(h_{1:t}) \;\approx\; \tfrac{\alpha}{2}\,\|h_{1:t}\|_F^{2}
+   \;=\; \tfrac{\alpha}{2}\sum_{s\le t}\|h_s\|_2^2
+   \quad\Longrightarrow\quad \boxed{\;\Delta R_t \;\propto\; \|h_t\|_2^{2}\;} $$
+<p>The marginal collapses to the <strong>per-token squared norm</strong> — equivalent to replacing
+$M_{t-1}^{-1}$ by $\alpha I$ (drop the denominator entirely). $O(T d)$, vectorized. This is the paper's stated
+streaming approximation. <em>Implementation note:</em> $\|h_t\|^2$ has a non-stationary scale (representation norms
+grow during training), so in our leak-free <em>threshold</em> setting it is normalized by its causal trailing-window
+mean before thresholding; the paper's rank-based Top-K is scale-free and needs no such normalization.</p>
+</div>
+
+<h2>3. How the implementation works — end-to-end</h2>
+<p class="sub">The score $\Delta R_t$ from §2 is only step 3 of a longer pipeline. Here is how raw bytes become a
+prediction, and where coding-rate chunking plugs into the AU-Net backbone.
+Code: <code>lingua/apps/aunet/coding_rate.py</code> (the chunker) and <code>hierarchical.py</code> (the model hook).</p>
+
+<h3>3.1 Where it sits — the AU-Net hierarchy</h3>
+<div class="card">
+<p>ByteFlow keeps the AU-Net U-shape unchanged; chunking only decides <em>which</em> byte positions are promoted into
+the deep trunk. A 2-stage (single-level) hierarchy, the only shape used here:</p>
+<div class="pipe">  bytes x₁:ₜ ∈ V^T   (V = 256 byte vocab,  T = 8192)
+        │  tok_embeddings
+        ▼
+  Local Encoder  (3 layers, dim 512, sliding-window attn)
+        │
+        ▼   h₁:ₜ ∈ ℝ^{T×512}        ◀── contextualized byte reps
+        │
+   ┌────┴───────────────────────────────────────────┐
+   │  CODING-RATE CHUNKING  (the new part, §2–§3.3)  │
+   │   score ΔRₜ  →  causal threshold  →  level_mask │
+   └────┬───────────────────────────────────────────┘
+        │  down: gather the K promoted rows, project 512→768
+        ▼   z₁:ₖ ∈ ℝ^{K×768}        (K ≪ T,  K ≈ T / 4.5)
+  Global Trunk  (10 layers, dim 768, full causal attn)   ◀── most of the FLOPs live here
+        │
+        ▼   g₁:ₖ
+        │  up: scatter back to T,  sₜ = hₜ + s̃ₜ   (residual + 16-bin position map)
+        ▼
+  Decoder  (3 layers, dim 512)
+        │  vocab head
+        ▼
+  p̂(xₜ₊₁ | x₁:ₜ)  ∈ Δ^{256}</div>
+<p>(Dims shown are the 100M config <code>[512,768] / [3,10]</code>. The trunk runs on $K\!\approx\!T/4.5$ tokens
+instead of $T$, which is why compressing well matters: it sets the trunk's compute budget.)</p>
+</div>
+
+<h3>3.2 The one structural change: boundaries move into <code>forward()</code></h3>
+<div class="card">
+<p>AU-Net's defining rule is that <strong>the model never computes boundaries</strong> — whitespace / BPEByte produce an
+integer <code>level_mask</code> in the <em>data loader</em>, and the model just consumes it. Coding-rate chunking cannot
+do that, because $\Delta R_t$ is a function of the <strong>learned</strong> encoder output $h$, which only exists after
+<code>encoders[0]</code> runs. So the boundary producer moves <em>into</em> the forward pass — the only real change to the model:</p>
+<div class="codeblk"><span class="c"># hierarchical.py — HierarchicalTransformer.forward (coding-rate path)</span>
+x = self.tok_embeddings(token_values)
+
+enc0_out = <span class="k">None</span>
+<span class="k">if</span> self.coding_rate <span class="k">is not</span> <span class="k">None</span>:                         <span class="c"># run encoder up front: h needed for boundaries</span>
+    enc0_out = self.encoders[<span class="s">0</span>](x, attn_impl=<span class="s">"fmha"</span>)
+    level_mask = self.coding_rate(enc0_out, nb_levels=<span class="s">1</span>)    <span class="c"># ◀── model-side level_mask</span>
+
+masks, _, nb_toks = self.get_pool_mask(level_mask, [...], force_first=<span class="k">True</span>)
+<span class="k">for</span> i, (encoder, trans, mask) <span class="k">in</span> <span class="f">enumerate</span>(...):
+    x = enc0_out <span class="k">if</span> (i==<span class="s">0</span> <span class="k">and</span> enc0_out <span class="k">is not</span> <span class="k">None</span>) <span class="k">else</span> encoder(x)  <span class="c"># reuse, no recompute</span>
+    residuals.append(x); x = trans.down(x, mask, ...)            <span class="c"># pool to K rows</span>
+x = self.trunk(x)
+... trans.up(...) ... decoder(x) ... logits</div>
+<p>For whitespace / BPEByte, <code>self.coding_rate is None</code> and the data-supplied <code>level_mask</code> is used
+verbatim — so all three boundary schemes share one backbone, isolating the comparison to the boundary rule alone.</p>
+</div>
+
+<h3>3.3 The chunker — score → select → mask</h3>
+<div class="card">
+<p><code>CodingRateChunker(h, nb_levels)</code> turns $h\in\mathbb{R}^{B\times T\times d}$ into an integer
+<code>level_mask</code>$\in\{0,1\}^{B\times T}$ (1 = boundary). Three internal stages:</p>
+<div class="step"><div class="n">1</div><div class="b"><b>Score.</b> Compute $\Delta R_t$ per position by one of the §2 formulas
+(<code>exact</code> Sherman–Morrison scan / <code>logdet</code> diagonal-window / <code>l2</code> squared norm). All causal:
+$\Delta R_t$ uses only $h_{1:t}$.</div></div>
+<div class="step"><div class="n">2</div><div class="b"><b>Threshold.</b> A position is a boundary iff $\;\text{score}_t \ge \tau$. $\tau$ is a single
+scalar tracked as an EMA of the per-batch $(1-p)$ quantile, $p=1/\text{target\_ratio}$ (§3.4). The decision uses the
+<em>pre-update</em> $\tau$ — never the current sequence's own future.</div></div>
+<div class="step"><div class="n">3</div><div class="b"><b>Emit.</b> <code>level_mask = (score ≥ τ).long()</code>, with position 0 forced to a
+boundary (BOS). Capping to the trunk's max length is handled downstream by <code>get_pool_mask</code>.</div></div>
+<div class="codeblk"><span class="c"># coding_rate.py — CodingRateChunker.forward  (@torch.no_grad)</span>
+score = self._score(h)                          <span class="c"># §2: exact | logdet | l2</span>
+<span class="k">if</span>   self.mode.endswith(<span class="s">"fixed_tau"</span>): boundary = score >= self.tau_buf
+<span class="k">elif</span> self.mode.endswith(<span class="s">"quantile"</span>):  boundary = score >= self._ema_tau(score)   <span class="c"># causal threshold</span>
+<span class="k">elif</span> self.mode == <span class="s">"rolling_topk"</span>:     boundary = self._rolling_threshold(score)   <span class="c"># causal, trailing-window</span>
+<span class="k">else</span>:                                  boundary = self._global_topk(score)         <span class="c"># NON-causal (diagnostic)</span>
+level_mask = boundary.long() * nb_levels
+level_mask[:, <span class="s">0</span>] = nb_levels                     <span class="c"># always keep BOS</span>
+<span class="k">return</span> level_mask</div>
+</div>
+
+<h3>3.4 Calibrating &amp; keeping it leak-free</h3>
+<div class="card">
+<p><b>Why a threshold, not Top-K.</b> The paper uses global Top-K, which ranks all $T$ positions together — including
+future bytes — so a position's promotion depends on tokens after it. For an autoregressive byte LM that <em>leaks the
+future</em> into the trunk input. A causal <strong>threshold</strong> (decide each $t$ from its prefix only) is leak-free
+by construction and identical at train / eval / generation. Verified: perturbing future bytes leaves every boundary in
+$[0,t)$ unchanged for the threshold modes, and <em>changes</em> them for <code>global_topk</code> (the intended leak).</p>
+<p><b>Hitting the target ratio.</b> $\tau$ is tracked as a direct EMA of the batch $(1-p)$ quantile, so the boundary rate
+self-calibrates to $p=1/\text{target\_ratio}$ (≈ 4.5 bytes/chunk, matching BPEByte for iso-FLOPs).</p>
+<div class="note" style="margin:.7rem 0 0;"><b>The scale-invariance fix.</b> $\|h_t\|^2$ has a <em>non-stationary scale</em> —
+representation norms grow during training — so a global threshold drifts and chunking collapses (we saw nbtoks fall to
+~100, ratio ~1800). Top-K is immune because it is rank-based; a threshold is not. Fix: the <code>l2</code> score is
+normalized by its causal trailing-window mean, $\;\text{score}_t = \|h_t\|^2 / \tfrac1W\!\sum_{t-W\le s\le t}\|h_s\|^2$,
+making it stationary so the EMA threshold stays calibrated (verified ratio 4.25–4.77 under deliberately growing norms).
+The <code>exact</code>/<code>logdet</code> log-det scores are already bounded, so they never collapsed.</div>
+</div>
+
+<h3>3.5 From mask to compute — pooling &amp; upsampling</h3>
+<div class="card">
+<p><code>get_pool_mask</code> turns <code>level_mask &gt; i</code> into a per-level keep-mask (capped to the trunk's
+<code>max_seqlen = 3200</code>). Then the existing AU-Net transition does the resampling, unchanged:</p>
+<ul>
+<li><b>down</b> — gather only the $K$ promoted rows of $h$ and project $512\!\to\!768$ → $z_{1:K}$.
+Gradients reach the encoder through this gather (the mask itself is discrete / detached, like AU-Net's existing pooling).</li>
+<li><b>trunk</b> — full causal attention over the $K$ compressed tokens.</li>
+<li><b>up</b> — scatter $g_{1:K}$ back to all $T$ positions via a byte→chunk index, add a 16-bin position map, and a
+<strong>large residual from the encoder</strong>: $\;s_t = h_t + \tilde s_t$. (Matches the paper's eqs 14–17, $B{=}16$ bins.)</li>
+</ul>
+</div>
+
+<h3>3.6 Train / eval / generation parity</h3>
+<div class="card">
+<p>Because the threshold is causal and prefix-deterministic, the <em>same</em> boundaries are produced in all three
+regimes from a single code path — no separate eval-boundary logic (unlike BPEByte, which needs a dedicated
+prefill path). At generation, the chunker streams: maintain the running score state and the scalar $\tau$, and commit a
+boundary the instant $\text{score}_t \ge \tau$ — no rollback, no future dependence. (The Top-K family is the exception:
+it is not prefix-deterministic, so it would need the two-mode eval split — global vs rolling — described in the plan.)</p>
+</div>
+
+<h3>3.7 Config &amp; files</h3>
+<div class="card">
+<div class="codeblk"><span class="c"># model.coding_rate block (configs/byteflow_100M.yaml) — the only diff vs the BPEByte partner</span>
+coding_rate:
+  enabled: <span class="k">true</span>
+  mode: l2_quantile          <span class="c"># l2_* (eq 29) | exact_* (eqs 11-12) | logdet_* | rolling_topk | global_topk</span>
+  target_ratio: <span class="s">4.5</span>           <span class="c"># bytes/chunk → sets boundary rate p = 1/4.5</span>
+  eps2: <span class="s">0.5</span>                  <span class="c"># noise variance ε² (exact/logdet only)</span>
+  window: <span class="s">512</span>                 <span class="c"># trailing-window W (l2 normalization + logdet/rolling)</span>
+  ema_decay: <span class="s">0.99</span></div>
+<p>Files: <code>coding_rate.py</code> — <code>CodingRateArgs</code> (dataclass) + <code>CodingRateChunker</code> (nn.Module,
+score/threshold/scan). <code>hierarchical.py</code> — the <code>coding_rate</code> field on <code>HierarchicalArgs</code>,
+the chunker built in <code>__init__</code>, and the <code>forward()</code> hook above (single-level asserted).</p>
+</div>
+
+<h2>4. Differences at a glance</h2>
+<table>
+<tr><th>Mode</th><th>Covariance used</th><th>History</th><th>Effective $M_{t-1}^{-1}$</th><th>Cost</th><th>In paper?</th></tr>
+<tr><td><code>exact_quantile</code></td><td><strong>full $d\times d$</strong> (off-diagonals)</td><td>full prefix $[1{:}t]$</td>
+    <td>true inverse $(I+\alpha G_{t-1})^{-1}$</td><td>$O(Td^2)$, sequential</td><td class="ok">yes (eq 11–12)</td></tr>
+<tr><td><code>logdet_quantile</code></td><td><strong>diagonal only</strong></td><td>trailing window $W$</td>
+    <td>$\operatorname{diag}(1+\alpha g_{t-1,f})^{-1}$</td><td>$O(Td)$, vectorized</td><td class="bad">no (our variant)</td></tr>
+<tr><td><code>l2_quantile</code></td><td>— (trace only)</td><td>per-token</td>
+    <td>$\alpha I$ (no denominator)</td><td>$O(Td)$, vectorized</td><td class="ok">yes (eq 29)</td></tr>
+</table>
+<p>Reading the rightmost-but-one column top to bottom shows the progressive simplification:
+<strong>full inverse → diagonal inverse → scaled identity</strong>. Each step throws away more of the
+correlation structure the exact log-det captures.</p>
+
+<div class="note">
+<strong>Empirical result (100M, matched backbone/budget, 1672 steps).</strong>
+Final per-byte CE (≈ BPB): <code>logdet 0.997</code>, <code>l2 1.007</code>, <code>exact 1.027</code> (rank-0; cross-rank
+means ≈ 0.99–1.005) — <strong>statistically tied</strong>. So the off-diagonal / full-prefix information the exact
+form preserves did <em>not</em> help here, and all three sit ~0.07 BPB <em>behind</em> the leak-free BPEByte peer
+(<code>v4_root_greedy 0.931</code>). The cheap L2 form is therefore the sensible default; the gap to BPEByte is not a
+score-fidelity problem.
+</div>
+
+<h2>5. Why <code>logdet_quantile</code> was used first</h2>
+<div class="card">
+<p>It was an over-engineered intermediate chosen <em>before</em> the paper's exact equations were locked down — a methodological misstep, owned here:</p>
+<ol>
+  <li><strong>The PDF hadn't parsed yet.</strong> At first implementation only a lossy web extraction was available.
+      It gave the exact log-det (eq 11) but rendered the Appendix-B approximation vaguely as
+      “$R_\varepsilon \propto \|h_{1:t}\|^2$,” <em>without</em> the derivation (eqs 26–29) that collapses the marginal to
+      the bare per-token norm $\Delta R_t \propto \|h_t\|^2$.</li>
+  <li><strong>The bare L2 looked “too trivial.”</strong> A per-token norm seemed to discard the cumulative/log-det
+      structure that is the method's whole point, so it didn't look trustworthy as the faithful form.</li>
+  <li><strong>A “middle ground” was invented.</strong> The diagonal log-det keeps the per-feature
+      $\log(1+\cdot)$ shape (more log-det-like than a bare norm) while staying $O(Td)$ and vectorizable; the trailing
+      window was added to cure the non-stationary decay observed in testing. It seemed “more faithful than a norm,
+      cheaper than the exact $d\times d$ scan,” so it was made the default.</li>
+  <li><strong>The error:</strong> defaulting to a <em>self-invented</em> score instead of first verifying against the
+      paper. Once page 18 + Appendix B parsed cleanly, eq 29 confirmed the faithful approximation is exactly
+      $\|h_t\|^2$, revealing <code>logdet_quantile</code> as neither the exact form nor the paper's approximation —
+      just an unsanctioned intermediate. Configs were then switched to <code>l2_quantile</code> and the true
+      <code>exact</code> mode was implemented.</li>
+</ol>
+<p>The correct order — followed only after the fact — is: <em>parse the paper → implement the exact form and the
+paper's stated approximation → add cheaper variants only as explicit ablations.</em> The saving grace is that it did
+not change the conclusion (all three score forms tie at ~1.00).</p>
+</div>
+
+<footer>
+Generated for the AU-Net / ByteFlow integration study. Formulas: ByteFlow arXiv 2603.03583 §3 + App. A/B.
+See <code>plan_byteflow.md</code> and <code>lingua/apps/aunet/coding_rate.py</code> for the implementation,
+and <code>byteflow_100M_loss.png</code> for the training curves.
+</footer>
+
+</body>
+</html>
