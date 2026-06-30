@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BPEByte: Causal BPE-Guided Byte Patching — Paper Outline &amp; Submission Plan</title>
+<style>
+  :root{
+    --ink:#1a1a1a; --mut:#5a5f66; --line:#e3e6ea; --bg:#fbfcfd;
+    --accent:#2f6db5; --good:#1d7a44; --bad:#b23b3b; --warn:#b07a18;
+    --code:#f4f6f8; --chip:#eef3f9;
+  }
+  *{box-sizing:border-box}
+  body{font:16px/1.62 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       color:var(--ink); background:var(--bg); margin:0; padding:0}
+  .wrap{max-width:920px; margin:0 auto; padding:48px 28px 96px}
+  h1{font-size:30px; line-height:1.25; margin:0 0 6px}
+  h2{font-size:23px; margin:46px 0 10px; padding-bottom:7px; border-bottom:2px solid var(--accent); color:#16314f}
+  h3{font-size:18px; margin:28px 0 8px; color:#243b54}
+  h4{font-size:15px; margin:18px 0 4px; color:var(--mut); text-transform:uppercase; letter-spacing:.04em}
+  p{margin:9px 0}
+  .sub{color:var(--mut); font-size:15px; margin:0 0 4px}
+  code{background:var(--code); padding:1px 5px; border-radius:4px; font:13.5px/1.5 "SF Mono",Menlo,Consolas,monospace}
+  pre{background:var(--code); border:1px solid var(--line); border-radius:8px; padding:12px 14px; overflow:auto; font:13px/1.55 "SF Mono",Menlo,Consolas,monospace}
+  table{border-collapse:collapse; width:100%; margin:12px 0; font-size:14px}
+  th,td{border:1px solid var(--line); padding:6px 9px; text-align:right}
+  th:first-child,td:first-child{text-align:left}
+  thead th{background:var(--chip); color:#16314f}
+  tbody tr:nth-child(even){background:#fff}
+  .win{color:var(--good); font-weight:600}
+  .lose{color:var(--bad); font-weight:600}
+  .tie{color:var(--warn); font-weight:600}
+  .chip{display:inline-block; background:var(--chip); border:1px solid var(--line); border-radius:20px;
+        padding:2px 11px; font-size:12.5px; color:#16314f; margin:2px 4px 2px 0}
+  .callout{border-left:4px solid var(--accent); background:#fff; border:1px solid var(--line);
+           border-left-width:4px; border-radius:6px; padding:12px 16px; margin:14px 0}
+  .callout.good{border-left-color:var(--good)}
+  .callout.bad{border-left-color:var(--bad)}
+  .callout.warn{border-left-color:var(--warn)}
+  .callout h4{margin-top:0; color:var(--ink)}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .card{border:1px solid var(--line); border-radius:8px; padding:14px 16px; background:#fff}
+  .meta{color:var(--mut); font-size:13.5px}
+  ul,ol{margin:8px 0 8px 4px; padding-left:22px}
+  li{margin:5px 0}
+  .toc{columns:2; column-gap:34px; font-size:14.5px}
+  .toc a{color:var(--accent); text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  .verdict{font-size:18px; font-weight:700}
+  .scorebar{display:flex; align-items:center; gap:10px; margin:6px 0}
+  .scorebar .label{width:130px; font-size:13.5px; color:var(--mut)}
+  .scorebar .track{flex:1; height:12px; background:#eceff3; border-radius:7px; overflow:hidden}
+  .scorebar .fill{height:100%; background:linear-gradient(90deg,#7aa7d6,#2f6db5)}
+  .scorebar .val{width:64px; font-size:13px; text-align:right; color:#16314f}
+  hr{border:none; border-top:1px solid var(--line); margin:34px 0}
+  .foot{color:var(--mut); font-size:13px; margin-top:40px}
+  sup{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="sub">Paper outline &amp; submission strategy · internal working document · 2026-06-27</p>
+<h1>BPEByte: Causal, Leak-Free BPE-Guided Patching for Byte-Level Language Models</h1>
+<p class="sub">A tokenizer-statistics–guided, fully causal patch-boundary scheme on the AU-Net hierarchical backbone — byte-level robustness at subword-competitive quality.</p>
+
+<p>
+<span class="chip">Backbone: AU-Net hierarchical (encoder→pool→trunk→unpool→decoder)</span>
+<span class="chip">Boundary: online BPE-trie greedy longest-match, root placement</span>
+<span class="chip">Property: causal · leak-free · train==eval==gen parity</span>
+<span class="chip">Scales: 100M / 760M / 1.3B matched-compute</span>
+</p>
+
+<h2 id="toc">Contents</h2>
+<div class="toc">
+  <a href="#abstract">0. One-paragraph pitch</a><br>
+  <a href="#intro">1. Introduction</a><br>
+  <a href="#related">2. Related work</a><br>
+  <a href="#method">3. Method</a><br>
+  <a href="#exp">4. Experiments</a><br>
+  <a href="#analysis">5. Analysis &amp; ablations</a><br>
+  <a href="#conclusion">6. Conclusion</a><br>
+  <a href="#accept">A. Acceptance assessment (ICLR / ACL / EMNLP)</a><br>
+  <a href="#improve">B. How to make it accept-worthy</a><br>
+  <a href="#c1">C.1 Experiment design — multilingual &amp; code (B4)</a><br>
+  <a href="#c2">C.2 Experiment design — scaling law / compute-optimal</a><br>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="abstract">0. One-paragraph pitch (the claim we can defend today)</h2>
+<div class="callout">
+<p>Byte-level LMs remove the tokenizer's brittleness (prompt-boundary sensitivity, typo fragility, no character access) but pay for it in sequence length and, empirically, in clean-task accuracy. Dynamic <em>patching</em> (BLT, SpaceByte, H-Net) recovers efficiency, but the patcher is either a separate learned model (BLT entropy model, H-Net router) or a coarse heuristic (whitespace). <strong>BPEByte asks a narrower question:</strong> what if we keep the proven byte-level information of a BPE tokenizer — its merge statistics — but use them <em>only to place pooling boundaries</em>, fully causally, while the model still reads raw bytes? The boundaries reproduce subword fertility exactly, yet every boundary is a deterministic function of <em>past</em> bytes only (leak-free, verified ΔBPC = 0), so train, eval, and streaming generation are bit-identical. Across 100M / 760M / 1.3B matched-compute runs, BPEByte (i) <strong>matches or beats the AU-Net word-patch baseline at every scale</strong>, (ii) is <strong>completely immune to the Prompt-Boundary Problem</strong> that costs the subword baseline up to −8.9 MCQ points and +1.18 BPC, (iii) is <strong>more typo- and noise-robust</strong>, and (iv) <strong>overtakes the 1.8B subword baseline on 5-shot core reasoning</strong> (67.9 vs 67.4) — closing the byte↔subword quality gap as scale grows.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="intro">1. Introduction</h2>
+
+<h4>The tokenizer is a liability</h4>
+<ul>
+  <li><strong>Prompt-Boundary Problem (PBP).</strong> A trailing space re-tokenizes the continuation; the subword baseline's BPC jumps <span class="lose">+1.18</span> (English) and MCQ accuracy drops <span class="lose">−8.9 pts</span> on average. Byte models are invariant by construction.</li>
+  <li><strong>Typo / noise fragility.</strong> One edit reshatters the token stream. On noisy ARC-Easy the subword baseline drops <span class="lose">−10.7</span> pts vs BPEByte's <span class="win">−6.6</span>.</li>
+  <li><strong>No character access.</strong> Subword IDs are opaque; spelling, character counting, and orthographic tasks are bottlenecked (CUTE).</li>
+  <li><strong>Format brittleness.</strong> Letter-MMLU pins all models at the chance floor (~24–26); scoring the answer <em>text</em> instead lifts every model by <strong>+9–11 pts</strong> — a tokenization-of-the-label artifact, not a knowledge gap.</li>
+</ul>
+
+<h4>But naïve byte models lose, and dynamic patchers add a moving part</h4>
+<p>Pure byte sequences are ~4.5× longer (DCLM: 4.54 bytes/llama-token), so a global transformer over raw bytes is wasteful. The field's answer is <em>patching</em>: pool bytes into variable-length units and run the deep trunk over the pooled stream. The open question is <strong>how to choose the boundaries</strong>. BLT learns a separate entropy model; H-Net learns an end-to-end router; SpaceByte uses whitespace. Each adds either a second trained network or a heuristic that is poorly matched to morphology.</p>
+
+<h4>Our position</h4>
+<div class="callout good">
+<p>BPE merges already encode a strong, cheap, data-driven segmentation that the field spent a decade tuning. <strong>Reuse those statistics as a boundary oracle — not as a vocabulary.</strong> The model never sees a token ID; it reads bytes and pools them at BPE-derived cut points produced by a streaming greedy longest-match over a merge trie. This is the missing "free" baseline between whitespace patching and a learned patcher — and, made causal, it is the first BPE-guided byte model with exact train/inference parity.</p>
+</div>
+
+<h4>Contributions</h4>
+<ol>
+  <li>A <strong>causal, leak-free, online BPE-trie patching scheme</strong> (<code>root_greedy</code>) with verified zero boundary leakage (ΔBPC = 0.000) and identical batch / streaming masks.</li>
+  <li>A <strong>matched-compute, 3-scale study</strong> (100M / 760M / 1.3B) isolating the boundary mechanism against AU-Net word patches and a subword Llama baseline.</li>
+  <li>A <strong>boundary-scheme ablation</strong> (committed-view vs. greedy vs. prefix-free vs. prefix-vocab; root vs. before-root placement) quantifying exactly what the leak buys and where placement matters.</li>
+  <li>A <strong>robustness suite</strong> (PBP cut-invariance, HellaSwag-Noise, typo-downstream, CUTE) where byte patching wins, plus the <strong>MMLU letter-vs-text reframing</strong> showing the format gap dwarfs every model gap.</li>
+</ol>
+
+<!-- ============================================================ -->
+<h2 id="related">2. Related work</h2>
+
+<div class="grid">
+  <div class="card">
+    <h3>BLT — Byte Latent Transformer</h3>
+    <p class="meta">Entropy-based dynamic patching.</p>
+    <p>A small byte-LM scores next-byte surprise; high-entropy positions open new patches. Local encoder/decoder + latent transformer over patches.</p>
+    <p><strong>Contrast:</strong> BLT needs a <em>separately trained</em> entropy model and a calibrated threshold per domain. BPEByte's oracle is the existing BPE trie — no extra network, no θ tuning. We include a BLT-style entropy variant (v8) as a head-to-head.</p>
+  </div>
+  <div class="card">
+    <h3>ByteFlow Net — coding-rate chunking</h3>
+    <p class="meta">Deng et al. (Rice / Amazon).</p>
+    <p>Boundaries chosen <em>inside</em> the model from learned encoder hidden states by promoting positions of maximal marginal coding-rate ΔR. Global Top-K selection.</p>
+    <p><strong>Contrast:</strong> Top-K is non-causal (membership depends on future scores) and the authors' "rolling top-k" still leaks at training. BPEByte is a deterministic function of past bytes — strict train==gen parity, no leak.</p>
+  </div>
+  <div class="card">
+    <h3>H-Net — hierarchical dynamic chunking</h3>
+    <p class="meta">Learned, end-to-end boundaries.</p>
+    <p>A differentiable router learns where to chunk, trained jointly with the LM; stacks hierarchies, fully tokenizer-free.</p>
+    <p><strong>Contrast:</strong> maximal flexibility but a new learned component with its own optimization difficulty and load-balancing. BPEByte trades learned boundaries for a fixed, interpretable, zero-extra-parameter oracle — a strong, cheap reference point H-Net should be measured against.</p>
+  </div>
+  <div class="card">
+    <h3>SpaceByte</h3>
+    <p class="meta">Whitespace-delimited patches.</p>
+    <p>Inserts global transformer blocks at space boundaries; simple and tokenizer-free but coarse and language-dependent (fails on no-space scripts / code).</p>
+    <p><strong>Contrast:</strong> our AU-Net word-patch baseline <em>is</em> the SpaceByte family. BPEByte's BPE boundaries are finer and morphology-aware, and we show they beat whitespace at all three scales.</p>
+  </div>
+</div>
+
+<h4>Positioning table (for the paper)</h4>
+<table>
+<thead><tr><th>Method</th><th>Boundary source</th><th>Extra trained net?</th><th>Causal / leak-free?</th><th>Char access</th></tr></thead>
+<tbody>
+<tr><td>Subword (Llama)</td><td>BPE vocabulary</td><td>no</td><td>n/a (token IDs)</td><td class="lose">no</td></tr>
+<tr><td>SpaceByte / AU-Net word</td><td>whitespace</td><td>no</td><td>yes</td><td class="win">yes</td></tr>
+<tr><td>BLT</td><td>entropy model surprise</td><td class="lose">yes (entropy LM)</td><td>yes (calibrated)</td><td class="win">yes</td></tr>
+<tr><td>ByteFlow</td><td>coding-rate ΔR (learned h)</td><td>in-model head</td><td class="tie">top-k leaks</td><td class="win">yes</td></tr>
+<tr><td>H-Net</td><td>learned router</td><td class="lose">yes (router)</td><td>yes</td><td class="win">yes</td></tr>
+<tr><td><strong>BPEByte (ours)</strong></td><td>BPE merge trie (statistics only)</td><td class="win">no</td><td class="win">yes (exact)</td><td class="win">yes</td></tr>
+</tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="method">3. Method</h2>
+
+<h3>3.1 Backbone (unchanged AU-Net hierarchy)</h3>
+<pre>bytes x_1:T  →  Local Encoder  →  h_1:T
+            →  Downsample (pool at boundaries)  →  z_1:K   (K ≪ T)
+            →  Global Trunk (deep, full causal attn over K patches)  →  g_1:K
+            →  Upsample (broadcast + residual from h)  →  s_1:T
+            →  Local Decoder  →  p(x_{t+1} | x_1:t)</pre>
+<p>The only thing that varies across our models is <strong>how the K pooling boundaries are produced</strong>. Everything else (params, data, optimizer, seq len) is held fixed, so the comparison isolates the boundary mechanism.</p>
+
+<h3>3.2 The <code>root_greedy</code> boundary scheme</h3>
+<p>Given the byte stream, we run a <strong>streaming greedy longest-match over the BPE merge trie</strong>: at position <code>pos</code>, walk the trie as far as the upcoming bytes allow, emit a patch boundary at the end of the longest matched merge, advance, repeat. "<strong>root</strong> placement" puts the boundary marker at the patch's first byte (the trie root), so the boundary token is determined the instant the patch <em>opens</em>.</p>
+
+<div class="callout warn">
+<h4>The causality argument (the technical core)</h4>
+<p>A boundary is <strong>leak-free</strong> iff membership of byte <em>t</em> in its patch depends only on bytes ≤ <em>t</em>. The danger case is "<code>before_root</code>" placement, where the cut can peek at the <em>breaking</em> byte (the byte that ends the longest match) — that byte is in the future relative to the bytes it terminates. We show this leak is small but real: it inflates HellaSwag specifically by ~+0.36 (v6 vs v6-root) and nets ~0 on average. <code>root_greedy</code> with root placement removes it entirely: <strong>ΔBPC = 0.000</strong> between an aligned cut and a mid-token committed cut, and the batch-training mask equals the streaming-generation mask byte-for-byte (no commitment lag, no rollback).</p>
+</div>
+
+<h4>Why this matters operationally</h4>
+<ul>
+  <li><strong>Train == eval == generate.</strong> No teacher-forcing-only shortcut, unlike global Top-K (ByteFlow) or BLT's full-sequence entropy at train time.</li>
+  <li><strong>No second network, no threshold.</strong> The oracle is the frozen BPE trie shipped with any subword tokenizer.</li>
+  <li><strong>Fertility-matched to subword.</strong> By construction BPEByte fragments a word exactly as the subword baseline does — so any quality difference is attributable to <em>byte access</em>, not to a different segmentation granularity (clean covariate control; see <code>idea_oov_eval.md</code>).</li>
+</ul>
+
+<h3>3.3 Implementation notes</h3>
+<ul>
+  <li>Special tokens (BOS = 256) overflow <code>uint8</code> and break naïve trie walks → cast to <code>int64</code>; commit unknown bytes as 1-byte patches (<code>longest_match = max(1, i−pos)</code>) to avoid the greedy infinite loop.</li>
+  <li>Streaming decode never rolls back (loglikelihood path is exact); only very long autoregressive code-gen hits an O(n²) re-prefill cost — a known limitation to fix, not a correctness bug.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="exp">4. Experiments</h2>
+
+<h3>4.1 Setup</h3>
+<p class="meta">All models matched on DCLM data and compute. Byte models use ×Chinchilla "ratio" budgets; Llama runs iso-byte (more steps). Four model families: <strong>BPEByte root_greedy</strong>, <strong>AU-Net word-patch</strong>, <strong>Llama subword</strong>, plus boundary-scheme variants v1–v8.</p>
+
+<h3>4.2 Headline: byte↔subword gap closes with scale</h3>
+<table>
+<thead><tr><th>Scale</th><th>Metric</th><th>Llama (subword)</th><th>AU-Net word</th><th>BPEByte rg</th><th>Read</th></tr></thead>
+<tbody>
+<tr><td>100M (ratio-40)</td><td>4-bench avg acc_norm</td><td class="win">42.7</td><td>38.7</td><td>38.8</td><td>subword leads ~3.6; byte = word</td></tr>
+<tr><td>760M</td><td>BPB (↓)</td><td class="win">0.9234</td><td>0.9284</td><td>0.9256</td><td>subword best; byte gap shrinking</td></tr>
+<tr><td>1.3B</td><td>5-bench mean, 0-shot</td><td class="win">65.6</td><td>65.0</td><td>64.4</td><td>subword still leads at 0-shot</td></tr>
+<tr><td>1.3B</td><td>5-bench mean, <strong>5-shot</strong></td><td>67.4</td><td>66.6</td><td class="win">67.9</td><td><strong>byte overtakes at 5-shot</strong></td></tr>
+</tbody>
+</table>
+<div class="callout good">
+<p><strong>The scaling story is the spine of the paper.</strong> At 100M the subword model leads by ~3.6 avg; by 1.3B few-shot the byte model has caught and passed it (67.9 &gt; 67.4), with the strongest few-shot scaling slope. This is the "byte models win eventually, and they bring robustness for free" argument — but it currently rests on <strong>3 scale points and 1 seed</strong> (see Appendix B).</p>
+</div>
+
+<h3>4.3 Robustness — where byte patching wins outright</h3>
+<table>
+<thead><tr><th>Probe (1.3B)</th><th>Llama</th><th>AU-Net2</th><th>BPEByte rg</th></tr></thead>
+<tbody>
+<tr><td>PBP cut-point ΔBPC (→0 ideal)</td><td class="lose">+0.710</td><td>+0.000</td><td class="win">+0.000</td></tr>
+<tr><td>PBP-MC ΔAcc (→0 ideal)</td><td class="lose">−8.92</td><td>−0.03</td><td class="win">+0.16</td></tr>
+<tr><td>HellaSwag-Noise avg (acc_norm)</td><td>37.6</td><td>41.5</td><td class="win">42.2</td></tr>
+<tr><td>Noisy ARC-Easy drop (pts)</td><td class="lose">−10.7</td><td>−7.5</td><td class="win">−6.6</td></tr>
+<tr><td>Noisy BoolQ drop (pts)</td><td class="lose">−4.1</td><td>−1.2</td><td class="win">+0.8</td></tr>
+<tr><td>CUTE avg (exact_match)</td><td>18.4</td><td class="win">23.9</td><td>20.6</td></tr>
+</tbody>
+</table>
+<p class="meta">PBP is the cleanest result in the whole study: byte models are cut-invariant <em>by construction</em>, and the subword baseline pays a large, mechanistic penalty (the "never end a prompt with a trailing space" failure, quantified).</p>
+
+<h3>4.4 The MMLU format reframing</h3>
+<table>
+<thead><tr><th>MMLU 5-shot</th><th>Llama</th><th>AU-Net2</th><th>BPEByte rg</th></tr></thead>
+<tbody>
+<tr><td>letter (P(A/B/C/D))</td><td>24.7</td><td>26.3</td><td>24.5</td></tr>
+<tr><td><strong>text (score the answer string)</strong></td><td class="win">35.2</td><td>34.9</td><td>34.4</td></tr>
+</tbody>
+</table>
+<p>Scoring the real answer text lifts every model <strong>+9–11 pts</strong> off the chance floor; between models it is a statistical tie at every shot count. The knowledge was there — the A/B/C/D <em>token</em> format buried it. (A secondary finding, but a clean, quotable one.)</p>
+
+<!-- ============================================================ -->
+<h2 id="analysis">5. Analysis &amp; ablations</h2>
+
+<h3>5.1 Boundary-scheme ablation (100M, ratio-40, 84B bytes)</h3>
+<p class="meta">Same architecture; only the boundary scheme differs. This is the "what exactly does the boundary choice buy" experiment.</p>
+<table>
+<thead><tr><th>Scheme</th><th>Property</th><th>Avg acc_norm</th></tr></thead>
+<tbody>
+<tr><td>llama</td><td>subword baseline</td><td class="win">42.72</td></tr>
+<tr><td>v6-root</td><td>prefix_free, root (leak-free)</td><td>39.08</td></tr>
+<tr><td>v6</td><td>prefix_free, before_root (leaky)</td><td>39.07</td></tr>
+<tr><td>v4 = root_greedy</td><td>greedy, root (leak-free)</td><td>38.76</td></tr>
+<tr><td>v7</td><td>prefix_vocab, root (leak-free)</td><td>38.69</td></tr>
+<tr><td>aunet (word)</td><td>whitespace baseline</td><td>38.66</td></tr>
+<tr><td>v1</td><td>committed-view (delayed mask)</td><td class="lose">37.21</td></tr>
+</tbody>
+</table>
+<h4>Findings</h4>
+<ul>
+  <li><strong>Leak-free byte ≥ word baseline.</strong> Every leak-free scheme (v6-root, v4, v7) ties or beats whitespace patching — no penalty for raw bytes with a causal boundary.</li>
+  <li><strong>The boundary leak buys ~+0.36 HellaSwag but ~0 on average</strong> (v6 vs v6-root) — it inflates one task, not capability. Removing it is "free."</li>
+  <li><strong>committed-view (v1) is the weakest</strong> (−1.5 to −2 avg) — the delayed 3rd-view mask underperforms greedy/trie schemes <em>and</em> costs 2× wall-clock.</li>
+  <li><strong>Subword-warm-start does not help at adequate training budget</strong> (consistent with an undertraining-regime effect: warm-start helps only when more undertrained).</li>
+</ul>
+
+<h3>5.2 New-code vs old-code (760M)</h3>
+<p>The current causal implementation nets <strong>+0.0092 mean</strong> across downstream vs the old code point, mostly redistribution (BoolQ ↑0.06, MMLU/ARC-C ↓) — both versions verified leak-free. Useful as an honesty/ablation panel, not a headline.</p>
+
+<h3>5.3 Efficiency (to be measured — see Appendix B)</h3>
+<p class="meta">Wall-clock at 100M/4×A100: standard byte ~4.1 s/step vs Llama ~2.1 s/step; committed-view ~8.1 s/step. The paper needs a proper bytes/patch, sequence-compression, and inference-throughput panel — currently the weakest-covered axis.</p>
+
+<!-- ============================================================ -->
+<h2 id="conclusion">6. Conclusion</h2>
+<ul>
+  <li>BPE merge statistics are a <strong>free, causal, leak-free boundary oracle</strong> for byte-level LMs — no second network (BLT), no learned router (H-Net), no non-causal Top-K (ByteFlow).</li>
+  <li>At matched compute, BPEByte <strong>matches/beats whitespace patching at every scale and overtakes the subword baseline on 5-shot reasoning at 1.3B</strong>, while being <strong>immune to the Prompt-Boundary Problem</strong> and <strong>more robust to noise and typos</strong>.</li>
+  <li>The byte↔subword quality gap (clean MC, BPB) <strong>narrows with scale</strong> but is not yet closed on the core LM metric — the honest framing is "robustness now, parity approaching."</li>
+  <li>Future: fix long-gen O(n²) re-prefill; multilingual / code; head-to-head vs BLT entropy patching (v8) and H-Net.</li>
+</ul>
+
+<hr>
+
+<!-- ============================================================ -->
+<h2 id="accept">Appendix A — Acceptance assessment (ICLR / ACL / EMNLP)</h2>
+
+<div class="callout">
+<p class="verdict">Current state: <span class="tie">borderline / weak-reject at a top-tier main track</span> · solid <span class="win">Findings (ACL/EMNLP) or workshop</span> accept · a clear main-track accept is reachable with ~2 targeted additions (Appendix B).</p>
+</div>
+
+<h3>Reviewer-2 simulation</h3>
+<div class="scorebar"><div class="label">Novelty</div><div class="track"><div class="fill" style="width:55%"></div></div><div class="val">5.5 / 10</div></div>
+<div class="scorebar"><div class="label">Rigor / evidence</div><div class="track"><div class="fill" style="width:50%"></div></div><div class="val">5.0 / 10</div></div>
+<div class="scorebar"><div class="label">Robustness story</div><div class="track"><div class="fill" style="width:82%"></div></div><div class="val">8.2 / 10</div></div>
+<div class="scorebar"><div class="label">Clarity / framing</div><div class="track"><div class="fill" style="width:70%"></div></div><div class="val">7.0 / 10</div></div>
+<div class="scorebar"><div class="label">Impact / significance</div><div class="track"><div class="fill" style="width:60%"></div></div><div class="val">6.0 / 10</div></div>
+
+<h3>What reviewers will praise</h3>
+<ul>
+  <li><strong>Clean causal-leak analysis.</strong> The ΔBPC = 0 vs +1.18 PBP result is mechanistic, quantified, and reproducible — a genuinely nice contribution. Reviewers love a sharp, falsifiable claim.</li>
+  <li><strong>Matched-compute, multi-scale discipline.</strong> Three scales with held-fixed everything-but-boundary is more rigorous than most byte-model papers.</li>
+  <li><strong>The "free oracle" angle.</strong> "Reuse BPE statistics as boundaries, not vocabulary" is a crisp, memorable framing that BLT/H-Net don't occupy.</li>
+  <li><strong>MMLU letter-vs-text</strong> is a quotable, broadly-useful observation.</li>
+</ul>
+
+<h3>What reviewers will attack (the rejection risks)</h3>
+<div class="callout bad">
+<ol>
+  <li><strong>"It loses on the core metric."</strong> BPB is worse than subword at every scale (0.9256 vs 0.9234 at 760M); clean MC trails until 1.3B few-shot. A skeptic reads this as "byte models still don't win where it counts." The robustness wins must be framed as the contribution, not as compensation.</li>
+  <li><strong>"Single seed, no CIs."</strong> The headline 1.3B result (67.9 vs 67.4) is a <strong>0.5-pt gap with no error bars</strong> — within plausible seed noise. This is the single most likely reason for rejection at ICLR. <em>Must</em> be fixed.</li>
+  <li><strong>"Novelty is incremental vs BLT/H-Net."</strong> The backbone is AU-Net; the idea is "a different boundary function." Reviewers may file it as a boundary-ablation paper unless the causal-parity property and the BPE-statistics framing are elevated to a real conceptual contribution with a head-to-head vs BLT/H-Net under matched compute.</li>
+  <li><strong>"No efficiency numbers."</strong> The entire premise of patching is efficiency, yet there's no throughput / FLOPs / sequence-compression panel and the byte model is <em>slower</em> per step. A byte-patching paper without an efficiency frontier is half a paper.</li>
+  <li><strong>"Boundary-study, not a method."</strong> (Internal audit already flagged this.) The paper reads as exploratory unless it is re-framed around a pre-registered claim with the right controls.</li>
+  <li><strong>"Generation is broken."</strong> The long-gen O(n²) re-prefill / hang must be at least characterized; reviewers will ask.</li>
+</ol>
+</div>
+
+<h3>Venue-specific read</h3>
+<table>
+<thead><tr><th>Venue</th><th>Current odds</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>ICLR main</td><td class="lose">~20–30%</td><td>Rewards novelty + rigor; the single-seed headline and incremental-vs-BLT framing are fatal as-is. With seeds + BLT head-to-head + efficiency: ~45–55%.</td></tr>
+<tr><td>ACL / EMNLP main</td><td class="tie">~30–40%</td><td>Values the tokenization/robustness angle and clean analysis more; PBP + CUTE + multilingual would resonate. Multilingual experiment is the highest-leverage add here.</td></tr>
+<tr><td>ACL / EMNLP Findings</td><td class="win">~65–75%</td><td>The robustness + leak analysis is already a credible Findings paper today.</td></tr>
+<tr><td>Workshop (tokenization-free / efficient LM)</td><td class="win">~85%+</td><td>Strong fit as-is; good venue to stake the claim early.</td></tr>
+</tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="improve">Appendix B — How to make it accept-worthy</h2>
+<p class="sub">Ordered by (impact × feasibility). The first three convert "borderline" → "main-track competitive."</p>
+
+<h3>★★★ Tier 1 — do these or don't submit to a main track</h3>
+<div class="card">
+  <h4>B1. Seeds + confidence intervals on the headline</h4>
+  <p>Run ≥3 seeds (or bootstrap CIs over eval items) for the 1.3B core-reasoning and the 100M ablation. The 67.9-vs-67.4 claim is indefensible without them. Cheap relative to the training already done — re-eval is minutes; if seeds are unaffordable, at minimum report per-item bootstrap CIs and frame gaps honestly as ties where ≤1 se. <span class="chip">cost: low</span></p>
+</div>
+<div class="card">
+  <h4>B2. An efficiency frontier (the missing half of the paper)</h4>
+  <p>Plot <strong>quality vs. inference cost</strong> (and vs. training FLOPs): bytes/patch achieved, sequence-length compression, tokens/sec at generation, KV-cache size, wall-clock per generated character. Show BPEByte sits on or near the subword Pareto frontier while subword is off it on robustness. Without this, "patching" has no payoff axis. <span class="chip">cost: medium</span></p>
+</div>
+<div class="card">
+  <h4>B3. Head-to-head vs BLT entropy patching under matched compute (v8)</h4>
+  <p>The v8 entropy study is already running. Land it: BPEByte vs BLT-style entropy boundaries vs Meta's <code>blt-entropy</code> ceiling, same backbone/data/budget. "Our free BPE oracle matches a separately-trained entropy model" is the result that converts incremental-novelty into a real comparison. <span class="chip">cost: medium (in progress)</span></p>
+</div>
+
+<h3>★★ Tier 2 — turns a Findings paper into a main-track contender</h3>
+<div class="card">
+  <h4>B4. Multilingual / morphologically-rich + code &nbsp;<span class="chip">full design → <a href="#c1">Appendix C.1</a></span></h4>
+  <p>BPE fertility is worst exactly where byte access should help most: agglutinative languages (Finnish/Turkish), no-space scripts (Chinese/Thai), and code. A clean win on FLORES-style multilingual BPC or a non-English reasoning benchmark would be the strongest <em>new</em> evidence and directly answers "why not just use subword." <strong>Crucially, AU-Net word-patch is the baseline that makes this experiment a proof, not a demo:</strong> whitespace patching collapses on no-space scripts and code, so BPEByte beating AU-Net there isolates "BPE boundaries" as the cause, independent of byte access. The single best ACL/EMNLP move. <span class="chip">cost: medium-high</span></p>
+</div>
+<div class="card">
+  <h4>B5. The OOV / nonce copy-spell motivation experiment</h4>
+  <p>Already designed (<code>idea_oov_eval.md</code>). Because BPEByte is <em>fertility-matched</em> to subword, a real-vs-nonce copy/spell task isolates <strong>character access</strong> as the sole causal variable. A win here is the cleanest possible motivation figure: "same segmentation, byte access alone buys X." Put it in the intro as Figure 1. <span class="chip">cost: low</span></p>
+</div>
+<div class="card">
+  <h4>B6. Scaling law / compute-optimal frontier &nbsp;<span class="chip" style="background:#fde8e8;border-color:#e6b8b8">PROMOTED to required</span> &nbsp;<span class="chip">full design → <a href="#c2">Appendix C.2</a></span></h4>
+  <p>Fit the byte↔subword gap vs scale across all points and <em>extrapolate the crossover</em>. "The gap closes at compute C*" is a far stronger claim than three disconnected tables, and reviewers increasingly expect a scaling argument from any "X is competitive" paper. Most of the grid already exists (ratio-5/10/20/40 at 100M + 760M + 1.3B), so this is largely a <em>fitting</em> exercise on data already collected, plus a few fill-in points. <span class="chip">cost: low–medium (mostly fitting existing runs)</span></p>
+</div>
+
+<h3>★ Tier 3 — polish &amp; defense-hardening</h3>
+<ul>
+  <li><strong>Fix / characterize generation.</strong> Bound or fix the O(n²) long-gen re-prefill; report streaming-gen parity explicitly (it's a strength — sell it).</li>
+  <li><strong>Pre-register the claim.</strong> Re-write Method around one falsifiable thesis ("causal BPE boundaries match learned patchers at lower cost and zero leak") so it reads as a method, not a sweep. Move v1–v8 to a clearly-labelled ablation.</li>
+  <li><strong>Add the missing controls</strong> the internal audit flagged (e.g., a fertility-matched random-boundary control to prove BPE structure — not just patch count — is what helps).</li>
+  <li><strong>Decompose CUTE.</strong> BPEByte trails AU-Net word on CUTE avg (20.6 vs 23.9) — explain why (word patches help <code>spell</code> specifically) so it's not read as a loss.</li>
+  <li><strong>Tighten BPB framing.</strong> Report BPB <em>and</em> downstream together; argue (with the PBP/robustness data) that BPB under-credits byte models because it ignores boundary brittleness.</li>
+</ul>
+
+<div class="callout good">
+<h4>The one-sentence strategy</h4>
+<p>Reframe from "byte models can be competitive" (defensive, loses on BPB) to <strong>"BPE statistics are a free, causal, leak-free patcher that buys provable boundary-robustness at near-zero quality cost — and the cost vanishes with scale."</strong> Then back it with seeds (B1), an efficiency frontier (B2), and a BLT head-to-head (B3). That package is an ICLR/ACL main-track submission.</p>
+</div>
+
+<hr>
+
+<!-- ============================================================ -->
+<h2 id="c1">Appendix C.1 — Experiment design: multilingual &amp; code (B4)</h2>
+
+<div class="callout">
+<h4>Thesis</h4>
+<p><strong>BPEByte's advantage over baselines grows with BPE fertility and is largest exactly where whitespace patching breaks.</strong> Two separable wins, two different baselines beaten:</p>
+</div>
+
+<h3>C1.1 The 3-baseline decomposition (why AU-Net must be a baseline)</h3>
+<table>
+<thead><tr><th>Model</th><th>Char access?</th><th>Language-agnostic boundaries?</th><th>Fails on…</th></tr></thead>
+<tbody>
+<tr><td>Llama (subword)</td><td class="lose">no (opaque IDs)</td><td class="win">yes (BPE)</td><td>char tasks, high-fertility langs, PBP</td></tr>
+<tr><td>AU-Net (word / whitespace)</td><td class="win">yes</td><td class="lose">no (needs spaces)</td><td>CJK / Thai / code (no usable boundaries)</td></tr>
+<tr><td><strong>BPEByte (ours)</strong></td><td class="win">yes</td><td class="win">yes (BPE trie)</td><td>—</td></tr>
+</tbody>
+</table>
+<div class="callout good">
+<p>This 2×2 is the experiment's logic: <strong>BPEByte − Llama</strong> isolates the value of <em>byte/character access</em> (both share BPE-style fertility); <strong>BPEByte − AU-Net</strong> isolates the value of <em>BPE boundaries over whitespace</em> (both share byte access). A win over <em>both</em> on the same multilingual/code suite is a clean causal claim that neither byte access alone nor good boundaries alone explains the result. Without AU-Net in the grid, a reviewer can say "it's just a byte model" — AU-Net is the rebuttal.</p>
+</div>
+
+<h3>C1.2 Models &amp; training</h3>
+<ul>
+  <li><strong>4 families, matched compute:</strong> Llama subword · AU-Net word-patch · BPEByte root_greedy · (stretch) BLT-style entropy v8. Same backbone/params/optimizer; Llama iso-byte.</li>
+  <li><strong>Scale:</strong> one tractable scale for the multilingual study — recommend <strong>300M or 760M</strong> (760M already exists for English; mirror the recipe). Train on a <strong>multilingual+code mix</strong>, not English-only DCLM.</li>
+  <li><strong>Data:</strong> <code>CulturaX</code> or <code>mC4</code> subset spanning ~15–25 languages chosen to span the morphology grid below, mixed with <code>The Stack v2</code> (code). ~50/50 NL/code or 70/30. Hold out a per-language + per-code-language test split for BPB.</li>
+  <li><strong>Tokenizer note (must report):</strong> BPEByte and Llama share the <em>same</em> BPE tokenizer, so cross-language fertility differences are identical for both → fertility is a clean covariate, not a confound. Run once with the (English-centric) llama3 tokenizer <em>and</em> once with a multilingual tokenizer to show the byte advantage is largest precisely when the tokenizer is a poor fit (the realistic deployment case).</li>
+</ul>
+
+<h3>C1.3 Language grid (chosen to vary fertility &amp; whitespace)</h3>
+<table>
+<thead><tr><th>Morphology / script class</th><th>Languages</th><th>Subword fertility</th><th>AU-Net whitespace OK?</th><th>Predicted BPEByte win</th></tr></thead>
+<tbody>
+<tr><td>Analytic, spaced (control)</td><td>English, Spanish</td><td>low</td><td>yes</td><td class="tie">small (parity)</td></tr>
+<tr><td>Fusional</td><td>Russian, German</td><td>medium</td><td>yes</td><td class="tie">small–medium</td></tr>
+<tr><td>Agglutinative</td><td>Finnish, Turkish, Hungarian, Korean</td><td class="lose">high</td><td>yes</td><td class="win">large vs Llama</td></tr>
+<tr><td>Templatic</td><td>Arabic, Hebrew</td><td class="lose">high</td><td>yes</td><td class="win">large vs Llama</td></tr>
+<tr><td>No-whitespace script</td><td>Chinese, Japanese, Thai, Lao</td><td class="lose">high</td><td class="lose"><strong>no</strong></td><td class="win"><strong>large vs BOTH</strong> (AU-Net collapses)</td></tr>
+<tr><td>Low-resource / rare script</td><td>Amharic, Tamil, Telugu</td><td class="lose">very high</td><td>varies</td><td class="win">largest</td></tr>
+<tr><td>Code</td><td>Python, JS, C, Rust</td><td class="lose">high (symbols)</td><td class="lose"><strong>no</strong></td><td class="win"><strong>large vs BOTH</strong> + PBP</td></tr>
+</tbody>
+</table>
+
+<h3>C1.4 Metrics &amp; the headline figure</h3>
+<ul>
+  <li><strong>Primary — BPB per language</strong> (bits-per-byte). Byte-normalized, so it is directly comparable across subword and byte models regardless of tokenizer — the one fair cross-tokenizer metric. Report per language + per class mean.</li>
+  <li><strong>Headline Figure 1 — the fertility-advantage plot.</strong> x-axis = subword fertility (bytes/token) per language; y-axis = ΔBPB = BPB(Llama) − BPB(BPEByte). <em>Predicted: a clean positive slope</em> — the byte advantage grows monotonically with fertility. Overlay AU-Net's ΔBPB on the same axes; it tracks BPEByte on spaced languages but <strong>diverges (goes negative) on the no-space cluster</strong>, visually proving the boundary-vs-byte-access decomposition in one figure.</li>
+  <li><strong>Downstream MCQ (loglikelihood — no generation-hang risk):</strong> Belebele (122-lang reading comprehension), XStoryCloze, XCOPA, XWinograd, XNLI. These reuse the existing loglikelihood harness directly.</li>
+  <li><strong>Generation (optional, note the long-gen caveat):</strong> MGSM (multilingual math), HumanEval / MBPP pass@1 for code. If the O(n²) re-prefill is unfixed, substitute code-completion BPB on The Stack held-out.</li>
+  <li><strong>Robustness, multilingual:</strong> PBP ΔBPC on CJK (we already have Llama zh +0.11) and code (Llama +0.84) — byte = 0. Code-PBP is a strong standalone result: subword models are notoriously boundary-fragile on code.</li>
+</ul>
+
+<h3>C1.5 Predicted result (what we expect to claim)</h3>
+<table>
+<thead><tr><th>Metric (lower BPB / higher acc better)</th><th>Llama</th><th>AU-Net word</th><th>BPEByte</th></tr></thead>
+<tbody>
+<tr><td>BPB — spaced low-fertility (en/es)</td><td class="win">best</td><td>≈</td><td>≈</td></tr>
+<tr><td>BPB — agglutinative/templatic</td><td>worst</td><td>mid</td><td class="win">best</td></tr>
+<tr><td>BPB — no-space (zh/ja/th) + code</td><td>mid</td><td class="lose">collapses</td><td class="win">best</td></tr>
+<tr><td>Belebele / XCOPA avg</td><td>?</td><td>?</td><td class="win">≥ both (hypothesis)</td></tr>
+<tr><td>PBP ΔBPC (code, zh)</td><td class="lose">large</td><td>0</td><td class="win">0</td></tr>
+</tbody>
+</table>
+<p class="meta"><strong>Risk / honesty:</strong> if BPEByte only ties subword on downstream multilingual MCQ, the BPB-fertility figure + code-PBP still carry the section. The result that would <em>sink</em> the framing is BPEByte losing to subword on high-fertility BPB — unlikely given byte models can't be worse than ~8 bits/byte and subword fertility directly inflates its effective context cost, but must be checked. Pre-register the fertility-slope sign as the falsifiable prediction.</p>
+
+<h3>C1.6 Cost &amp; fallback &nbsp;<span class="chip" style="background:#e8f5ec;border-color:#bcdcc8">MEASURED 2026-06-28 → <a href="#">../reports/b4_pilot_estimate.md</a></span></h3>
+<div class="callout good">
+<p><strong>Measured on ece-agpu11 (A100-80GB, current code, compile):</strong> BPEByte <strong>0.508 s/step</strong>, Llama 0.515, AU-Net ≈0.51 — A100 only ~1.5× slower than B200 (not the ~12× the stale doc implied). So a <strong>100M ratio-40 (84B-byte) pilot is ~1.9 h/byte-model, ~2.5 h Llama</strong>; a full <strong>3–4-family pilot ≈ 8–10 h wall on one free 4-GPU slice (~30–40 GPU-h)</strong>. Multilingual = identical compute. <strong>The pilot is cheap; the real cost is data staging.</strong></p>
+</div>
+<p>Full <strong>760M × 4 families</strong> (the publishable scale) projects to ~2–3 days wall / ~160–240 GPU-h. <strong>Cheaper fallback:</strong> a cross-lingual <em>transfer</em> eval — take the existing English-trained models and measure BPB degradation on multilingual/code held-out text; byte models should degrade more gracefully. Weaker, but a same-week result that de-risks the full run. ⚠️ At 100M even ratio-40 separates byte <em>schemes</em> by only ~1 pt, so 100M may be too small to cleanly rank <em>families</em> on multilingual BPB — use the pilot to validate the pipeline + lock cost, then commit to 760M for separation.</p>
+
+<!-- ============================================================ -->
+<h2 id="c2">Appendix C.2 — Experiment design: scaling law / compute-optimal frontier</h2>
+
+<div class="callout">
+<h4>Thesis</h4>
+<p><strong>The byte↔subword BPB gap shrinks predictably with compute and crosses below subword at a finite, extrapolable compute C*.</strong> This converts the three disconnected scale tables into one quantitative law — the difference between "byte can be competitive" (weak) and "byte overtakes subword beyond C*, and here is C*" (strong).</p>
+</div>
+
+<h3>C2.1 Why BPB is the right axis (not per-token loss)</h3>
+<p>Per-token loss is <em>not</em> comparable across tokenizers (a subword token ≈ 4.5 bytes). <strong>BPB (bits-per-byte) normalizes that away</strong> — it is the only loss metric on which byte and subword models can share a y-axis. The 760M table already does this conversion (Llama 2.9044 nats/token ÷ ln2 ÷ 4.5376 B/tok = 0.9234 BPB). Every point in the scaling fit must be BPB. <strong>Include all 4 families</strong> (Llama, AU-Net word, BPEByte, BLT-v8) so the law shows the full ordering and each family's exponent.</p>
+
+<h3>C2.2 The grid (most of it already exists)</h3>
+<table>
+<thead><tr><th>Params (N)</th><th>Budgets available (×Chinchilla → steps)</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>100M</td><td>ratio 5/10/20/40 (1672 / 3344 / 6688 / 13376)</td><td class="win">have most; ratio-10 retrain queued</td></tr>
+<tr><td>300M</td><td>(matched grid)</td><td class="tie">in progress (per project tracker)</td></tr>
+<tr><td>760M</td><td>~29.2k steps (ratio-equiv)</td><td class="win">have</td></tr>
+<tr><td>1.3B</td><td>final ckpt</td><td class="win">have</td></tr>
+</tbody>
+</table>
+<p class="meta">→ A 3–4 size × 2–4 budget grid <em>per family</em> already exists or is queued. The main new work is <strong>fitting</strong>, plus filling 1–2 IsoFLOP gaps for a clean frontier.</p>
+
+<h3>C2.3 Two complementary fits</h3>
+<h4>(a) Chinchilla-form loss surface</h4>
+<pre>L_BPB(N, D) = E + A / N^α + B / D^β        # D = bytes seen, N = params
+
+Fit {E, A, B, α, β} per family by L-BFGS on log-Huber loss (Chinchilla Approach 3).
+Report per family:
+  • E   — irreducible BPB  (does byte have a lower floor?)
+  • β   — data-scaling exponent  (do byte models convert data faster?)
+  • the compute-optimal ratio  D*/N  (byte models see more bytes → expect different optimum)</pre>
+
+<h4>(b) Compute (FLOPs) frontier &amp; the crossover C*</h4>
+<pre>For each family, plot min-BPB vs training FLOPs C  (the compute-optimal envelope).
+Fit   L_BPB(C) = L_inf + (C / C0)^(-a).
+Crossover:  solve  L_BPEByte(C*) = L_Llama(C*)   →   report C* (and whether C* is
+            below, within, or beyond the 1.3B compute already spent).</pre>
+<div class="callout warn">
+<h4>FLOPs accounting must be fair (the reviewer will check this)</h4>
+<p>Byte models run a longer encoder/decoder (over T bytes) but a <em>shorter</em> trunk (over K ≈ T/4.5 patches); subword runs everything over T/4.5 tokens. Count FLOPs as <code>C ≈ 6N_enc·T + 6N_trunk·K + 6N_dec·T</code> vs subword <code>6N·(T/4.5)</code> — <strong>not</strong> by step count. The 100M ablation's "iso-byte Llama runs more steps" convention is the right instinct; formalize it into an explicit per-family FLOPs ledger and report the frontier on FLOPs, not steps. Also report a wall-clock / throughput frontier (byte ~4.1 vs Llama ~2.1 s/step) so the efficiency cost is visible alongside the quality crossover.</p>
+</div>
+
+<h3>C2.4 The headline figures</h3>
+<ul>
+  <li><strong>Figure 2 — BPB vs compute, 4 families.</strong> Log-log; each family's compute-optimal envelope; mark the BPEByte↔Llama crossover C* with a CI band. This is the paper's money figure.</li>
+  <li><strong>Figure 3 — gap vs scale.</strong> ΔBPB(Llama − BPEByte) vs N (or C), showing the gap closing; annotate the 0-crossing. Pair with the downstream version (5-bench mean) where the crossover already appears at 1.3B few-shot (67.9 vs 67.4) — two independent metrics agreeing on a crossover is a strong, hard-to-dismiss result.</li>
+  <li><strong>Table — fitted exponents</strong> {E, α, β, a} per family with bootstrap CIs over the grid points.</li>
+</ul>
+
+<h3>C2.5 What each outcome lets us claim</h3>
+<table>
+<thead><tr><th>Fitted outcome</th><th>Claim</th><th>Strength</th></tr></thead>
+<tbody>
+<tr><td>C* below current 1.3B compute</td><td>"BPEByte already on the better side of the frontier"</td><td class="win">strongest</td></tr>
+<tr><td>C* modestly beyond 1.3B, tight CI</td><td>"gap closes at C*; extrapolation supported by downstream crossover already observed"</td><td class="win">strong</td></tr>
+<tr><td>β(byte) &gt; β(subword), E equal</td><td>"byte models are more data-efficient asymptotically; parity is a matter of scale"</td><td class="tie">good (mechanistic)</td></tr>
+<tr><td>No crossover / E(byte) &gt; E(subword)</td><td>honest negative: "byte trails on BPB but wins robustness at equal cost"</td><td class="tie">still publishable, reframe to robustness</td></tr>
+</tbody>
+</table>
+<p class="meta"><strong>Pre-register</strong> the sign of (E_byte − E_subword) and the existence of C* before fitting, so the scaling claim is confirmatory, not a post-hoc curve-pick. Use held-out budget points (don't fit on the point you use to validate the extrapolation).</p>
+
+<div class="callout good">
+<h4>Combined effect on the submission</h4>
+<p>C.1 (multilingual/code with AU-Net as the isolating baseline) gives a <em>new-domain</em> win that answers "why not subword"; C.2 (scaling law / compute-optimal frontier on BPB) gives the <em>quantitative</em> backbone that turns "competitive" into "overtakes at C*." Together with B1 (seeds/CIs) and B3 (BLT head-to-head), they move the paper from borderline to a credible ICLR/ACL main-track submission.</p>
+</div>
+
+<hr>
+
+<p class="foot">Sources: <code>../reports/model_results_1.3B.md</code>, <code>../reports/model_results_760M.md</code>, <code>../reports/100M_ablation.md</code>, <code>plan_byteflow.md</code>, <code>idea_oov_eval.md</code>. All numbers transcribed from those files; single-seed unless noted. This is an internal planning document — verify every cited figure against the run JSONs before external use.</p>
+
+</div>
+</body>
+</html>

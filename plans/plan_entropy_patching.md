@@ -12,9 +12,13 @@ with a 100M / 300M / 760M / 1.3B configuration matrix to compare **AU-Net (word 
 (BPE-trie patches) vs Entropy (entropy patches)**, all sharing one architecture and budget, against the
 Llama subword baseline.
 
-Companions: `BPEByte_root_greedy_method.md` (the leak-free trie scheme this mirrors),
-`paper_exp_plan260618.md`, `cmp-300M-scope` / `status_300M.md`. Code touch-points:
-`lingua/apps/aunet/data/byte_trie.py`, `…/data/regex_cutting.py`, `…/hierarchical.py`.
+Companions: `../methods/BPEByte_root_greedy_method.md` (the leak-free trie scheme this mirrors),
+`../PROJECT_STATUS.md`. Code touch-points: `lingua/apps/aunet/data/byte_trie.py`,
+`…/data/regex_cutting.py`, `…/data/entropy_patch.py`.
+
+_(Absorbed `entropy_patch_plan.md`, the earlier prep doc, 2026-06-30: its two-phase structure and
+V5-analog class naming — `EntropyBoundaryPredictor` / `EntropyIncrementalParser` mirroring the
+`Distilled*` predictor/parser — are covered in §5 (Integration) and §8 (Implementation status) below.)_
 
 ---
 

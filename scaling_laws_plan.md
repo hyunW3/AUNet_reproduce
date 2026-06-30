@@ -1,1 +1,0 @@
-scaling_laws/scaling_laws_plan.md
