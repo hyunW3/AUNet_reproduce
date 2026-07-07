@@ -46,6 +46,10 @@ REG = {
   "1.3B":("llama_1.8B_paper","llama",None)},
 }
 ACC_1p3B = {"rg":60.3,"aunet":59.75,"llama":60.28}
+# 5-shot 4-bench (HS/ARC-E/ARC-C/PIQA) acc_norm means, measured on ece-agpu11 (num_fewshot=5).
+FIVE = {"rg":{"100M":36.3,"300M":43.9,"760M":55.4,"1.3B":62.9},
+        "aunet":{"100M":36.0,"300M":44.5,"760M":55.6,"1.3B":62.6},
+        "llama":{"100M":41.0,"300M":48.3,"760M":57.4,"1.3B":61.9}}
 TASKS = ["hellaswag","arc_easy","arc_challenge","piqa"]
 
 def load(mdir, typ):
@@ -186,6 +190,12 @@ L=["# Ratio-10 (gamma=10) scaling law — BPEByte rg vs AU-Net vs Llama\n",
    *tbl(lambda m,sc: f"{D[m][sc]['bpb']:.4f}"),
    "\n## Downstream acc_norm (0-shot 4-bench mean)\n","| scale | N | rg | AU-Net | Llama |","|---|---|---|---|---|",
    *tbl(lambda m,sc: f"{D[m][sc]['acc']:.1f}"),
+   "\n## Downstream acc_norm — 5-shot (4-bench mean, num_fewshot=5)\n","| scale | N | rg | AU-Net | Llama |","|---|---|---|---|---|",
+   *[f"| {sc} | {N[sc]/1e6:.0f}M | {FIVE['rg'][sc]:.1f} | {FIVE['aunet'][sc]:.1f} | {FIVE['llama'][sc]:.1f} |" for sc in SCALES],
+   "\n**5-shot flips the ranking at 1.3B:** 0-shot Llama 60.3 = rg 60.3 > AU-Net 59.8; **5-shot rg 62.9 >",
+   "AU-Net 62.6 > Llama 61.9** — the byte models exploit the exemplars more (Δ from 0-shot: rg +2.6,",
+   "AU-Net +2.8 vs Llama +1.6). Up to 760M Llama still leads on 5-shot; the crossover is at 1.3B."
+   " Per-benchmark at 1.3B 5-shot: rg wins ARC-Challenge (41.9), AU-Net wins ARC-Easy (72.4), Llama PIQA (75.7).",
    "\n## Fitted laws (N-weighted Huber)\n",
    "| model | BPB: E | alpha | R2 | acc: b | R2 |","|---|---|---|---|---|---|"]
 for m in ("rg","aunet","llama"):
