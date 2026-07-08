@@ -19,30 +19,26 @@ immediately below (same 100M arch, 13,376 steps ≈ 84B bytes, 4 benchmarks), fo
 model are included as baselines. Eval: `acc_norm %` on HellaSwag (n=10,042) / ARC-Easy (n=2,376) /
 PIQA / ARC-Challenge, full datasets. Verified from each run's `eval_r40_allbench/results.json`.
 
-| Model | Scheme | HS | ARC-E | PIQA | ARC-C | **Avg** |
-|---|---|---:|---:|---:|---:|---:|
-| **llama** | subword baseline | 35.60 | 45.20 | 65.34 | 24.74 | **42.72** |
-| **v6-root** | prefix_free, **root** (leak-free) | 32.34 | 38.01 | 60.88 | 25.09 | **39.08** |
-| **v6** | prefix_free, before_root | 32.70 | 37.04 | 61.21 | 25.34 | **39.07** |
-| **v4** | root_greedy (leak-free) | 31.92 | 37.25 | 61.81 | 24.06 | **38.76** |
-| **v7** | prefix_vocab, root (leak-free) | 31.86 | 38.59 | 61.97 | 22.35 | **38.69** |
-| **aunet** | AU-Net word-patch baseline | 32.37 | 37.71 | 61.70 | 22.87 | **38.66** |
-| **v1** | committed-view (bt, delayed mask) | 29.83 | 34.60 | 59.90 | 24.49 | **37.21** |
-| _warm_rg_ | v4 + subword-warm trunk | 31.59 | 37.92 | 60.66 | 23.21 | _38.35_ |
-| _warm_v1_ | v1 + subword-warm trunk | 29.02 | 33.71 | 56.64 | 20.56 | _34.98_ |
+| Model | Scheme | HS | ARC-E | PIQA | ARC-C | **Avg** | **FLOPs** |
+|---|---|---:|---:|---:|---:|---:|---:|
+| **llama** | subword baseline | 35.60 | 45.20 | 65.34 | 24.74 | **42.72** | 11 |
+| **v6-root** | prefix_free, **root** (leak-free) | 32.34 | 38.01 | 60.88 | 25.09 | **39.08** | 31 |
+| **v6** | prefix_free, before_root | 32.70 | 37.04 | 61.21 | 25.34 | **39.07** | 31 |
+| **v4** | root_greedy (leak-free) | 31.92 | 37.25 | 61.81 | 24.06 | **38.76** | 31 |
+| **v7** | prefix_vocab, root (leak-free) | 31.86 | 38.59 | 61.97 | 22.35 | **38.69** | 31 |
+| **aunet** | AU-Net word-patch baseline | 32.37 | 37.71 | 61.70 | 22.87 | **38.66** | 31 |
+| **v1** | committed-view (bt, delayed mask) | 29.83 | 34.60 | 59.90 | 24.49 | **37.21** | 31 |
+| _warm_rg_ | v4 + subword-warm trunk | 31.59 | 37.92 | 60.66 | 23.21 | _38.35_ | 31 |
+| _warm_v1_ | v1 + subword-warm trunk | 29.02 | 33.71 | 56.64 | 20.56 | _34.98_ | 31 |
 
+_FLOPs = total training FLOPs in **EFLOP (10¹⁸)**. Byte AU-Net = 3.66e8 FLOPs/byte (measured
+`model.flops_per_token`) × 84.1B bytes = **31 EFLOP** — same for every byte scheme (shared arch
+[512,768]/[3,10] + ratio-40; committed-view v1's ~2× is wall-clock/dataloader, not FLOPs). Llama
+(dense subword) = 6×100M × 18.5B tokens = **11 EFLOP**. **Note: llama wins on quality AND uses ~⅓ the
+compute** — the byte models pay ~2.8× more FLOPs (raw-byte encoder over 84B bytes) for the same text._
 
-| Entropy model | HS | ARC-E | PIQA | ARC-C | **Avg** |
-|---|---:|---:|---:|---:|---:|
-| **v4** | root_greedy (leak-free) | 31.92 | 37.25 | 61.81 | 24.06 | **38.76** |
-| **llama** | subword baseline | 35.60 | 45.20 | 65.34 | 24.74 | **42.72** |
-| **aunet** | AU-Net word-patch baseline | 32.37 | 37.71 | 61.70 | 22.87 | **38.66** |
-| MID (byte_50M, 10×)              | 31.94 | 36.57 | 60.88 | 23.12 | **38.13** |
-| HIGH (byte_50M, 20×)             | 31.99 | 35.35 | 61.64 | 23.63 | **38.15** |
-| LOW (byte_50M, 5×)               | 31.74 | 35.27 | 58.92 | 23.38 | **37.33** |
-| BLT (Meta, 100M)                 | 30.19 | 35.94 | 58.81 | 22.95 | **36.98** |
-
-(sorted by average; warm-start rows in italics. Run dirs: `runs/cmp_100M_ratio20/<model>/`.)
+(sorted by average; warm-start rows in italics. Run dirs: `runs/cmp_100M_ratio20/<model>/`. Entropy
+patching — LOW/MID/HIGH/BLT — is in the [v8 section](#v8--entropy-patching-blt-style-ratio-40) below.)
 
 **Findings.**
 - **Leak-free byte == word baseline.** Every leak-free byte scheme (v6-root 39.08, v4 38.76, v7
@@ -96,27 +92,28 @@ Core 6 models at each budget (acc_norm %). ratio-10 = step 3344 (llama 4400), re
 ratio-20 = step 6688 (llama 8800); ratio-40 = 13376 (llama 17600). v6 here = `prefix_free`/before_root.
 v7 has no ratio-20 (no surviving step-6688 checkpoint). Eval = `eval_r{10,20,40}_allbench/`.
 
-| Model | Ratio | HS | ARC-E | PIQA | ARC-C | **Avg** |
-|---|---|---:|---:|---:|---:|---:|
-| **llama** | r10 | 31.67 | 42.55 | 63.38 | 23.04 | **40.16** |
-|  | r20 | 33.80 | 43.86 | 63.66 | 24.83 | **41.53** |
-|  | r40 | 35.60 | 45.20 | 65.34 | 24.74 | **42.72** |
-| **v6** | r10 | 29.46 | 33.33 | 59.36 | 23.04 | **36.30** |
-|  | r20 | 31.01 | 35.94 | 60.55 | 25.34 | **38.21** |
-|  | r40 | 32.70 | 37.04 | 61.21 | 25.34 | **39.07** |
-| **v4** | r10 | 28.69 | 33.46 | 56.75 | 22.35 | **35.31** |
-|  | r20 | 30.38 | 35.61 | 59.63 | 23.46 | **37.27** |
-|  | r40 | 31.92 | 37.25 | 61.81 | 24.06 | **38.76** |
-| **v7** | r10 | 28.67 | 33.80 | 56.80 | 22.44 | **35.43** |
-|  | r20 | — | — | — | — | _—_ |
-|  | r40 | 31.86 | 38.59 | 61.97 | 22.35 | **38.69** |
-| **aunet** | r10 | 28.80 | 33.80 | 58.49 | 22.61 | **35.92** |
-|  | r20 | 31.19 | 36.20 | 61.10 | 22.61 | **37.77** |
-|  | r40 | 32.37 | 37.71 | 61.70 | 22.87 | **38.66** |
-| **v1** | r10 | 28.27 | 31.65 | 55.11 | 21.08 | **34.03** |
-|  | r20 | 28.88 | 33.63 | 57.56 | 22.35 | **35.61** |
-|  | r40 | 29.83 | 34.60 | 59.90 | 24.49 | **37.21** |
+| Model | Ratio | HS | ARC-E | PIQA | ARC-C | **Avg** | **FLOPs** |
+|---|---|---:|---:|---:|---:|---:|---:|
+| **llama** | r10 | 31.67 | 42.55 | 63.38 | 23.04 | **40.16** | 2.8 |
+|  | r20 | 33.80 | 43.86 | 63.66 | 24.83 | **41.53** | 5.5 |
+|  | r40 | 35.60 | 45.20 | 65.34 | 24.74 | **42.72** | 11 |
+| **v6** | r10 | 29.46 | 33.33 | 59.36 | 23.04 | **36.30** | 7.7 |
+|  | r20 | 31.01 | 35.94 | 60.55 | 25.34 | **38.21** | 15 |
+|  | r40 | 32.70 | 37.04 | 61.21 | 25.34 | **39.07** | 31 |
+| **v4** | r10 | 28.69 | 33.46 | 56.75 | 22.35 | **35.31** | 7.7 |
+|  | r20 | 30.38 | 35.61 | 59.63 | 23.46 | **37.27** | 15 |
+|  | r40 | 31.92 | 37.25 | 61.81 | 24.06 | **38.76** | 31 |
+| **v7** | r10 | 28.67 | 33.80 | 56.80 | 22.44 | **35.43** | 7.7 |
+|  | r20 | — | — | — | — | _—_ | — |
+|  | r40 | 31.86 | 38.59 | 61.97 | 22.35 | **38.69** | 31 |
+| **aunet** | r10 | 28.80 | 33.80 | 58.49 | 22.61 | **35.92** | 7.7 |
+|  | r20 | 31.19 | 36.20 | 61.10 | 22.61 | **37.77** | 15 |
+|  | r40 | 32.37 | 37.71 | 61.70 | 22.87 | **38.66** | 31 |
+| **v1** | r10 | 28.27 | 31.65 | 55.11 | 21.08 | **34.03** | 7.7 |
+|  | r20 | 28.88 | 33.63 | 57.56 | 22.35 | **35.61** | 15 |
+|  | r40 | 29.83 | 34.60 | 59.90 | 24.49 | **37.21** | 31 |
 
+FLOPs in EFLOP (10¹⁸); scales linearly with budget (byte 7.7 / 15 / 31 at r10/20/40; llama 2.8 / 5.5 / 11).
 Each budget doubling buys ~**+1.0 to +1.5 avg**, monotonically, and the scheme ordering is **preserved
 at every budget** (llama ≫ v6 > v4 ≈ v7 ≈ aunet > committed-view v1). HS and ARC-E carry most of the
 budget signal; PIQA/ARC-C move less. (ratio-20-only legacy schemes: v3_offline 37.57, v5_distilled 37.34.)
@@ -127,12 +124,18 @@ Boundaries from a small byte-LM's next-byte surprise (monotonic ΔH, target 4.5 
 placement, leak-free) instead of a BPE trie. **Entropy-model budget study**: our byte_50M at
 5×/10×/20× Chinchilla (LOW/MID/HIGH) + Meta's `facebook/blt-entropy` 100M (the intended ceiling).
 
-| Entropy model | HS | ARC-E | PIQA | ARC-C | **Avg** |
-|---|---:|---:|---:|---:|---:|
-| MID (byte_50M, 10×) | 31.94 | 36.57 | 60.88 | 23.12 | **38.13** |
-| HIGH (byte_50M, 20×) | 31.99 | 35.35 | 61.64 | 23.63 | **38.15** |
-| LOW (byte_50M, 5×) | 31.74 | 35.27 | 58.92 | 23.38 | **37.33** |
-| BLT (Meta, 100M) | 30.19 | 35.94 | 58.81 | 22.95 | **36.98** |
+| Entropy model | HS | ARC-E | PIQA | ARC-C | **Avg** | **FLOPs** |
+|---|---:|---:|---:|---:|---:|---:|
+| MID (byte_50M, 10×) | 31.94 | 36.57 | 60.88 | 23.12 | **38.13** | 39 |
+| HIGH (byte_50M, 20×) | 31.99 | 35.35 | 61.64 | 23.63 | **38.15** | 39 |
+| LOW (byte_50M, 5×) | 31.74 | 35.27 | 58.92 | 23.38 | **37.33** | 39 |
+| BLT (Meta, 100M) | 30.19 | 35.94 | 58.81 | 22.95 | **36.98** | 48 |
+
+_FLOPs (EFLOP) = AU-Net training (**31**, as above) **+ the one-time entropy precompute** (forward-only
+byte-LM over the 84B bytes): 50M model → 2×50M×84B ≈ **8 EFLOP** (LOW/MID/HIGH total **39**); Meta's
+100M BLT → 2×100M×84B ≈ **17 EFLOP** (BLT total **48**). So entropy patching costs **+26–55% more total
+FLOPs** than the trie schemes (31) **and scores lower** — a clear loss on the compute-quality frontier,
+worst of all for the biggest (BLT) entropy model._
 
 **Findings.**
 - **Entropy-model budget plateaus at MID.** 5×→10× gains ~0.8 avg (LOW 37.33 → MID 38.13); 10×→20×

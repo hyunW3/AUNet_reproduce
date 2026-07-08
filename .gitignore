@@ -15,6 +15,7 @@ consolidated/
 *.bin
 *.distcp
 *.metadata
+tmp_global_ckpts/
 
 # python virtualenvs
 .venv/

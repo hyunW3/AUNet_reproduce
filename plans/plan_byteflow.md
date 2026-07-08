@@ -114,6 +114,15 @@ Now read from the actual PDF (`pdftotext` of the saved arXiv PDF). Corrections t
 
 **Net:** the 100M run's biggest infidelity was the **score mode** (now fixed to `l2_quantile`); the biggest *remaining* missing piece is the **Canon layer** (encoder+decoder causal conv, k=4).
 
+### 1.5 Three-agent faithfulness audit (2026-07-07) — verdict: NOT a faithful BFlowNet
+Three independent review agents (coding-rate math / architecture / causality+bugs) converged:
+- **Faithful:** exact log-det marginal (eqs 11/12/25 — Sherman-Morrison verified mathematically exact), 5-stage hierarchy, select-then-project downsample, B=16 bins + h_t residual, RoPE θ=5e5 / SWA / 8192→3200→8192.
+- **Missing/deviating (priority):** (1) **Canon layers entirely absent** — no conv1d in `apps/aunet`, encoder/decoder are plain Llama blocks (paper ablates −1.85/−2.13 pts); (2) **encoder+decoder depth E=3 vs paper E=6** (half depth); (3) **default selection = threshold, which §3.2 "Why Not Global Threshold?" explicitly rejects** — the paper's headline Global Top-K (best, 0.86) is present but mislabeled "diagnostic/never deploy"; (4) **`rolling_topk` is a Gaussian z-threshold, NOT the paper's evicting top-k buffer** — `rolling_evict`/`buffer_k`/`eval_mode` are dead code, §3.4 eval split unimplemented; (5) **L2 threshold score normalized** (`‖h‖²/trailing_mean`) deviates from eq 29's raw `‖h_t‖²`; (6) sliding L=512 vs paper 2048; (7) upsample bin(t) is within-chunk-offset-mod-16 not absolute `⌊t/(T/B)⌋`.
+- **Bugs/leaks:** first-batch `_ema_tau` within-batch leak (1 step); `global_topk` not runtime-fenced against non-causal eval/gen; `target_ratio=4.5` never verified vs BPEByte bytes/token; per-rank τ not all-reduced.
+- **Implication:** the ~0.99 null result is a fair *internal backbone-matched* comparison but not a faithful ByteFlow test. To actually reproduce the paper's selection ranking: add Canon, E=6 encoder, use Global/Sliding Top-K (not the threshold), L=2048, and scale/steps up.
+
+**Deviations REMOVED (2026-07-07) — `coding_rate.py` is now paper-only.** Per the goal of faithfully reproducing the paper, all non-paper selection features were stripped: the EMA/learned **threshold** modes (`*_quantile`/`*_fixed_tau`, `_ema_tau`, `tau_buf`), the **L2 trailing-mean normalization** (score is now raw `‖h_t‖²`, eq 29), and the Gaussian **`rolling_topk`** + its dead config (`rolling_evict`/`buffer_k`/`eval_mode`). Remaining modes = **`global_topk`** (paper's main Global Top-K; default), **`sliding_topk`** (paper's Sliding-window Top-K, L default 2048), **`exact_global_topk`** (exact score + Global Top-K). `CodingRateArgs` = {enabled, mode, target_ratio, eps2, window, topk}. All 4 `byteflow_*.yaml` updated to `mode: global_topk`, `window: 2048`, `ema_decay` dropped; verified OmegaConf round-trip + chunker ratios. Debug tooling (launch.json picker, debug_coding_rate.py) updated to the 3 modes. NOTE: old threshold-trained checkpoints (`byteflow_100M_l2`, `_exact`) can no longer be loaded (their `mode` is gone) — the sliding/global-topk checkpoints still load. The `exact_sliding_topk` combo was dropped (the exact marginal decays with prefix length → collapses under a sliding window).
+
 **Exact coding-rate mode implemented (2026-06-24).** `coding_rate.py` now has `score_type="exact"` (modes `exact_quantile` / `exact_fixed_tau` / `exact_global_topk`) computing the *exact* full-prefix log-det marginal (eqs 11–12) via the matrix-determinant lemma + a Sherman-Morrison rank-1 inverse scan: `ΔR_t = ½ log(1 + (d/ε²)·h_tᵀ M_{t-1}⁻¹ h_t)`, `M_t = I_d + (d/ε²)Σ_{s≤t}h_s h_sᵀ`. Verified against brute-force `logdet` to 3e-5; causal/leak-free; calibrates to target ratio. Cost is **O(T·d²) sequential in T** (`@torch.compiler.disable`d Python time-loop) → ~6.2× slower throughput than the L2 approx; small-scale ablation only.
 
 **Two 100M reruns launched 2026-06-24 (matched bs24×ga8, 1672 steps), to supersede the non-faithful logdet_quantile result:**
@@ -135,6 +144,11 @@ Both vs baselines v2_online 0.798 / v1_committed 0.904 / v4_root_greedy 0.931 (t
 | ByteFlow logdet_quantile (diag+window) | 0.997 | ~0.99 | leak-free |
 | ByteFlow l2_quantile (L2 approx, eq 29) | 1.007 | ~0.99 | leak-free |
 | ByteFlow exact log-det (eqs 11-12) | 1.027 | ~1.005 | leak-free |
+
+> **Codebase note (2026-07-06):** since score fidelity turned out irrelevant, the non-standard `logdet_quantile`
+> (diagonal+window) score was **removed from `coding_rate.py`** at the user's request — only the paper's two standard
+> forms remain: `exact_*` (eqs 11–12) and `l2_*` (eq 29). Default mode is now `l2_quantile`. The logdet numbers below
+> are kept as the historical record of the completed run.
 
 **Conclusions.** (1) **Score fidelity is irrelevant**: logdet ≈ L2 ≈ exact (all ~1.00, tied within noise). (2) **Coding-rate chunking underperforms BPEByte byte-trie boundaries** at 100M/1672 steps by **~0.07 BPB vs the leak-free peer v4 (0.931)** and ~0.2 vs leaky v2. The cause is therefore NOT the approximation — candidates remain: **cold-start** (boundaries derive from a randomly-initialized encoder, so segmentation is meaningless early; BPEByte has correct boundaries from step 0), **missing Canon layer** (§1.4; ablated as ~2 pts in the paper), and **undertraining** (1672 steps; the paper trains ~1.95M). Highest-leverage next test: boundary warmup / encoder warm-start to kill the cold-start penalty, and/or add Canon.
 
@@ -167,6 +181,33 @@ The leak concern in §2 is **not ours alone** — it is the central thread of th
 1. The causality risk is real and acknowledged; the published method has a **train/inference boundary mismatch** + an admitted *"leaks minimal information"* at training. We can strictly improve on it by being causal at **both** train and inference.
 2. **"Rolling top-k" = streaming Top-K over a bounded buffer of k seen positions** (evict lowest-ΔR when a higher one arrives once the buffer is full). It is causal and gives a fixed ≤k trunk length (static graph). This is a first-class mode for us, distinct from the global Top-K.
 3. The buffer's "pure byte model below k, compress above k" behavior maps cleanly onto our `max_seqlens[1]` cap: ≤cap positions ⇒ no eviction; >cap ⇒ selection. Our existing ragged+cap machinery already implements the buffer's spirit.
+
+**Paper's chunking-strategy ablation (from the OpenReview rebuttal, `PoC/…OpenReview.pdf`, 600M):**
+
+| Strategy | Val BPB ↓ | Downstream ↑ | Stability |
+|---|---|---|---|
+| **Global Top-K** | **0.86** | 50.89% | Good |
+| Sliding-window Top-K (L=2048) | 0.89 | 50.12% | Good |
+| Hard top-k | 0.90 | 49.38% | Moderate |
+| **Learned threshold** | 0.91 | 49.76% | **Unstable** |
+
+⇒ The paper found **Global Top-K best and the learned threshold worst + unstable** — which *matches our own experience* (our `l2_quantile` threshold collapsed until the scale-normalization fix). This is a real tension: Global Top-K is the strongest selector but leaks at train; our leak-free threshold is the weakest+least stable of their set. It argues for prioritizing the **causal rolling/sliding-window Top-K** (0.89, "Good" stability, still leak-free at inference) over the pure threshold if we want both leak-freeness *and* the paper's quality. And the authors confirm **rolling top-k = fixed buffer of k that fills then evicts low-priority tokens** (k ∝ length; short seq → pure byte model). Visualized on the real 100M ckpt in `reports/byteflow_topk_compare.png` (threshold=content-adaptive count, Global Top-K=fixed ratio 4.5).
+
+**`sliding_topk` mode implemented + run launched (2026-07-06).** New causal, rank-based selector in `coding_rate.py`: position t is a boundary iff its raw `‖h_t‖²` is in the top-k of the trailing window `[t-L+1,t]`, k=round(L·p) (vectorized unfold+sort). Rank-based ⇒ **scale-free** (uses raw energy, no normalization) ⇒ stable — verified ratio 4.48 (4.39–4.56) even under 6× growing norms, leak-free. This is the paper's "Sliding-window Top-K (L)" made causal (their 0.89 BPB, "Good" stability — vs the "Unstable" learned threshold). **100M run on ece-agpu11 GPU0-3** (matched bs24×ga8, L=512, compile=true, `runs/byteflow_100M_sliding`, ratio-5 = 1672 steps ≈ 2.3B tok).
+
+**sliding_topk FINAL (2026-07-06, ckpt 1672):** loss **~0.99** (rank0 1.011 / cross-rank mean 0.99), ratio settled ~4.5, stable throughout. **Result: sliding-window Top-K ≈ threshold ≈ all coding-rate variants (~0.99–1.00), still ~0.06 behind BPEByte v4 (0.931).** So at OUR 100M / ratio-5 / L=512 setting the **selection method does not matter** — threshold(0.99) ≈ rolling ≈ sliding(0.99) ≈ exact(1.005) ≈ logdet(0.997) — which does NOT reproduce the paper's 600M ablation (sliding 0.89 > threshold 0.91). The gap to BPEByte is not a selection-rule problem at this scale; the bottleneck is elsewhere (cold-start, undertraining at ratio-5/1672 steps, missing Canon, and 100M vs the paper's 600M/1.3B). A larger L (paper used 2048 vs our 512) and ratio-10+/longer training are the remaining levers to test the paper's selection ranking.
+
+### 100M final scoreboard (all at ratio-5, 1672 steps, matched backbone/budget; per-byte CE ≈ BPB)
+| Model | final loss (rank0) | mean |
+|---|---|---|
+| BPEByte v2_online | 0.798 | — |
+| BPEByte v1_committed | 0.904 | — |
+| **BPEByte v4_root_greedy** | **0.931** | — |
+| ByteFlow logdet_quantile | 0.997 | ~0.99 |
+| ByteFlow l2_quantile (threshold) | 1.007 | ~0.99 |
+| ByteFlow exact log-det | 1.027 | ~1.005 |
+| **ByteFlow sliding_topk L=512** | **1.011** | **~0.99** |
+| **ByteFlow sliding_topk L=2048** (paper's L) | **1.000** | **~0.98** |
 
 ### 2.3 Decision: causal-threshold coding-rate chunking (primary)
 
@@ -270,10 +311,10 @@ Add a `coding_rate:` block to `HierarchicalArgs` (`hierarchical.py:33`) — mode
 model:
     coding_rate:
         enabled: true
-        mode: logdet_quantile    # l2_quantile | l2_fixed_tau | logdet_quantile | logdet_fixed_tau | rolling_topk | global_topk
+        mode: l2_quantile        # l2_quantile | l2_fixed_tau | exact_quantile | exact_fixed_tau | exact_global_topk | rolling_topk | global_topk
         target_ratio: 4.5        # bytes/chunk; matches BPEByte token budget for iso-FLOPs
-        eps2: 0.5                # [VERIFY default from PDF]; only used by logdet modes
-        window: 512              # boxcar window for logdet energy g_{t-1} (keeps dR_t stationary); ~ encoder SWA window
+        eps2: 0.5                # noise variance ε² (exact_* only)
+        window: 512              # trailing window: l2 scale-normalization + rolling_topk stats; ~ encoder SWA window
         ema_decay: 0.99          # quantile-tracker decay (*_quantile)
         tau: null                # only for l2_fixed_tau
         rolling_evict: commit    # rolling_topk: commit (monotone, no eviction; DEFAULT) | exact (evicts; diagnostic-only, §2.4a)

@@ -98,9 +98,12 @@ direction, or one already used?). Causal. Cost $O(T d^2)$, <strong>sequential in
 Verified against brute-force <code>logdet</code> to $3\times10^{-5}$.</p>
 </div>
 
-<div class="card diag">
-<span class="tag diag">logdet_quantile — non-paper variant</span>
-<h3>Diagonal log-det, trailing window</h3>
+<div class="card diag" style="opacity:.72">
+<span class="tag diag">logdet_quantile — REMOVED from the codebase</span>
+<h3>Diagonal log-det, trailing window <span style="color:#c0392b">(discarded — non-standard, not in the paper)</span></h3>
+<p style="color:#c0392b;margin:.2rem 0 .6rem;"><strong>No longer implemented.</strong> The code now keeps only the
+paper's two standard forms — exact (§2-exact) and its L2 approximation (below). This card is retained for the
+retrospective in §5 and to explain the empirical result table.</p>
 <p>Two simplifications of §2-exact: (i) keep only the <strong>diagonal</strong> of the Gram (drop off-diagonal
 cross-feature terms ⇒ a sum of independent per-feature scalars); (ii) replace the full prefix with a
 <strong>trailing boxcar window</strong> of $W$ bytes.</p>

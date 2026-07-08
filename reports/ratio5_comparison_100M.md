@@ -28,14 +28,15 @@ Artifacts:
 
 100M AU-Net, ratio-5 (1672 steps, 10.5B bytes), final ckpt 0000001672. acc_norm (%) for HellaSwag/ARC-easy.
 Random ≈ 25 (HS 4-way, ARC-e ~4-way). (gen_ll generation-framed variants dropped — cloze scoring only.)
+train-BPB recomputed 2026-07-08 with the consistent last-40-step-window method (all runs on snu55/B200).
 
 | scheme            | HellaSwag | ARC-easy | eval n         | train-BPB |
 |-------------------|-----------|----------|----------------|-----------|
-| aunet (word)      | 27.79     | 30.39    | full 10042/2376| 1.312     |
-| root_greedy (BPE) | 27.49     | 29.97    | full           | 1.317     |
-| entropy-LOW (5×)  | 34.5±1.5  | 31.2±1.5 | 1000           | 1.398     |
-| entropy-MID (10×) | 35.0±1.5  | 33.5±1.5 | 1000           | 1.397     |
-| entropy-HIGH (20×)| 34.2±1.5  | 30.3±1.5 | 1000           | 1.394     |
+| aunet (word)      | 27.79     | 30.39    | full 10042/2376| 1.327     |
+| root_greedy (BPE) | 27.49     | 29.97    | full           | 1.321     |
+| entropy-LOW (5×)  | 34.5±1.5  | 31.2±1.5 | 1000           | 1.389     |
+| entropy-MID (10×) | 35.0±1.5  | 33.5±1.5 | 1000           | 1.387     |
+| entropy-HIGH (20×)| 34.2±1.5  | 30.3±1.5 | 1000           | 1.386     |
 
 **IMPORTANT subset caveat.** word/root_greedy are FULL-dataset; entropy LOW/MID/HIGH are **limit-1000**
 (first 1000 docs) — entropy eval is CPU-bound (per-request boundary computation, GPU idle) so full timed out
@@ -47,7 +48,7 @@ compare entropy rows to word/root rows directly. The only clean comparison is LO
 **Findings.**
 - Within-study (same subset): LOW/MID/HIGH HellaSwag 34.5 / 35.0 / 34.2 and ARC-easy 31.2 / 33.5 / 30.3 are
   FLAT — all within ~1 stderr (±1.5). **Entropy-model budget (5×→10×→20×) produces NO systematic downstream
-  separation** at ratio-5, mirroring the flat train-BPB (1.398 / 1.397 / 1.394).
+  separation** at ratio-5, mirroring the flat train-BPB (1.389 / 1.387 / 1.386).
 - Consistent with the headline: at ratio-5 (1672 steps) the 100M byte models are too undertrained for
   downstream to discriminate; the budget signal lives in train-BPB, not these benchmarks. A fair word-vs-
   entropy readout needs same-subset eval and/or the ratio-20+ budget (per repo convention, ratio-20=6688
@@ -64,17 +65,17 @@ PIQA/ARC-C = acc_norm; BoolQ = acc. Random: PIQA ≈ 50, ARC-C ≈ 25, BoolQ ≈
 
 | scheme            | PIQA (an) | ARC-C (an) | BoolQ (acc) | train-BPB |
 |-------------------|-----------|------------|-------------|-----------|
-| aunet (word)      | 54.3      | 22.4       | 43.6        | 1.312     |
-| root_greedy (BPE) | 53.9      | 20.4       | 38.1        | 1.317     |
-| entropy-LOW (5×)  | 52.5      | 21.0       | 62.2        | 1.398     |
-| entropy-MID (10×) | 53.7      | 21.4       | 41.5        | 1.397     |
-| entropy-HIGH (20×)| 52.7      | 21.5       | 60.0        | 1.394     |
+| aunet (word)      | 54.3      | 22.4       | 43.6        | 1.327     |
+| root_greedy (BPE) | 53.9      | 20.4       | 38.1        | 1.321     |
+| entropy-LOW (5×)  | 52.5      | 21.0       | 62.2        | 1.389     |
+| entropy-MID (10×) | 53.7      | 21.4       | 41.5        | 1.387     |
+| entropy-HIGH (20×)| 52.7      | 21.5       | 60.0        | 1.386     |
 
 **All at chance.** PIQA 52.5-54.3 ≈ random 50; ARC-C 20.4-22.4 ≈ (slightly below) random 25; BoolQ swings
 38-62 with no pattern = majority-class noise (62 = always-true). Entropy LOW/MID/HIGH are flat within ±1.5%
 on every task (PIQA 52.5/53.7/52.7, ARC-C 21.0/21.4/21.5, BoolQ 62.2/41.5/60.0 — BoolQ scatter is noise,
 not a trend). **No entropy-budget downstream separation on any of the 5 benchmarks**, consistent with the
-flat train-BPB (1.398/1.397/1.394) and the ratio-5 "too short to rank" verdict.
+flat train-BPB (1.389/1.387/1.386) and the ratio-5 "too short to rank" verdict.
 
 Artifacts: entropy snu55 `runs/aunet_100M_entropy_{low,mid,high}/evals_r5_extra/results.json`;
 word/root B200 `runs/cmp_100M/aunet_orig_100M/evals_r5_extra` + `runs/ablation_100M/v4_root_greedy/evals_r5_extra`.
@@ -105,8 +106,11 @@ matters more than train-vs-val. Full writeup: `runs/cmp_100M/calibration_train_v
 
 Same 100M AU-Nets, entropy-model budget LOW(5×)/MID(10×)/HIGH(20×), but trained to **ratio-10 (3344
 steps, 2× the ratio-5 budget)**. Downstream limit-1000 (same subset/method as the ratio-5 table).
-acc_norm % for HS/ARC-e/PIQA/ARC-C; acc % for BoolQ. train-BPB = mean last-40 `loss`/ln2. (gen_ll
-generation-framed variants dropped — cloze scoring only.)
+acc_norm % for HS/ARC-e/PIQA/ARC-C; acc % for BoolQ. (gen_ll generation-framed variants dropped — cloze
+scoring only.) train-BPB kept on the original mean-last-40 method here: the r10 LOW/HIGH metrics live only
+on snu30 (off-limits) and can't be recomputed, so all three rows stay same-method for a valid 3-way
+comparison. For cross-scale reference, MID recomputes to **1.248** under the consistent last-40-step window
+(~+0.010); LOW/HIGH would shift alike, so the flat ordering is unchanged.
 
 | entropy model | HS | ARC-e | PIQA | ARC-C | BoolQ | train-BPB |
 |---------------|------|-------|------|-------|-------|-----------|
@@ -115,7 +119,7 @@ generation-framed variants dropped — cloze scoring only.)
 | HIGH (20×)    | 34.4 | 35.3  | 56.5 | 21.5  | 60.1  | 1.243 |
 
 ratio-5 baseline for reference (limit-1000): HS 34.5/–/34.2, ARC-e 31.2/–/30.3, PIQA 52.5/–/52.7,
-ARC-C 21.0/–/21.5, BoolQ 62.2/–/60.0; r5 train-BPB LOW 1.398 / HIGH 1.394.
+ARC-C 21.0/–/21.5, BoolQ 62.2/–/60.0; r5 train-BPB LOW 1.389 / HIGH 1.386.
 
 **Conclusion — entropy-model budget STILL does not transfer downstream at ratio-10 (all 3 rows).** LOW,
 MID and HIGH are flat within noise on every non-degenerate task: HS 34.9/35.8/34.4, ARC-e 33.8/33.8/35.3,
@@ -171,6 +175,10 @@ dropped. HIGH entropy model, val-cal, equal 4.5 B/patch, limit-1000. HS/ARC-e/PI
 BoolQ = acc %. Avg4 = mean of the 4 non-degenerate acc_norm tasks (HS, ARC-e, PIQA, ARC-C); BoolQ is
 listed but EXCLUDED from Avg4 (majority-class degenerate, ~62 baseline). BPB = mean `loss`/ln2 over the
 last-40-step window (consistent method, recomputed 2026-07-07). Best BPB per (scale, budget) in bold.
+**budget = STEP count (r5=1672, r10=3344), STEP-matched across scales = iso-DATA.** ratio ≡ data/model, so
+for the 300M (3.01× params: 296.66M vs 98.59M) these are true **ratio-1.7 / ratio-3.3**, NOT ratio-5/10 —
+the 300M rows are data-matched to 100M but under-trained for their size (a true 300M ratio-10 = 10,065
+steps, in training). So the cross-scale BPB drop is measured at equal data, not equal ratio.
 
 | scale | rule      | budget | HS   | ARC-e | PIQA | ARC-C | BoolQ | Avg4 | BPB       |
 |-------|-----------|--------|------|-------|------|-------|-------|------|-----------|
