@@ -4,6 +4,21 @@ runs/
 data/
 tokenizer/
 
+# model checkpoints (belt-and-suspenders: runs/ already ignored, but never
+# let a stray checkpoint written elsewhere bloat the repo again)
+checkpoints/
+consolidated/
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.bin
+*.distcp
+*.metadata
+
+# python virtualenvs
+.venv/
+
 # rendered animation media (regenerate from viz/*.py)
 viz/*.gif
 viz/*.mp4
