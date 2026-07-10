@@ -1,5 +1,12 @@
 # 100M hybrid ablation — full matrix
 
+> **Recipe: AD-HOC** (global batch 768, 3,344 steps, LR 2.0e-3, warmup 100) — the
+> `runs/small/poc/campaign/` family. **NOT** the AU-Net scaling-law recipe used in
+> [`leaderboard_100M.md`](leaderboard_100M.md) (batch 48, 53,504 steps, LR 3.4e-3). Same 21 GB / γ10.4
+> budget, but the law recipe runs ~0.08 BPB / +3–4 downstream pts better, so **absolute numbers here
+> are not comparable to `leaderboard_100M.md`** — only the *relative* ablation (all 10 rows share this
+> recipe) is. A law-recipe version of this ablation is in progress (see foot of doc).
+
 _100M (98.59M params), ratio ≈10.4 (21.04 GB), single seed 777. Boundary: `(0,N)`=Uniform-full (B1),
 `N/2`=static-half (B2), `(N/3,2N/3)`=Uniform-mid (B3). Prefill placement: **leaf**=before_root (offline
 real-BPE), **bt**=before_root (online backtracking/longest-match), **root**=offline-BPE root placement.
