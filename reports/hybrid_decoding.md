@@ -18,15 +18,17 @@ Old→new map (note the P1/P2 inversion — the default hybrid I trained used **
 C-online → **original gr**; the default "hybrid P1×B1" (before_root prefill) →
 **hybrid(leaf/root, (0,N))**; "rootp" → **hybrid(root/root, …)**; P3 / bt (longest-match) dropped.
 
-**Evaluation (question-tokenization)** is named `prompt / answer (prompt-mode / answer-mode)`, where
-placement ∈ {root, before_root} and mode ∈ {online, offline}. The answer is always `root_greedy` =
-**root (online)**, so only the prompt varies:
-- **root/root (online/online)** = online root_greedy prompt — the *original root_greedy way* (native
-  to **original gr**) *(was "greedy-Q")*.
-- **before_root/root (offline/online)** = offline-BPE before_root prompt (native to
-  **hybrid(leaf/root)**) *(was "offline-Q" / "leaf-Q")*.
-- **root/root (offline/online)** = offline-BPE root prompt (native to **hybrid(root/root)**) *(was
-  "offline-root-Q" / "root-Q")*.
+**Evaluation (question-tokenization)** is named `{placement}-{mode}[-seg]`, where placement ∈
+{leaf=before_root, root}, mode ∈ {online, offline}, and the online segmenter seg ∈ {gr=greedy,
+bt=backtracking}. The answer is always `root_greedy`, so only the prompt varies:
+- **root-online-gr** = `root/root (online/online)` — online root_greedy prompt, the *original
+  root_greedy way* (native to **original gr**).
+- **leaf-offline** = `before_root/root (offline/online)` — offline-BPE before_root prompt (native to
+  **hybrid(leaf/root)**).
+- **root-offline** = `root/root (offline/online)` — offline-BPE root prompt (native to
+  **hybrid(root/root)**).
+- **leaf-online-bt** = `before_root/root (online-bt/online)` — online backtracking / longest-match
+  before_root prompt (native to **hybrid(bt/root)**).
 
 ## 1. What this is
 
@@ -150,7 +152,7 @@ exactly **+0.029** (identical to 100M ratio-40) but wins by **more** under offli
 fixed pure-greedy cost, growing offline-prompt gain — is **consistent across 100M→300M**.
 
 **decode-BPB(b/N=0.5) vs N so far:** original gr 1.214 (100M) → 1.195 (300M); hybrid 1.079 → 1.044.
-760M/1.3B rungs pending (760M hybrid ~2–3 days). Downstream matrix (greedy/bt/offline-Q) runs per
+760M/1.3B rungs pending (760M hybrid ~2–3 days). Downstream matrix (root-online-gr / leaf-online-bt / leaf-offline) runs per
 rung too.
 
 ## 7b. Hybrid prefill-placement ablation — leaf (before_root) vs root (rootp)
@@ -243,7 +245,7 @@ inference scenario. Absolute scores remain near-chance (100M), so treat magnitud
 **Question** tokenization ∈ {greedy (a greedy model's native), bt (repo-standard), offline (hybrid's
 native)}; **answer** greedy throughout. Rows = tasks; columns = 6 (model × question-tokenizer).
 
-| task | orig-gr·greedyQ | orig-gr·btQ | orig-gr·offlineQ | hyb(leaf/root)·greedyQ | ·btQ | ·offlineQ |
+| task | orig-gr·root-online-gr | orig-gr·leaf-online-bt | orig-gr·leaf-offline | hyb(leaf/root)·root-online-gr | ·leaf-online-bt | ·leaf-offline |
 |------|-----------:|--------:|-----------:|----------:|-------:|-----------:|
 | hellaswag  | 0.320 | 0.319 | 0.302 | 0.323 | 0.326 | **0.331** |
 | arc_easy   | 0.295 | 0.296 | 0.286 | 0.308 | 0.306 | **0.308** |
@@ -254,17 +256,17 @@ native)}; **answer** greedy throughout. Rows = tasks; columns = 6 (model × ques
 
 Reading the means:
 
-- **Each model peaks in its own training regime:** original gr at greedy/bt-Q (0.412), hybrid at
-  offline-Q (0.425). Off-regime tokenization moves each the expected way — original gr **drops** under
-  offline-Q (0.4126→0.4060), hybrid **rises** under offline-Q (0.4192→0.4254).
-- **Hybrid ≥ original gr at every question-tokenization**, and by the most under offline-Q:
-  greedy-Q +0.68 pp, bt-Q +0.66 pp, **offline-Q +1.94 pp**.
-- **Best-vs-best (each in native regime):** hybrid (offline-Q) 0.4254 vs original gr (greedy-Q) 0.4124
+- **Each model peaks in its own training regime:** original gr at greedy/leaf-online-bt (0.412), hybrid at
+  leaf-offline (0.425). Off-regime tokenization moves each the expected way — original gr **drops** under
+  leaf-offline (0.4126→0.4060), hybrid **rises** under leaf-offline (0.4192→0.4254).
+- **Hybrid ≥ original gr at every question-tokenization**, and by the most under leaf-offline:
+  root-online-gr +0.68 pp, leaf-online-bt +0.66 pp, **leaf-offline +1.94 pp**.
+- **Best-vs-best (each in native regime):** hybrid (leaf-offline) 0.4254 vs original gr (root-online-gr) 0.4124
   = **+1.30 pp**. So even comparing each model at its own best prompt tokenization, hybrid wins.
-- greedy-Q ≈ bt-Q for both models (the prompt segmentation barely differs there); the real lever is
-  **offline-Q**, which only the hybrid model was trained to exploit.
+- root-online-gr ≈ leaf-online-bt for both models (the prompt segmentation barely differs there); the real lever is
+  **leaf-offline**, which only the hybrid model was trained to exploit.
 
-Near-chance at 100M (winogrande sits at its 0.50 baseline — its −0.9 pp offline-Q dip for hybrid is
+Near-chance at 100M (winogrande sits at its 0.50 baseline — its −0.9 pp leaf-offline dip for hybrid is
 noise); directional, to be re-checked at 300M+. `runs/poc/downstream/{gq_,,oq_}*`.
 
 ### 8c. Downstream vs scale — 100M ratio-40 & 300M (mean acc over 5 tasks, limit 1000)
@@ -277,12 +279,12 @@ Re-run at the **rigorous** budgets (100M ratio-40, not the ratio-10 pilot above)
 | **100M** (r40) | 0.439 → 0.492 (**+0.053**) | 0.439 → 0.494 (+0.055) | 0.414 → 0.478 (**+0.064**) |
 | **300M** | 0.448 → 0.455 (**+0.008**) | 0.444 → 0.456 (+0.012) | 0.425 → **0.497** (**+0.073**) |
 
-**The key scaling signal:** the **offline-Q hybrid advantage grows with scale** (+0.064 → +0.073),
-while the greedy/bt-Q advantage **collapses toward parity** (+0.053 → +0.008). So at 300M the two
+**The key scaling signal:** the **leaf-offline hybrid advantage grows with scale** (+0.064 → +0.073),
+while the greedy/leaf-online-bt advantage **collapses toward parity** (+0.053 → +0.008). So at 300M the two
 models are ~even when the prompt is greedy/bt-tokenized (matching the BPB finding that hybrid pays a
 small pure-greedy cost), but hybrid opens a **large, growing gap under an offline-tokenized prompt**
 — its native, and the realistic inference, regime. This is the downstream analog of the BPB
-scaling in §7, and both point the same way. (Downstream is above chance here — 300M offline-Q hybrid
+scaling in §7, and both point the same way. (Downstream is above chance here — 300M leaf-offline hybrid
 0.497 — so these are more than directional.)
 
 ## 8d. Full design grid — all 7 cells (100M ratio-10), BPB (B200) + downstream (A100)
@@ -322,8 +324,8 @@ P3/bt dropped.
 - **Boundary strategy (B1/B2/B3) is second-order** on both metrics (BPB within 0.01; downstream leaf
   0.441/0.442/0.462 — noise).
 - **All hybrids beat original gr** on decode BPB under an offline prompt (~1.18 vs 1.37 @ b/N=0.5).
-- Downstream: **greedy-Q ≡ leaf-Q accuracy on A100** (MC argmax insensitive to that question-tok
-  distinction at near-chance); only root-Q shifts the seam enough to move a few. Code verified —
+- Downstream: **root-online-gr ≡ leaf-offline accuracy on A100** (MC argmax insensitive to that question-tok
+  distinction at near-chance); only root-offline shifts the seam enough to move a few. Code verified —
   distinct tokenizations, identical argmax. A100 numbers differ slightly from earlier B200 downstream
   (§8/§8b/§8c) — the hardware inconsistency this A100 re-run resolves. `runs/poc/downstream/fullmatrix/` (A100).
 
