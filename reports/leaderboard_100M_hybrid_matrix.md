@@ -58,3 +58,49 @@ not a new signal, it's the same signal, which is itself the result.
 
 **Net:** the winning axis is **before_root prefill (leaf or bt)**; boundary rule and leaf-vs-bt are
 second-order. Best configs: **bt·(0,N)** and **leaf·(N/3,2N/3)**.
+
+---
+
+# 100M hybrid ablation — full matrix (AU-Net-law recipe)
+
+> **Recipe: AU-Net-law** (global batch 48, 53,504 steps, LR 3.4e-3, warmup 3000) — the same 21 GB /
+> γ10.4 budget as the ad-hoc matrix above, but the scaling-law HP recipe (Videau 2025 §2.3). This is the
+> **law-recipe twin** of the ad-hoc grid: same 10 cells, evaluated identically (agpu18 GPU2,3, `eval_g23/`).
+> Completed 2026-07-11 (survived a disk-quota incident + 2 bt restarts). All 10 cells trained to 53,504.
+
+Downstream = 5-bench mean (HS/ARC-E/PIQA `acc_norm` + BoolQ/Wino `acc`, limit 1000). BPB = held-out
+`eval_hybrid_bpb` 512-cap @ b/N=0.5. Train-BPB = final `loss/out ÷ ln2` (noisy single-step proxy).
+
+| Trained model | Train-BPB | Decode@0.5 | Full@0.5 | root-online-gr | leaf-offline | root-offline | leaf-online-bt |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| **original gr** (control) | 1.139 | 1.194 | 1.789 | **0.414** | 0.414 | 0.406 | 0.414 |
+| **leaf · (0,N)** | 1.101 | 1.095 | 1.125 | 0.474 | **0.474** | 0.447 | 0.474 |
+| **leaf · N/2** | **1.092** | 1.100 | 1.130 | 0.493 | **0.493** | 0.481 | 0.493 |
+| **leaf · (N/3,2N/3)** | 1.097 | 1.098 | 1.126 | 0.487 | **0.487** | 0.488 | 0.487 |
+| **bt · (0,N)** | 1.105 | 1.097 | 1.135 | 0.467 | 0.467 | 0.483 | **0.467** |
+| **bt · N/2** | 1.095 | 1.100 | 1.137 | 0.484 | 0.484 | 0.430 | **0.484** |
+| **bt · (N/3,2N/3)** | 1.100 | **1.094** | 1.129 | 0.483 | 0.483 | 0.495 | **0.483** |
+| **root · (0,N)** | 1.136 | 1.078 | 1.167 | 0.458 | 0.458 | **0.450** | 0.458 |
+| **root · N/2** | 1.135 | 1.079 | 1.168 | 0.413 | 0.413 | **0.416** | 0.413 |
+| **root · (N/3,2N/3)** | 1.098 | **1.078** | 1.167 | 0.414 | 0.414 | **0.418** | 0.414 |
+
+Bold DS cell = native regime (rg→root-online-gr, leaf→leaf-offline, bt→leaf-online-bt, root→root-offline).
+
+## Law-recipe findings
+
+- **The greedyQ≡leafQ≡btQ collapse holds identically** — for every cell the three before_root question
+  columns (root-online-gr / leaf-offline / leaf-online-bt) are byte-identical; only root-offline differs.
+  Same invariance as the ad-hoc recipe.
+- **Law ≫ ad-hoc, as expected (~0.05–0.10 BPB better):** control Train-BPB 1.139 vs 1.239 (−0.10);
+  leaf/bt ~1.10 vs ~1.13; Decode BPB all hybrids ~1.08–1.10 vs the ad-hoc ~1.18–1.19 (−0.09); downstream
+  native ~+0.03–0.05 (leaf_half 0.493 vs ad-hoc leaf ~0.44). Confirms the law recipe's iso-budget gain.
+- **Decode-BPB placement REVERSES vs ad-hoc:** on the ad-hoc recipe all hybrids tied (~1.18) on decode;
+  on the law recipe **root prefill is the *best* on Decode BPB (1.078) < leaf/bt (1.094–1.100)** — a clean
+  ~0.02 separation. But root is **worst on downstream** (rootQ 0.42–0.45 vs leaf/bt 0.47–0.49) and worst on
+  Full-BPB (1.167 vs leaf/bt ~1.13). So root prefill trades downstream for a slightly lower leak-free decode BPB.
+- **Downstream, native regime:** leaf ≈ bt (0.47–0.49) > root (0.41–0.46) > control (0.414) — same
+  ordering as ad-hoc, sharper. **Best single cell: leaf · N/2 = 0.493** (5-bench), leaf/bt·(N/3,2N/3) ≈ 0.456 (3-bench).
+
+**Net (law recipe):** before_root prefill (leaf ≈ bt) still wins downstream; **leaf · N/2** is the top
+config. The one new twist vs ad-hoc: **root prefill gives the lowest leak-free Decode BPB** under the law
+recipe, though it doesn't translate to downstream. Boundary rule remains second-order within a family.
