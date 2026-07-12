@@ -19,7 +19,7 @@ over-batching). This is a data-to-model ratio **γ = 10.4** (213.4 bytes/param).
 | # | Model | boundary rule | **BPB** | HS/ARC-E/PIQA | all-6 |
 |---|---|---|---:|---:|---:|
 | 1 | **BPEByte hybrid leaf_mid** | offline-leaf prefill · mid boundaries | **1.041** | 42.62 | 42.91 |
-| 2 | **BPEByte hybrid bt** | online-bt (backtracking) prefill · mid | **1.043** | 41.3 † | 43.33 † |
+| 2 | **BPEByte hybrid bt** | online-bt (backtracking) prefill · mid | **1.043** | 41.33 | 43.33 |
 | 3 | **Llama (subword)** | fixed BPE vocab | 1.053 | **47.43** | **45.27** |
 | 4 | **BPEByte root_greedy** | online greedy, causal (0-leak) | 1.079 | 41.59 | 39.60 |
 | 5 | **AU-Net (word)** | whitespace / word | 1.082 | 42.32 | 42.63 |
@@ -30,23 +30,39 @@ over-batching). This is a data-to-model ratio **γ = 10.4** (213.4 bytes/param).
 
 | Model | HS | ARC-E | ARC-C | BoolQ | PIQA | Wino | **HS/ARC-E/PIQA** | **all-6** |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
+Each hybrid shown at its **native** question regime (leaf_mid → leafQ, bt → btQ); see the regime matrix below.
+
+| Model | HS | ARC-E | ARC-C | BoolQ | PIQA | Wino | **HS/ARC-E/PIQA** | **all-6** |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
 | Llama (subword) | 33.2 | 45.1 | 23.8 | 54.9 | 64.0 | 50.6 | **47.43** | **45.27** |
-| BPEByte hybrid leaf_mid | 31.6 | 34.9 | 24.4 | 53.6 | 61.4 | 51.6 | 42.62 | 42.91 |
+| BPEByte hybrid leaf_mid (leafQ) | 31.6 | 34.9 | 24.4 | 53.6 | 61.4 | 51.6 | 42.62 | 42.91 |
 | Entropy / BLT (low, 5×) | 31.3 | 35.4 | 24.0 | 47.5 | 60.3 | 51.3 | 42.33 | 41.63 |
 | AU-Net (word) | 31.8 | 36.0 | 24.4 | 54.8 | 59.1 | 49.6 | 42.32 | 42.63 |
 | BPEByte root_greedy | 30.7 | 34.6 | 23.5 | 39.1 | 59.4 | 50.2 | 41.59 | 39.60 |
-| BPEByte hybrid bt — **greedyQ** † (native, causal) | 31.1 | 34.9 | 23.4 | 61.8 | 57.9 | 50.9 | 41.30 | 43.33 |
-| BPEByte hybrid bt — leafQ † (matched to leaf_mid) | 31.3 | 32.4 | 24.8 | 47.9 | 58.4 | 50.5 | 40.70 | 40.88 |
+| BPEByte hybrid bt (btQ) | 31.2 | 34.9 | 23.5 | 61.7 | 57.9 | 50.8 | 41.33 | 43.33 |
 | ByteFlow global_topk | 30.2 | 28.4 | 20.4 | 41.3 | 53.2 | 51.2 | 37.24 | 37.44 |
 
-† **hybrid-bt is eval-regime-dependent** (unlike leaf_mid, where leaf-offline ≡ root-online-gr). Its
-**greedyQ** (root-online-greedy, causal — the scheme bt actually decodes with) scores all-6 **43.33**,
-*above* leaf_mid (42.91); its **leafQ** (offline-leaf, the regime matched to leaf_mid's) scores **40.88**,
-*below* leaf_mid. BoolQ drives the split (61.8 vs 47.9). So bt ties leaf_mid on BPB, but the downstream
-verdict depends on which regime you call canonical — the causal-native (greedyQ) favors bt, the
-leaf-matched (leafQ) favors leaf_mid. Ranking cell uses greedyQ (bt's operating regime).
-
 (HellaSwag 10,042 · ARC-E 2,376 · ARC-C 1,172 · BoolQ 3,270 · PIQA 1,838 · WinoGrande 1,267.)
+
+### Hybrid eval-regime matrix (all-6 / HS-ARC-E-PIQA)
+
+Each hybrid scored under three question tokenizations (answer=greedy throughout, full dataset). **Bold =
+each model's own native regime** (leaf_mid = leafQ offline-BPE prefill; bt = btQ online-bt prefill).
+
+| Model | leafQ (leaf-native) | btQ (bt-native) | greedyQ |
+|---|---:|---:|---:|
+| leaf_mid | **42.91 / 42.62** | — | 43.12 / 41.90 |
+| bt | 40.88 / 40.70 | **43.33 / 41.33** | 43.33 / 41.30 |
+
+**Findings.**
+- **bt is regime-robust; leaf_mid isn't.** bt native (btQ) ≈ bt greedyQ (both all-6 **43.33**, tri ~41.3) — it
+  only drops under the foreign leafQ (40.88). leaf_mid moves with regime (leafQ 42.91 vs greedyQ 43.12; BoolQ
+  53.6→58.0), so the earlier "leaf-offline ≡ greedy, 0 flips" claim doesn't hold on downstream MC.
+- **Native-vs-native flips by metric.** all-6: bt **43.33** > leaf_mid **42.91** (+0.42, entirely BoolQ 61.7 vs
+  53.6). HS/ARC-E/PIQA: leaf_mid **42.62** > bt **41.33** (**+1.29**). On the low-noise benches offline-BPE
+  prefill (leaf_mid) is the better hybrid; bt's edge is confined to BoolQ.
+- **Net:** bt ties leaf_mid on BPB (1.043 vs 1.041) and matches/beats it on all-6, but trails ~1.3 on the clean
+  tri metric — a real cost/quality tradeoff for its 37%-cheaper parsing, not a free win.
 
 ## Takeaways
 
@@ -54,10 +70,10 @@ leaf-matched (leafQ) favors leaf_mid. Ranking cell uses greedyQ (bt's operating 
   (47.43 / 45.27). Hybrid is the best byte model on both means; it edges AU-Net (all-6 42.91 vs 42.63).
 - **hybrid bt ties leaf_mid on BPB (1.043 vs 1.041)** — the byte-trie prefill (backtracking, ~37% cheaper
   to parse than offline real-BPE, verified-equivalent patch-length distribution) matches the offline-leaf
-  prefill on loss. **Downstream is eval-regime-dependent** (see † above): causal-native **greedyQ 43.33 >
-  leaf_mid 42.91**, but leaf-matched **leafQ 40.88 < leaf_mid** — BoolQ (61.8 vs 47.9) drives the split.
-  So "cheaper parser, same quality" holds under bt's own decode regime but not under the leaf-matched eval;
-  the canonical-regime call decides the verdict.
+  prefill on loss. **Downstream, native-vs-native** (bt=btQ 43.33/41.33, leaf_mid=leafQ 42.91/42.62): bt
+  edges leaf_mid on all-6 (BoolQ-driven) but trails **~1.3 on the clean HS/ARC-E/PIQA**. bt is regime-robust
+  (btQ ≈ greedyQ), leaf_mid is regime-sensitive — see the eval-regime matrix. Net: a real cost/quality
+  tradeoff for the cheaper parser, not a free win.
 - **Entropy/BLT-low: weak BPB (1.102, 2nd-worst) but mid-pack downstream (all-6 41.63).** It beats
   root_greedy and ByteFlow downstream despite worse loss — but costs the extra entropy-precompute FLOPs and
   still trails the trie/word schemes, consistent with the ratio-40 finding that entropy patching < trie.
