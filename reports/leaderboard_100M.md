@@ -49,20 +49,25 @@ Each hybrid shown at its **native** question regime (leaf_mid → leafQ, bt → 
 Each hybrid scored under three question tokenizations (answer=greedy throughout, full dataset). **Bold =
 each model's own native regime** (leaf_mid = leafQ offline-BPE prefill; bt = btQ online-bt prefill).
 
-| Model | leafQ (leaf-native) | btQ (bt-native) | greedyQ |
+| Model | leafQ (offline-BPE) | btQ (online-bt) | greedyQ (online-greedy) |
 |---|---:|---:|---:|
-| leaf_mid | **42.91 / 42.62** | — | 43.12 / 41.90 |
+| leaf_mid | **42.91 / 42.62** | 43.15 / 41.87 | 43.12 / 41.90 |
 | bt | 40.88 / 40.70 | **43.33 / 41.33** | 43.33 / 41.30 |
 
+(bold = each model's own native prefill regime.)
+
 **Findings.**
-- **bt is regime-robust; leaf_mid isn't.** bt native (btQ) ≈ bt greedyQ (both all-6 **43.33**, tri ~41.3) — it
-  only drops under the foreign leafQ (40.88). leaf_mid moves with regime (leafQ 42.91 vs greedyQ 43.12; BoolQ
-  53.6→58.0), so the earlier "leaf-offline ≡ greedy, 0 flips" claim doesn't hold on downstream MC.
-- **Native-vs-native flips by metric.** all-6: bt **43.33** > leaf_mid **42.91** (+0.42, entirely BoolQ 61.7 vs
-  53.6). HS/ARC-E/PIQA: leaf_mid **42.62** > bt **41.33** (**+1.29**). On the low-noise benches offline-BPE
-  prefill (leaf_mid) is the better hybrid; bt's edge is confined to BoolQ.
-- **Net:** bt ties leaf_mid on BPB (1.043 vs 1.041) and matches/beats it on all-6, but trails ~1.3 on the clean
-  tri metric — a real cost/quality tradeoff for its 37%-cheaper parsing, not a free win.
+- **leaf_mid is robust across all three regimes** (all-6 42.9–43.2, tri 41.9–42.6) — it does *not* drop under
+  bt's btQ. **bt is robust across the two *causal* regimes** (btQ ≈ greedyQ = 43.33) but **collapses under the
+  offline-BPE leafQ** (40.88). So the penalty is specifically **offline-BPE question tokenization hurting bt**,
+  not a symmetric "own-regime" effect. (Corrects the earlier "leaf-offline ≡ greedy, 0 flips" note — leaf_mid's
+  regimes differ modestly, and neither hybrid is best strictly in its own regime.)
+- **Matched-regime (fairer than native-vs-native):** under *leafQ* leaf_mid 42.91/42.62 ≫ bt 40.88/40.70; under
+  *btQ* and *greedyQ* the two are ~tied — bt +0.2 on noisy all-6, leaf_mid +0.5–0.6 on the clean tri. **On
+  HS/ARC-E/PIQA, leaf_mid ≥ bt in every matched regime.**
+- **Net:** bt ties leaf_mid on BPB (1.043 vs 1.041) and matches it on causal evals, but is fragile under
+  offline scoring and ~0.5 behind on the clean metric. offline-BPE prefill (leaf_mid) is the safer hybrid;
+  bt trades a little robustness + clean-bench quality for a 37%-cheaper parser.
 
 ## Takeaways
 
