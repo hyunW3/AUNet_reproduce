@@ -72,25 +72,34 @@ The three best 100M configs trained at **300M** (AU-Net-law, 120,752 steps, glob
 identically (native regime, 4-Q-mode + decode BPB, `eval_300M/`). leaf·MID = the scale-ladder `hybrid_300M`
 re-evaluated with the same protocol; leaf·N/2 and bt·N/2 newly trained (ece-agpu11 GPU2-5, 2026-07-14).
 
-| Model (native) | HS | ARC-E | PIQA | **3-bench** | 5-bench | Decode-BPB@0.5 | Full-BPB@0.5 |
+Downstream ±95% CI computed from lm-eval per-benchmark stderrs (SE of the mean); BPB 95% CI = bootstrap over
+docs (`eval_hybrid_bpb`, 2000 resamples).
+
+| Model (native) | HS | ARC-E | PIQA | **3-bench ±95%** | 5-bench ±95% | Decode-BPB@0.5 [95%] | Full-BPB@0.5 [95%] |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| leaf · MID (N/3,2N/3) | 46.4 | 44.6 | 67.1 | **52.7** | 53.7 | 0.996 | 1.020 |
-| leaf · N/2 | 46.2 | 44.8 | 67.4 | **52.8** | 53.0 | 0.993 | 1.018 |
-| bt · N/2 | 45.1 | 44.0 | 64.8 | **51.3** | 52.8 | 0.992 | 1.026 |
+| leaf · MID (N/3,2N/3) | 46.4 | 44.6 | 67.1 | **52.7 ±1.7** | 53.7 ±1.4 | 0.996 [0.974, 1.018] | 1.020 [1.000, 1.039] |
+| leaf · N/2 | 46.2 | 44.8 | 67.4 | **52.8 ±1.7** | 53.0 ±1.4 | 0.993 [0.970, 1.014] | 1.018 [0.998, 1.038] |
+| bt · N/2 | 45.1 | 44.0 | 64.8 | **51.3 ±1.8** | 52.8 ±1.4 | 0.992 [0.970, 1.014] | 1.026 [1.006, 1.045] |
 
 **vs 100M (native 3-bench):** leaf·MID 45.6→**52.7** (+7.1), leaf·N/2 45.4→**52.8** (+7.4), bt·N/2 44.6→**51.3** (+6.7).
 
-**Findings:**
-- **leaf·N/2 ≈ leaf·MID at 300M** (3-bench 52.8 vs 52.7 — tied within noise), both **> bt·N/2 (51.3)**. The
-  100M ordering holds and the leaf-vs-bt gap (~1.5 pt) is stable across scale; the N/2-vs-MID boundary choice
-  stays second-order within the leaf family (a wash).
-- **All three scale ~+7 pts** (100M→300M) — the hybrid downstream gains persist with scale.
-- **Decode BPB tightens to ~0.99 for all three** (0.992–0.996, bt marginally lowest, within noise); Full-BPB
-  leaf ~1.018–1.020 < bt 1.026. (The 5-bench leaf·MID 53.7 > leaf·N/2 53.0 edge is a WinoGrande artifact —
-  53.0 vs 50.0, i.e. near-chance noise; the 3-bench has them tied.)
+**Findings (with CIs — the differences are NOT significant):**
+- **All three are statistically tied at 300M.** 3-bench CIs (±1.7–1.8) overlap heavily: leaf·N/2 52.8, leaf·MID
+  52.7, bt·N/2 51.3 — the ~1.5 pt leaf-over-bt gap is **within noise** at limit=1000. Decode BPB (all 0.992–0.996,
+  CIs [0.970–1.018]) and Full BPB (1.018–1.026) are likewise fully overlapping. So the 100M leaf≥bt trend does
+  **not** reach significance at 300M — leaf and bt prefill are indistinguishable here, and N/2 ≈ MID is a wash.
+- **All three scale ~+7 pts** (100M→300M) — the hybrid downstream gains clearly persist with scale (this jump
+  is large relative to the ±1.7 CI, unlike the between-config gaps).
+- **Decode BPB tightened to ~0.99** for all three (from ~1.10 at 100M); the leaf/bt/boundary ordering is noise.
+  (The 5-bench leaf·MID 53.7 > leaf·N/2 53.0 edge is a WinoGrande near-chance artifact — 53.0 vs 50.0.)
 
-**Net (300M):** **leaf prefill** (either boundary) is the pick; **bt trails by ~1.5 pt** downstream. leaf·N/2
-and leaf·MID are indistinguishable (~52.8 3-bench), consistent with the boundary being second-order at 100M.
+**Net (300M):** the hybrid gain **scales (+7 pts)**, but at limit=1000 the **leaf-vs-bt and N/2-vs-MID choices are
+statistically indistinguishable** — more eval samples (or seeds) would be needed to separate them. leaf·N/2, leaf·MID,
+bt·N/2 all land at 51–53 (3-bench).
+
+**Checkpoints** (all @ step 120752): leaf·N/2 `ece:~/AUNet/runs/poc/portable_aunetlaw/lb_hyb_leaf_half_300M/checkpoints/0000120752`;
+bt·N/2 `…/lb_hyb_bt_half_300M/checkpoints/0000120752`; leaf·MID `…/lb_hyb_leaf_mid_300M/checkpoints/0000120752`
+(a consolidated copy of the B200 original `runs/300M/hybrid_300M/checkpoints/0000120752`).
 
 
 ---
