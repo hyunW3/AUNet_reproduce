@@ -1,0 +1,162 @@
+{
+ "llama": {
+  "noise_hs": 37.6,
+  "pbp_mc_dacc": -8.52,
+  "pbp_dbpc": 0.7102,
+  "pbp_by_bench": {
+   "curated": {
+    "canon": 70.0,
+    "degraded": 10.0,
+    "delta": -60.0,
+    "canon_norm": 90.0,
+    "degraded_norm": 10.0,
+    "delta_norm": -80.0
+   },
+   "arc_easy": {
+    "canon": 69.0,
+    "degraded": 47.6,
+    "delta": -21.46,
+    "canon_norm": 66.7,
+    "degraded_norm": 50.2,
+    "delta_norm": -16.46
+   },
+   "arc_challenge": {
+    "canon": 32.5,
+    "degraded": 29.4,
+    "delta": -3.16,
+    "canon_norm": 34.9,
+    "degraded_norm": 33.4,
+    "delta_norm": -1.45
+   },
+   "hellaswag": {
+    "canon": 47.3,
+    "degraded": 46.4,
+    "delta": -0.93,
+    "canon_norm": 63.3,
+    "degraded_norm": 62.9,
+    "delta_norm": -0.45
+   }
+  },
+  "clean_hs": 62.2
+ },
+ "aunet(word)": {
+  "noise_hs": 41.5,
+  "pbp_mc_dacc": 0.01,
+  "pbp_dbpc": 0.0,
+  "pbp_by_bench": {
+   "curated": {
+    "canon": 80.0,
+    "degraded": 80.0,
+    "delta": 0.0,
+    "canon_norm": 80.0,
+    "degraded_norm": 80.0,
+    "delta_norm": 0.0
+   },
+   "arc_easy": {
+    "canon": 69.3,
+    "degraded": 69.4,
+    "delta": 0.04,
+    "canon_norm": 67.0,
+    "degraded_norm": 65.5,
+    "delta_norm": -1.47
+   },
+   "arc_challenge": {
+    "canon": 34.6,
+    "degraded": 34.6,
+    "delta": 0.0,
+    "canon_norm": 35.8,
+    "degraded_norm": 36.1,
+    "delta_norm": 0.34
+   },
+   "hellaswag": {
+    "canon": 49.0,
+    "degraded": 49.0,
+    "delta": 0.0,
+    "canon_norm": 64.0,
+    "degraded_norm": 64.0,
+    "delta_norm": 0.01
+   }
+  },
+  "clean_hs": 62.6
+ },
+ "bpebyte_rg": {
+  "noise_hs": 42.3,
+  "pbp_mc_dacc": -0.05,
+  "pbp_dbpc": 0.0,
+  "pbp_by_bench": {
+   "curated": {
+    "canon": 70.0,
+    "degraded": 70.0,
+    "delta": 0.0,
+    "canon_norm": 80.0,
+    "degraded_norm": 80.0,
+    "delta_norm": 0.0
+   },
+   "arc_easy": {
+    "canon": 69.7,
+    "degraded": 69.7,
+    "delta": 0.0,
+    "canon_norm": 68.1,
+    "degraded_norm": 67.1,
+    "delta_norm": -0.93
+   },
+   "arc_challenge": {
+    "canon": 35.0,
+    "degraded": 34.7,
+    "delta": -0.26,
+    "canon_norm": 37.9,
+    "degraded_norm": 37.1,
+    "delta_norm": -0.77
+   },
+   "hellaswag": {
+    "canon": 48.4,
+    "degraded": 48.5,
+    "delta": 0.12,
+    "canon_norm": 63.8,
+    "degraded_norm": 63.7,
+    "delta_norm": -0.12
+   }
+  },
+  "clean_hs": 62.5
+ },
+ "hybrid": {
+  "noise_hs": null,
+  "pbp_mc_dacc": -0.14,
+  "pbp_dbpc": -0.0005,
+  "pbp_by_bench": {
+   "curated": {
+    "canon": 90.0,
+    "degraded": 90.0,
+    "delta": 0.0,
+    "canon_norm": 80.0,
+    "degraded_norm": 80.0,
+    "delta_norm": 0.0
+   },
+   "arc_easy": {
+    "canon": 68.9,
+    "degraded": 68.9,
+    "delta": -0.08,
+    "canon_norm": 65.7,
+    "degraded_norm": 64.9,
+    "delta_norm": -0.84
+   },
+   "arc_challenge": {
+    "canon": 35.1,
+    "degraded": 34.8,
+    "delta": -0.26,
+    "canon_norm": 36.9,
+    "degraded_norm": 37.4,
+    "delta_norm": 0.43
+   },
+   "hellaswag": {
+    "canon": 47.9,
+    "degraded": 47.8,
+    "delta": -0.09,
+    "canon_norm": 63.8,
+    "degraded_norm": 63.7,
+    "delta_norm": -0.09
+   }
+  },
+  "clean_hs": 62.6
+ }
+}

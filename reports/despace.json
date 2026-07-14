@@ -1,0 +1,222 @@
+{
+ "llama": {
+  "by_bench": {
+   "arc_easy": {
+    "clean": 68.9,
+    "degraded": 59.5,
+    "delta": -9.43,
+    "clean_norm": 67.0,
+    "degraded_norm": 52.6,
+    "delta_norm": -14.44
+   },
+   "arc_challenge": {
+    "clean": 32.4,
+    "degraded": 27.0,
+    "delta": -5.46,
+    "clean_norm": 35.1,
+    "degraded_norm": 30.6,
+    "delta_norm": -4.44
+   },
+   "piqa": {
+    "clean": 75.2,
+    "degraded": 73.2,
+    "delta": -2.01,
+    "clean_norm": 75.3,
+    "degraded_norm": 71.9,
+    "delta_norm": -3.43
+   },
+   "boolq": {
+    "clean": 63.4,
+    "degraded": 62.0,
+    "delta": -1.41,
+    "clean_norm": 65.2,
+    "degraded_norm": 62.2,
+    "delta_norm": -3.03
+   },
+   "hellaswag": {
+    "clean": 47.3,
+    "degraded": 43.1,
+    "delta": -4.2,
+    "clean_norm": 63.3,
+    "degraded_norm": 56.5,
+    "delta_norm": -6.75
+   },
+   "winogrande": {
+    "clean": 62.0,
+    "degraded": 53.3,
+    "delta": -8.68,
+    "clean_norm": 62.0,
+    "degraded_norm": 53.3,
+    "delta_norm": -8.68
+   }
+  },
+  "avg_delta": -5.2,
+  "avg_delta_norm": -6.79,
+  "n_bench": 6
+ },
+ "aunet(word)": {
+  "by_bench": {
+   "arc_easy": {
+    "clean": 69.4,
+    "degraded": 35.3,
+    "delta": -34.13,
+    "clean_norm": 66.9,
+    "degraded_norm": 34.8,
+    "delta_norm": -32.15
+   },
+   "arc_challenge": {
+    "clean": 34.4,
+    "degraded": 21.8,
+    "delta": -12.54,
+    "clean_norm": 35.9,
+    "degraded_norm": 26.7,
+    "delta_norm": -9.22
+   },
+   "piqa": {
+    "clean": 73.2,
+    "degraded": 68.1,
+    "delta": -5.11,
+    "clean_norm": 74.4,
+    "degraded_norm": 69.1,
+    "delta_norm": -5.33
+   },
+   "boolq": {
+    "clean": 61.2,
+    "degraded": 43.9,
+    "delta": -17.31,
+    "clean_norm": 65.3,
+    "degraded_norm": 62.0,
+    "delta_norm": -3.21
+   },
+   "hellaswag": {
+    "clean": 49.0,
+    "degraded": 40.3,
+    "delta": -8.74,
+    "clean_norm": 64.0,
+    "degraded_norm": 50.7,
+    "delta_norm": -13.36
+   },
+   "winogrande": {
+    "clean": 62.1,
+    "degraded": 49.7,
+    "delta": -12.39,
+    "clean_norm": 62.1,
+    "degraded_norm": 49.7,
+    "delta_norm": -12.39
+   }
+  },
+  "avg_delta": -15.04,
+  "avg_delta_norm": -12.61,
+  "n_bench": 6
+ },
+ "bpebyte_rg": {
+  "by_bench": {
+   "arc_easy": {
+    "clean": 69.8,
+    "degraded": 58.0,
+    "delta": -11.83,
+    "clean_norm": 68.1,
+    "degraded_norm": 54.0,
+    "delta_norm": -14.1
+   },
+   "arc_challenge": {
+    "clean": 34.7,
+    "degraded": 25.9,
+    "delta": -8.79,
+    "clean_norm": 37.8,
+    "degraded_norm": 30.5,
+    "delta_norm": -7.34
+   },
+   "piqa": {
+    "clean": 72.7,
+    "degraded": 70.8,
+    "delta": -1.9,
+    "clean_norm": 74.4,
+    "degraded_norm": 70.5,
+    "delta_norm": -3.92
+   },
+   "boolq": {
+    "clean": 62.0,
+    "degraded": 59.5,
+    "delta": -2.42,
+    "clean_norm": 64.0,
+    "degraded_norm": 62.2,
+    "delta_norm": -1.8
+   },
+   "hellaswag": {
+    "clean": 48.4,
+    "degraded": 43.8,
+    "delta": -4.6,
+    "clean_norm": 63.8,
+    "degraded_norm": 56.5,
+    "delta_norm": -7.35
+   },
+   "winogrande": {
+    "clean": 61.0,
+    "degraded": 53.7,
+    "delta": -7.26,
+    "clean_norm": 61.0,
+    "degraded_norm": 53.7,
+    "delta_norm": -7.26
+   }
+  },
+  "avg_delta": -6.13,
+  "avg_delta_norm": -6.96,
+  "n_bench": 6
+ },
+ "hybrid": {
+  "by_bench": {
+   "arc_easy": {
+    "clean": 69.1,
+    "degraded": 57.9,
+    "delta": -11.28,
+    "clean_norm": 65.8,
+    "degraded_norm": 51.1,
+    "delta_norm": -14.77
+   },
+   "arc_challenge": {
+    "clean": 35.0,
+    "degraded": 27.4,
+    "delta": -7.59,
+    "clean_norm": 36.9,
+    "degraded_norm": 30.9,
+    "delta_norm": -5.97
+   },
+   "piqa": {
+    "clean": 73.0,
+    "degraded": 69.9,
+    "delta": -3.1,
+    "clean_norm": 73.9,
+    "degraded_norm": 70.5,
+    "delta_norm": -3.43
+   },
+   "boolq": {
+    "clean": 63.6,
+    "degraded": 62.1,
+    "delta": -1.53,
+    "clean_norm": 63.4,
+    "degraded_norm": 62.2,
+    "delta_norm": -1.19
+   },
+   "hellaswag": {
+    "clean": 47.9,
+    "degraded": 43.2,
+    "delta": -4.61,
+    "clean_norm": 63.9,
+    "degraded_norm": 56.8,
+    "delta_norm": -7.09
+   },
+   "winogrande": {
+    "clean": 62.0,
+    "degraded": 53.4,
+    "delta": -8.6,
+    "clean_norm": 62.0,
+    "degraded_norm": 53.4,
+    "delta_norm": -8.6
+   }
+  },
+  "avg_delta": -6.12,
+  "avg_delta_norm": -6.84,
+  "n_bench": 6
+ }
+}
