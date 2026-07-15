@@ -102,29 +102,39 @@ avg3 = HS·ARC-E·PIQA, avgall = mean of the listed set. <span class="best">Gree
 <div class="tablewrap"><table>
 <thead><tr><th>Measure</th><th>Llama</th><th>AU-Net</th><th>BPEByte-rg</th></tr></thead>
 <tbody>
-<tr><td>train-log (full-context, iso-byte)</td><td>0.872</td><td>0.872</td><td class="best">0.853</td></tr>
-<tr><td>512-cap (held-out)</td><td>—<sup>1</sup></td><td>—<sup>2</sup></td><td>0.933</td></tr>
+<tr><td>held-out full-context (scaling — <b>primary</b>)</td><td class="best">0.8404</td><td>0.8662</td><td>0.8578</td></tr>
+<tr class="sub"><td>train-log (train-data proxy)</td><td>0.872</td><td>0.872</td><td>0.853</td></tr>
+<tr><td>512-cap (held-out, byte-only)</td><td>—<sup>1</sup></td><td>—<sup>2</sup></td><td>0.933</td></tr>
 </tbody></table></div>
-<p class="lead"><sup>1</sup> Llama is subword — no byte-level 512-cap metric. <sup>2</sup> AU-Net 512-cap not measured.</p>
+<p class="lead"><sup>1</sup> Llama subword — no byte-level metric. <sup>2</sup> AU-Net 512-cap not measured.
+<b>Held-out full-context is the scaling-story metric; the train-log row is a noisier single-step proxy that
+<em>overstates</em> Llama (0.872 vs 0.840) and misleadingly ties it with AU-Net — don't rank by it.</b> (0.840/0.866/0.858
+agree across <code>leaderboard_1B.md</code>, <code>scaling_summary.md</code>, <code>performance_summary §1a</code>.)</p>
 <div class="read"><b>Read:</b> the three families are <b>statistically tied at 1.3B</b> on downstream (avgall
-56.3–56.6 0-shot, 64.6–64.8 5-shot; sub-1-pt gaps are single-run noise); BPEByte-rg leads avg3 both shots. On BPB,
-rg's train-log edge over Llama/AU-Net (~0.02) is ~4–5× the seed floor (robust); rg-vs-AU-Net (0.0054) is within
-noise. MMLU-text 0-shot vs 5-shot use different protocols — do not compare the two rows.</div>
+56.3–56.6 0-shot, 64.6–64.8 5-shot; sub-1-pt gaps are single-run noise); BPEByte-rg leads avg3 both shots. On
+<b>held-out BPB the ranking is Llama &lt; rg &lt; AU-Net</b> (0.840 &lt; 0.858 &lt; 0.866) — the subword model
+keeps its ~0.02 per-byte edge, and rg beats AU-Net. MMLU-text 0-shot vs 5-shot use different protocols.</div>
 
 <!-- ===================== 2 ===================== -->
 <h2 id="s2"><span class="n">2.</span> Scale-wise full table <span class="tag">100M · 300M · 760M · 1.3B</span></h2>
 <p class="lead">Source: <code>scaling_bpb.csv</code> (BPB, tail-mean <code>loss/out</code> last 200 steps),
 <code>scaling_data.csv</code> (0-shot). γ10 (ad-hoc) recipe, iso-byte per scale.</p>
 
-<h3>Held-out BPB (↓)</h3>
+<h3>Held-out BPB (↓) — full-context, byte-normalized</h3>
 <div class="tablewrap"><table>
 <thead><tr><th>Scale</th><th>Llama</th><th>AU-Net</th><th>BPEByte-rg</th></tr></thead>
 <tbody>
-<tr><td>100M</td><td class="best">1.0587</td><td>1.0858</td><td>1.0833</td></tr>
-<tr><td>300M</td><td class="best">0.9945</td><td>1.1126</td><td>1.1071</td></tr>
-<tr><td>760M</td><td class="best">0.9191</td><td>0.9435</td><td>0.9403</td></tr>
-<tr><td>1.3B</td><td class="best">0.8404</td><td>0.8662</td><td>0.8578</td></tr>
+<tr><td>100M</td><td class="best">1.040</td><td>1.114</td><td>1.125</td></tr>
+<tr><td>300M</td><td class="best">0.968</td><td>1.016</td><td>1.014</td></tr>
+<tr><td>760M</td><td class="best">0.919</td><td>0.944</td><td>0.940</td></tr>
+<tr><td>1.3B</td><td class="best">0.840</td><td>0.866</td><td>0.858</td></tr>
 </tbody></table></div>
+<p class="lead">⚠️ The raw <code>scaling_bpb.csv</code> currently holds <b>undertrained 300M byte rows</b> (checkpoint
+step 40128 ≈ 33% of the 120,752 budget → spurious 0.995/1.113/1.107 that exceed their own 100M); the values above
+are the converged scaling-ladder numbers (<code>scaling_summary.md</code>, 1.3B matching §1). At 100M/300M Llama vs
+byte use different raw byte budgets → those rows are <em>indicative, not iso-budget</em>. The byte-only "Huber-fit"
+ladder in <a href="dashboard_bpebyte_rg.html">dashboard_bpebyte_rg</a> (rg 1.196/1.014/0.910/0.858) is a different
+held-out convention — ~0.07 higher at 100M, identical at 1.3B.</p>
 
 <h3>Downstream — avgall (6-bench) / avg3 (0-shot)</h3>
 <div class="tablewrap"><table>
@@ -148,9 +158,9 @@ noise. MMLU-text 0-shot vs 5-shot use different protocols — do not compare the
 <tr><td>WinoGr.</td><td class="lft">L / A / rg</td><td>50.6 / 49.7 / 50.0</td><td>50.2 / 50.3 / 54.8</td><td>54.0 / 55.6 / 54.6</td><td>61.6 / 61.5 / 61.1</td></tr>
 </tbody></table></div>
 <div class="read"><b>Read:</b> Llama leads at 100M–760M (subword edge) but the <b>byte slope is steeper</b> — families
-converge and cross at 1.3B (rg avgall 60.72 ≥ Llama 60.56; rg avg3 67.88 ≥ Llama 67.66). BPB: Llama keeps a
-~0.02–0.03 edge at every scale (AU-Net ≈ rg). <em>BPB here is train-log tail-mean, differs slightly from §1's
-leaderboard measure — same trend.</em></div>
+converge and cross at 1.3B on downstream (rg avgall 60.72 ≥ Llama 60.56; rg avg3 67.88 ≥ Llama 67.66). <b>On BPB
+Llama stays lowest at every scale</b> (Llama &lt; rg &lt; AU-Net), the ~0.02–0.03 subword edge persisting to 1.3B;
+AU-Net ≈ rg throughout (rg edges ahead at 760M/1.3B).</div>
 
 <!-- ===================== 3 ===================== -->
 <h2 id="s3"><span class="n">3.</span> 100M parsing ablation</h2>
@@ -175,17 +185,21 @@ KB/s is <b>derived</b> (32 KB ÷ (parse·32 + forward), iso-8192 B byte-seq).</p
 <div class="tablewrap"><table>
 <thead><tr><th>Method</th><th>Parse (ms/KB)</th><th>Forward (ms/step)</th><th>Parse+Fwd (KB/s)<sup>3</sup></th></tr></thead>
 <tbody>
-<tr><td>Llama (tiktoken 128k)</td><td>0.143</td><td>48.6<sup>4</sup></td><td>—<sup>4</sup></td></tr>
-<tr><td>BPEByte-rg (byte-trie)</td><td>0.166</td><td>59.0</td><td class="best">~509</td></tr>
+<tr><td>Llama (tiktoken 128k)</td><td>0.143</td><td>48.6<sup>4</sup></td><td class="best">~675<sup>4</sup></td></tr>
+<tr><td>BPEByte-rg (byte-trie)</td><td>0.166</td><td>59.0</td><td>~509</td></tr>
 <tr><td>AU-Net (regex word)</td><td>0.223</td><td>59.0</td><td>~495</td></tr>
 <tr><td>ByteFlow</td><td>0.226</td><td>59.0</td><td>~495</td></tr>
 <tr><td>BLT (entropy, fp16 default)</td><td>2.47 (GPU)</td><td>138.1<sup>5</sup></td><td>~237</td></tr>
 </tbody></table></div>
-<p class="lead"><sup>3</sup> derived, byte models iso-8192 B seq. <sup>4</sup> Llama runs 2048-token (~9.3 KB) seq,
-not iso-byte — combined KB/s omitted. <sup>5</sup> BLT forward = 58.9 base + 79.2 entropy = 138.1 ms (fp32 old = 451.9).</p>
-<div class="read"><b>Read:</b> Llama leads downstream (47.4 avg3) but at a different compute-per-byte axis (~2.2×
-lower FLOPs/byte — not iso-FLOP). Among byte models rg ≈ AU-Net ≈ ByteFlow on speed; <b>BLT is ~2× slower</b>
-(entropy model in the loop). ByteFlow global-top-k is weakest on both BPB and downstream.</div>
+<p class="lead"><sup>3</sup> throughput = <b>text-bytes per wall-second</b> (bytes ÷ (parse·KB + forward)) — the fair
+cross-tokenizer axis. Byte models: bsz4·8192 B = 32 KB/step. <sup>4</sup> Llama: seq 2048 tok × 4.541 B/tok × bsz4 =
+<b>36.3 KB/step</b>, parse+fwd 53.8 ms → <b>~675 KB/s</b> (forward-only ~748) — <b>fastest</b>, subword packs 4.541
+B/tok so its 2048-tok window covers ≈9.3 KB text (vs byte 8 KB); not iso-FLOP. <sup>5</sup> BLT forward = 58.9 base +
+79.2 entropy = 138.1 ms (fp32 old = 451.9).</p>
+<div class="read"><b>Read:</b> Llama leads downstream (47.4 avg3) <b>and</b> throughput (~675 KB/s vs byte ~495–509) —
+subword packs 4.541 B/tok, so it clears more text per step, though at a different (non-iso-FLOP) compute-per-byte
+axis. Among byte models rg ≈ AU-Net ≈ ByteFlow; <b>BLT is ~2× slower</b> (entropy model in the loop). ByteFlow
+global-top-k is weakest on both BPB and downstream.</div>
 
 <!-- ===================== 4 ===================== -->
 <h2 id="s4"><span class="n">4.</span> Robustness — input perturbation, 1.3B</h2>
@@ -201,31 +215,35 @@ lower FLOPs/byte — not iso-FLOP). Among byte models rg ≈ AU-Net ≈ ByteFlow
 <tr><td>BPEByte-rg</td><td>−0.16</td><td>+0.12</td><td>0.00</td><td>−0.26</td><td>0.000</td></tr>
 </tbody></table></div>
 
-<h3>4b · Noisy / typo (acc_norm)</h3>
+<h3>4b · Noisy / typo (acc_norm) — degraded value (Δ vs clean), bold = smallest drop</h3>
 <div class="tablewrap"><table>
 <thead><tr><th>Condition</th><th>Llama</th><th>AU-Net</th><th>BPEByte-rg</th></tr></thead>
 <tbody>
-<tr><td>HellaSwag-Noise (avg 15 variants)</td><td>37.6</td><td>41.5</td><td class="best">42.3</td></tr>
-<tr><td>HellaSwag-Typo (avg 8 ops)</td><td>49.7</td><td class="best">52.1</td><td>51.9</td></tr>
-<tr><td>ARC-C-Typo (avg 8 ops)</td><td>30.8</td><td>31.8</td><td class="best">33.5</td></tr>
-<tr class="sub"><td>HellaSwag / ARC-C clean (n=2000)</td><td>55.8 / 35.2</td><td>57.8 / 36.0</td><td>56.8 / 37.3</td></tr>
+<tr><td>HellaSwag-Noise (avg 15 variants)</td><td>37.6 (−18.2)</td><td>41.5 (−16.3)</td><td class="best">42.3 (−14.5)</td></tr>
+<tr><td>HellaSwag-Typo (avg 8 ops)</td><td>49.7 (−6.1)</td><td>52.1 (−5.7)</td><td class="best">51.9 (−4.9)</td></tr>
+<tr><td>ARC-C-Typo (avg 8 ops)</td><td>30.8 (−4.4)</td><td>31.8 (−4.2)</td><td class="best">33.5 (−3.8)</td></tr>
+<tr class="sub"><td>clean baseline (n=2000): HS / ARC-C</td><td>55.8 / 35.2</td><td>57.8 / 36.0</td><td>56.8 / 37.3</td></tr>
 </tbody></table></div>
+<p class="lead">Δ = degraded − clean; rg degrades <b>least</b> on all three (smallest |Δ|). No separate "Arc-c-noise"
+split exists — a 15-variant HellaSwag-Noise suite and an 8-op typo suite (applied to both HS and ARC-C).</p>
 
-<h3>4c · Despace (macro-avg acc over 5 tasks incl. HS & ARC-E; independent space-removal prob p)</h3>
+<h3>4c · Despace (macro-avg acc over 5 tasks incl. HS & ARC-E) — degraded value (Δ vs clean), bold = smallest drop</h3>
 <div class="tablewrap"><table>
 <thead><tr><th>Condition</th><th>Llama</th><th>AU-Net</th><th>BPEByte-rg</th></tr></thead>
 <tbody>
-<tr><td>clean</td><td>0.557</td><td class="best">0.568</td><td>0.557</td></tr>
-<tr><td>ctx10</td><td class="best">0.548</td><td>0.551</td><td>0.545</td></tr>
-<tr><td>ctx40</td><td>0.526</td><td>0.501</td><td class="best">0.530</td></tr>
-<tr><td>ctx70</td><td class="best">0.523</td><td>0.464</td><td>0.509</td></tr>
+<tr><td>clean</td><td>0.557</td><td>0.568</td><td>0.557</td></tr>
+<tr><td>ctx10</td><td class="best">0.548 (−.009)</td><td>0.551 (−.017)</td><td>0.545 (−.012)</td></tr>
+<tr><td>ctx40</td><td>0.526 (−.031)</td><td>0.501 (−.067)</td><td class="best">0.530 (−.027)</td></tr>
+<tr><td>ctx70</td><td class="best">0.523 (−.034)</td><td>0.464 (−.104)</td><td>0.509 (−.048)</td></tr>
 <tr class="sub"><td>ctx100</td><td>—<sup>6</sup></td><td>—<sup>6</sup></td><td>—<sup>6</sup></td></tr>
-<tr><td>all10</td><td>0.499</td><td>0.496</td><td class="best">0.504</td></tr>
-<tr><td>all40</td><td>0.457</td><td>0.431</td><td class="best">0.462</td></tr>
-<tr><td>all70</td><td>0.435</td><td>0.382</td><td class="best">0.438</td></tr>
+<tr><td>all10</td><td>0.499 (−.058)</td><td>0.496 (−.072)</td><td class="best">0.504 (−.053)</td></tr>
+<tr><td>all40</td><td>0.457 (−.100)</td><td>0.431 (−.137)</td><td class="best">0.462 (−.095)</td></tr>
+<tr><td>all70</td><td>0.435 (−.122)</td><td>0.382 (−.186)</td><td class="best">0.438 (−.119)</td></tr>
 <tr class="sub"><td>all100</td><td>—<sup>6</sup></td><td>—<sup>6</sup></td><td>—<sup>6</sup></td></tr>
 </tbody></table></div>
-<p class="lead"><sup>6</sup> ctx100 / all100 not run (stopped at p=70%). ctx = context only; all = context + choices.</p>
+<p class="lead"><sup>6</sup> ctx100 / all100 not run (stopped at p=70%). ctx = context only; all = context + choices.
+Δ = condition − clean; rg has the smallest drop in every "all" condition, AU-Net degrades most under heavy
+context-despace (ctx70 −.104).</p>
 <div class="read"><b>Read:</b> byte models are <b>boundary-robust</b> where Llama is not — PBP-mc ΔAcc −8.9 (Llama,
 driven by ARC-Easy −21.5) vs ≈0 for both byte models; cut-point ΔBPC +0.71 vs 0.00. rg leads noise/typo (HS-Noise
 42.3, ARC-C-Typo 33.5) and heavy-despace (all70 0.438). AU-Net degrades most under heavy context-despace.</div>
@@ -268,10 +286,24 @@ driven by ARC-Easy −21.5) vs ≈0 for both byte models; cut-point ΔBPC +0.71 
 <tr><td>AU-Net</td><td>0.975</td><td>0.725</td><td>0.425</td><td>0.300</td><td>0.631</td></tr>
 <tr><td>BPEByte-rg</td><td class="best">1.000</td><td class="best">0.900</td><td class="best">0.725</td><td class="best">0.550</td><td class="best">0.794</td></tr>
 </tbody></table></div>
-<div class="read"><b>Read:</b> BPEByte-rg is strongest on every probe — perfect S-NIAH-3 UUID copy (1.00 vs Llama
-0.16, AU-Net 0.52), best sparse FFLM (0.869 vs AU-Net 0.666), best Dyck-3 (0.673), best MK-NIAH at every K
+<h3>5d · S-NIAH despace robustness — exact-match acc, degraded value (Δ vs clean)</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Task</th><th>Llama</th><th>AU-Net</th><th>BPEByte-rg</th></tr></thead>
+<tbody>
+<tr><td>S-NIAH-1 (noise+#)</td><td>0 (−92)</td><td class="best">98 (−2)</td><td>56 (−44)</td></tr>
+<tr><td>S-NIAH-2 (essay+#)</td><td>0 (−64)</td><td>20 (−80)</td><td class="best">68 (−32)</td></tr>
+<tr><td>S-NIAH-3 (essay+UUID)</td><td>0 (−18)</td><td>8 (−40)</td><td class="best">46 (−54)</td></tr>
+</tbody></table></div>
+<p class="lead">Source <code>niah_despace.json</code>. Post-despace EM; Δ = despace − clean (clean: S1 92/100/100,
+S2 64/100/100, S3 18/48/100). Llama's EM <b>collapses to 0</b> on all three (subword re-tokenizes the despaced
+haystack); a softer "contains-target" metric (<code>*_tf</code>) stays high for all (S3 Llama 0→95.3, rg 46→98.2)
+— despace breaks exact formatting more than retrieval. The clean-vs-despace winner flips: rg is perfect clean but
+AU-Net wins the despaced S1.</p>
+<div class="read"><b>Read:</b> BPEByte-rg is strongest on every <b>clean</b> probe — perfect S-NIAH-3 UUID copy (1.00
+vs Llama 0.16, AU-Net 0.52), best sparse FFLM (0.869 vs AU-Net 0.666), best Dyck-3 (0.673), best MK-NIAH at every K
 (K=8: 0.55 vs Llama 0.175). AU-Net (static word-pooling) sits between; Llama floors on exact-copy of unseen
-character strings — byte-level character addressing is the lever.</div>
+character strings — byte-level character addressing is the lever. Under <b>despace</b> the exact-match story is
+harsher for everyone (Llama →0) and the winner is task-dependent (AU-Net on S1, rg on S2/S3).</div>
 
 <div class="foot">
 All numbers single-run (no seeds) unless a CI is shown; treat sub-1-pt downstream gaps as noise.

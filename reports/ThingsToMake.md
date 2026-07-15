@@ -45,15 +45,19 @@ WinoGrande, MMLU-text, avg3, avgall. Source: `scaling_downstream_table.md`, `mod
 
 | Measure | Llama | AU-Net | BPEByte-rg |
 |---|---:|---:|---:|
-| train-log (full-context, iso-byte) | 0.872 | 0.872 | **0.853** |
-| 512-cap (held-out) | — ¹ | — ² | 0.933 |
+| **held-out full-context** (scaling — *primary*) | **0.8404** | 0.8662 | 0.8578 |
+| train-log (train-data proxy) | 0.872 | 0.872 | 0.853 |
+| 512-cap (held-out, byte-only) | — ¹ | — ² | 0.933 |
 
-¹ Llama is subword — no byte-level 512-cap metric defined. ² AU-Net 512-cap not measured.
+¹ Llama subword — no byte-level metric defined. ² AU-Net 512-cap not measured. **Held-out full-context is the
+metric used in the scaling story; the train-log row is a noisier single-step proxy that _overstates_ Llama
+(0.872 vs 0.840 held-out) and so misleadingly ties it with AU-Net — don't rank by it.** (Source: `leaderboard_1B.md`
+§notes 3, `scaling_summary.md`, `performance_summary_per_scale.md §1a` — all three agree on 0.840/0.866/0.858.)
 
 **Read:** the three families are **statistically tied at 1.3B** on downstream (avgall 56.3–56.6 0-shot, 64.6–64.8
-5-shot; sub-1-pt gaps are single-run noise), and BPEByte-rg leads on avg3 both shots. On BPB, rg's train-log
-edge over Llama/AU-Net (~0.02) is ~4–5× the seed floor (robust); rg-vs-AU-Net (0.0054) is within noise. MMLU-text
-0-shot vs 5-shot use different protocols (letter-ish vs cloze) — do not compare the two rows.
+5-shot; sub-1-pt gaps are single-run noise); BPEByte-rg leads avg3 both shots. On **held-out BPB the ranking is
+Llama < rg < AU-Net** (0.840 < 0.858 < 0.866) — the subword model keeps its ~0.02 per-byte edge, and rg beats
+AU-Net. MMLU-text 0-shot vs 5-shot use different protocols — do not compare those two rows.
 
 ---
 
@@ -62,14 +66,21 @@ edge over Llama/AU-Net (~0.02) is ~4–5× the seed floor (robust); rg-vs-AU-Net
 **Models:** Llama · AU-Net · BPEByte-rg. Source: `scaling_bpb.csv` (BPB, tail-mean `loss/out` over last 200
 steps), `scaling_data.csv` (0-shot downstream). γ10 (ad-hoc) recipe, iso-byte budget per scale.
 
-### Held-out BPB (↓)
+### Held-out BPB (↓) — full-context, byte-normalized
 
 | Scale | Llama | AU-Net | BPEByte-rg |
 |---|---:|---:|---:|
-| 100M | **1.0587** | 1.0858 | 1.0833 |
-| 300M | **0.9945** | 1.1126 | 1.1071 |
-| 760M | **0.9191** | 0.9435 | 0.9403 |
-| 1.3B | **0.8404** | 0.8662 | 0.8578 |
+| 100M | **1.040** | 1.114 | 1.125 |
+| 300M | **0.968** | 1.016 | 1.014 |
+| 760M | **0.919** | 0.944 | 0.940 |
+| 1.3B | **0.840** | 0.866 | 0.858 |
+
+⚠️ The raw `scaling_bpb.csv` currently holds **undertrained 300M byte rows** (checkpoint step 40128 ≈ 33 % of the
+120,752 budget → spurious 0.995/1.113/1.107 that exceed their own 100M); the values above are the converged
+scaling-ladder numbers (`scaling_summary.md`, 1.3B matching §1's held-out). At 100M/300M Llama vs byte use
+different raw byte budgets, so those two rows are *indicative, not iso-budget*. _(The byte-only "Huber-fit" ladder
+in `dashboard_bpebyte_rg`—rg 1.196/1.014/0.910/0.858—is a different held-out convention that reads ~0.07 higher at
+100M; identical at 1.3B.)_
 
 ### Downstream — avgall (6-bench) / avg3 (0-shot)
 
@@ -92,9 +103,9 @@ steps), `scaling_data.csv` (0-shot downstream). γ10 (ad-hoc) recipe, iso-byte b
 | WinoGr. | Llama / AU-Net / rg | 50.6 / 49.7 / 50.0 | 50.2 / 50.3 / 54.8 | 54.0 / 55.6 / 54.6 | 61.6 / 61.5 / 61.1 |
 
 **Read:** Llama leads at 100M–760M (subword edge) but the **byte slope is steeper** — the families converge and
-cross at 1.3B (rg avgall 60.72 ≥ Llama 60.56; rg avg3 67.88 ≥ Llama 67.66). BPB: Llama keeps a ~0.02–0.03 edge
-at every scale (AU-Net ≈ rg throughout). _(BPB here is train-log tail-mean and differs slightly from §1's
-leaderboard measure — same trend, different window.)_
+cross at 1.3B on downstream (rg avgall 60.72 ≥ Llama 60.56; rg avg3 67.88 ≥ Llama 67.66). **On BPB Llama stays
+lowest at every scale** (Llama < rg < AU-Net), the ~0.02–0.03 subword edge persisting to 1.3B; AU-Net ≈ rg
+throughout (rg edges ahead at 760M/1.3B).
 
 ---
 
@@ -122,19 +133,22 @@ byte-seq). Source: `forward_parsing_benchmark.html`.
 
 | Method | Parse (ms/KB) | Forward (ms/step) | **Parse+Fwd (KB/s)** ³ |
 |---|---:|---:|---:|
-| Llama (tiktoken 128k) | 0.143 | 48.6 ⁴ | — ⁴ |
+| Llama (tiktoken 128k) | 0.143 | 48.6 ⁴ | **~675** ⁴ |
 | BPEByte-rg (byte-trie) | 0.166 | 59.0 | ~509 |
 | AU-Net (regex word) | 0.223 | 59.0 | ~495 |
 | ByteFlow | 0.226 | 59.0 | ~495 |
 | BLT (entropy, fp16 default) | 2.47 (GPU) | 138.1 ⁵ | ~237 |
 
-³ derived, byte models at iso-8192 B seq. ⁴ Llama runs a 2048-token (~9.3 KB) seq, not iso-byte — combined
-KB/s not comparable, omitted. ⁵ BLT forward = 58.9 base + 79.2 entropy-model = 138.1 ms (fp32 old = 451.9 ms).
+³ throughput = **text-bytes processed per wall-second** (bytes ÷ (parse·KB + forward)) — the fair cross-tokenizer
+axis. Byte models: bsz4·8192 B = 32 KB/step. ⁴ Llama: seq 2048 tok × 4.541 B/tok × bsz4 = **36.3 KB/step**, parse+fwd
+53.8 ms → **~675 KB/s** (forward-only ~748) — **fastest**, because subword packs 4.541 B/tok, so its 2048-tok
+window covers ≈9.3 KB of text (vs the byte models' 8 KB) and clears more text per step at similar latency. Not
+iso-FLOP. ⁵ BLT forward = 58.9 base + 79.2 entropy-model = 138.1 ms (fp32 old = 451.9 ms).
 
-**Read:** Llama leads downstream (47.4 avg3) but at a different compute-per-byte axis (2048-tok seq, ~2.2× lower
-FLOPs/byte — not iso-FLOP). Among byte models, rg ≈ AU-Net ≈ ByteFlow on parse+forward speed (~0.9× real-time at
-this batch); **BLT is ~2× slower** (entropy model in the loop). ByteFlow global-top-k is the weakest on both BPB
-and downstream. _(Secondary ratio-40 boundary-scheme ranking in `100M_ablation.md`: Llama 42.7 > BPEByte 38.8 ≈
+**Read:** Llama leads downstream (47.4 avg3) **and** throughput (~675 KB/s vs byte ~495–509) — subword packs
+4.541 B/tok, so it clears more text per step, though at a different (non-iso-FLOP) compute-per-byte axis. Among
+byte models, rg ≈ AU-Net ≈ ByteFlow on parse+forward speed; **BLT is ~2× slower** (entropy model in the loop).
+ByteFlow global-top-k is the weakest on both BPB and downstream. _(Secondary ratio-40 boundary-scheme ranking in `100M_ablation.md`: Llama 42.7 > BPEByte 38.8 ≈
 AU-Net 38.7 > BLT 37.0 avg over HS·ARC-E·PIQA·ARC-C.)_
 
 ---
@@ -152,34 +166,37 @@ AU-Net 38.7 > BLT 37.0 avg over HS·ARC-E·PIQA·ARC-C.)_
 | AU-Net | −0.03 | 0.00 | +0.04 | 0.00 | 0.000 |
 | BPEByte-rg | −0.16 | +0.12 | 0.00 | −0.26 | 0.000 |
 
-### 4b. Noisy / typo (acc_norm)
+### 4b. Noisy / typo (acc_norm; **degraded value (Δ vs clean)**, bold = smallest drop = most robust)
 
 | Condition | Llama | AU-Net | BPEByte-rg |
 |---|---:|---:|---:|
-| HellaSwag-Noise (avg 15 variants) | 37.6 | 41.5 | **42.3** |
-| HellaSwag-Typo (avg 8 ops) | 49.7 | **52.1** | 51.9 |
-| ARC-C-Typo (avg 8 ops) | 30.8 | 31.8 | **33.5** |
-| _(HellaSwag clean / ARC-C clean, n=2000)_ | 55.8 / 35.2 | 57.8 / 36.0 | 56.8 / 37.3 |
+| HellaSwag-Noise (avg 15 variants) | 37.6 (−18.2) | 41.5 (−16.3) | **42.3 (−14.5)** |
+| HellaSwag-Typo (avg 8 ops) | 49.7 (−6.1) | 52.1 (−5.7) | **51.9 (−4.9)** |
+| ARC-C-Typo (avg 8 ops) | 30.8 (−4.4) | 31.8 (−4.2) | **33.5 (−3.8)** |
+| _clean baseline (n=2000): HS / ARC-C_ | 55.8 / 35.2 | 57.8 / 36.0 | 56.8 / 37.3 |
 
-_No separate "HellaSwag-Typo/Arc-c-noise" splits exist beyond the above: only a 15-variant HellaSwag-Noise suite
-and an 8-op typo suite (applied to both HS and ARC-C questions)._
+_Δ = degraded − clean. rg degrades **least** on all three (smallest |Δ|). No separate "Arc-c-noise" split exists:
+only a 15-variant HellaSwag-Noise suite and an 8-op typo suite (applied to both HS and ARC-C questions)._
 
 ### 4c. Despace (macro-avg accuracy over 5 tasks incl. HellaSwag & ARC-Easy; independent space-removal prob p)
 
+Degraded value **(Δ vs clean)**, bold = smallest drop = most robust:
+
 | Condition | Llama | AU-Net | BPEByte-rg |
 |---|---:|---:|---:|
-| clean | 0.557 | **0.568** | 0.557 |
-| ctx10 | 0.548 | 0.551 | 0.545 |
-| ctx40 | 0.526 | 0.501 | **0.530** |
-| ctx70 | **0.523** | 0.464 | 0.509 |
+| clean | 0.557 | 0.568 | 0.557 |
+| ctx10 | **0.548 (−.009)** | 0.551 (−.017) | 0.545 (−.012) |
+| ctx40 | 0.526 (−.031) | 0.501 (−.067) | **0.530 (−.027)** |
+| ctx70 | **0.523 (−.034)** | 0.464 (−.104) | 0.509 (−.048) |
 | ctx100 | — ⁶ | — ⁶ | — ⁶ |
-| all10 | 0.499 | 0.496 | **0.504** |
-| all40 | 0.457 | 0.431 | **0.462** |
-| all70 | 0.435 | 0.382 | **0.438** |
+| all10 | 0.499 (−.058) | 0.496 (−.072) | **0.504 (−.053)** |
+| all40 | 0.457 (−.100) | 0.431 (−.137) | **0.462 (−.095)** |
+| all70 | 0.435 (−.122) | 0.382 (−.186) | **0.438 (−.119)** |
 | all100 | — ⁶ | — ⁶ | — ⁶ |
 
-⁶ ctx100 / all100 conditions were not run (eval stopped at p=70%). ctx = spaces removed from context only;
-all = context + answer choices.
+⁶ ctx100 / all100 not run (eval stopped at p=70%). ctx = spaces removed from context only; all = context + choices.
+Δ = condition − clean. rg has the smallest drop in every "all" (both-sides) condition; AU-Net degrades most under
+heavy context-despace (ctx70 −.104).
 
 **Read:** the byte models are **boundary-robust** where Llama is not — PBP-mc ΔAcc −8.9 (Llama, driven by
 ARC-Easy −21.5) vs ≈0 for both byte models; cut-point ΔBPC +0.71 vs 0.00. rg leads on noise/typo (HS-Noise 42.3,
@@ -222,11 +239,26 @@ ARC-C-Typo 33.5) and on heavy-despace (all70 0.438). AU-Net degrades most under 
 | AU-Net | 0.975 | 0.725 | 0.425 | 0.300 | 0.631 |
 | BPEByte-rg | **1.000** | **0.900** | **0.725** | **0.550** | **0.794** |
 
-**Read:** BPEByte-rg is the strongest on every state-tracking/recall probe — perfect S-NIAH-3 UUID copy (1.00 vs
-Llama 0.16, AU-Net 0.52), best sparse FFLM (0.869 vs AU-Net 0.666), best Dyck-3 (0.673), and best MK-NIAH at
-every K (K=8: 0.55 vs Llama 0.175). AU-Net (static word-pooling) sits between the two, degrading on sparse/OOD;
+### 5d · S-NIAH despace robustness — exact-match acc, **degraded value (Δ vs clean)** (`niah_despace.json`)
+
+| Task | Llama | AU-Net | BPEByte-rg |
+|---|---:|---:|---:|
+| S-NIAH-1 (noise+#) | 0 (−92) | **98 (−2)** | 56 (−44) |
+| S-NIAH-2 (essay+#) | 0 (−64) | 20 (−80) | **68 (−32)** |
+| S-NIAH-3 (essay+UUID) | 0 (−18) | 8 (−40) | **46 (−54)** |
+
+_Post-despace EM; Δ = despace − clean (clean: S1 92/100/100, S2 64/100/100, S3 18/48/100). Llama's EM **collapses
+to 0** on all three (subword re-tokenizes the whole despaced haystack); byte/word survive partially. A softer
+"contains-target" metric (`*_tf`) stays high for all (e.g. S3 Llama 0→95.3, rg 46→98.2) — despace breaks exact
+formatting more than retrieval. Note the clean-vs-despace winner flips: rg is perfect clean but AU-Net wins the
+despaced S1 (98)._
+
+**Read:** BPEByte-rg is the strongest on every **clean** state-tracking/recall probe — perfect S-NIAH-3 UUID copy
+(1.00 vs Llama 0.16, AU-Net 0.52), best sparse FFLM (0.869 vs AU-Net 0.666), best Dyck-3 (0.673), and best MK-NIAH
+at every K (K=8: 0.55 vs Llama 0.175). AU-Net (static word-pooling) sits between the two, degrading on sparse/OOD;
 Llama (subword) floors on exact-copy of unseen character strings (UUIDs) — the byte tokenizer's character-level
-addressing is the lever.
+addressing is the lever. Under **despace** the exact-match story is harsher for everyone (Llama →0), and the
+winner is task-dependent (AU-Net on S1, rg on S2/S3).
 
 ---
 
