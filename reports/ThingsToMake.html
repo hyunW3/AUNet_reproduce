@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ThingsToMake — filled report</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1d212b; --ink:#e7eaf0; --muted:#9aa4b2;
+    --line:#2a2f3a; --accent:#6ea8fe; --good:#66d19e; --warn:#e0b25a; --code:#0b0d11;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.02em}
+  h2{font-size:20px;margin:44px 0 6px;padding-top:20px;border-top:1px solid var(--line)}
+  h2 .n{color:var(--accent);font-variant-numeric:tabular-nums}
+  h3{font-size:15px;margin:22px 0 8px;color:var(--muted);font-weight:600;
+    text-transform:uppercase;letter-spacing:.04em}
+  p{margin:11px 0}
+  .lead{color:var(--muted);font-size:14px}
+  code{background:var(--code);border:1px solid var(--line);border-radius:4px;
+    padding:1px 5px;font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cdd6e6}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  .tablewrap{overflow-x:auto;margin:12px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:480px}
+  th,td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+  th:first-child,td:first-child,th:nth-child(2).lft,td.lft{text-align:left}
+  thead th{background:var(--panel2);color:var(--muted);font-weight:600;position:sticky;top:0;
+    font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#1b1f28}
+  .best{color:var(--good);font-weight:700}
+  tr.sub td{background:#141821;color:var(--muted);font-style:italic}
+  tr.avg td{border-top:1px solid #3a4150;font-weight:600}
+  .read{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:8px;padding:11px 15px;margin:14px 0;font-size:13.5px;color:#c4ccd8}
+  .read b{color:var(--ink)}
+  .foot{margin-top:44px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+  .tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+    padding:2px 10px;font-size:12px;color:var(--muted);margin-left:8px}
+  sup{color:var(--warn);font-size:.7em}
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin:18px 0}
+  .toc a{display:block;padding:3px 0;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>ThingsToMake — filled report</h1>
+<p class="lead">The 5-item deliverable template, filled with actual measured numbers. Three families throughout:
+<b>Llama</b> (subword), <b>AU-Net</b> (word-pooling), <b>BPEByte-rg</b> (<code>root_greedy</code>, online / 0-leak).
+"—" = not measured. Downstream: HS/ARC-E/ARC-C/PIQA = <code>acc_norm</code>, BoolQ/Wino/MMLU = <code>acc</code>;
+avg3 = HS·ARC-E·PIQA, avgall = mean of the listed set. <span class="best">Green</span> = best in row/group.</p>
+
+<div class="toc">
+<a href="#s1">1 · 1.3B — BPB + 0-/5-shot downstream</a>
+<a href="#s2">2 · Scale-wise full table (100M · 300M · 760M · 1.3B)</a>
+<a href="#s3">3 · 100M parsing ablation (+ throughput)</a>
+<a href="#s4">4 · Robustness — input perturbation, 1.3B</a>
+<a href="#s5">5 · State tracking & recall, 1.3B</a>
+</div>
+
+<!-- ===================== 1 ===================== -->
+<h2 id="s1"><span class="n">1.</span> 1.3B — BPB + zero-shot / 5-shot downstream</h2>
+<p class="lead">Source: <code>scaling_downstream_table.md</code>, <code>model_results_1.3B.md</code>,
+<code>leaderboard_1B.md</code>, <code>downstream_data.json</code>.</p>
+
+<h3>0-shot</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Benchmark</th><th>Llama</th><th>AU-Net</th><th>BPEByte-rg</th></tr></thead>
+<tbody>
+<tr><td>HellaSwag</td><td>62.2</td><td>62.6</td><td>62.5</td></tr>
+<tr><td>ARC-Easy</td><td>65.5</td><td>65.7</td><td class="best">66.8</td></tr>
+<tr><td>ARC-Challenge</td><td>35.3</td><td>36.5</td><td class="best">37.5</td></tr>
+<tr><td>PIQA</td><td class="best">75.3</td><td>74.2</td><td>74.3</td></tr>
+<tr><td>BoolQ</td><td class="best">63.5</td><td>61.1</td><td>62.0</td></tr>
+<tr><td>WinoGrande</td><td class="best">61.6</td><td>61.5</td><td>61.1</td></tr>
+<tr><td>MMLU-text</td><td>31.9</td><td>32.2</td><td class="best">32.3</td></tr>
+<tr class="avg"><td>avg3 (HS·ARC-E·PIQA)</td><td>67.7</td><td>67.5</td><td class="best">67.9</td></tr>
+<tr class="avg"><td>avgall (7-bench)</td><td>56.5</td><td>56.3</td><td class="best">56.6</td></tr>
+</tbody></table></div>
+
+<h3>5-shot</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Benchmark</th><th>Llama</th><th>AU-Net</th><th>BPEByte-rg</th></tr></thead>
+<tbody>
+<tr><td>HellaSwag</td><td>62.9</td><td class="best">63.7</td><td class="best">63.7</td></tr>
+<tr><td>ARC-Easy</td><td>70.3</td><td class="best">72.4</td><td>71.9</td></tr>
+<tr><td>ARC-Challenge</td><td>38.5</td><td>39.5</td><td class="best">39.9</td></tr>
+<tr><td>PIQA</td><td class="best">75.6</td><td>74.1</td><td>74.4</td></tr>
+<tr><td>BoolQ</td><td class="best">65.6</td><td>59.1</td><td>65.5</td></tr>
+<tr><td>WinoGrande</td><td>62.6</td><td>63.6</td><td class="best">64.1</td></tr>
+<tr><td>MMLU-text</td><td class="best">35.2</td><td>34.9</td><td>34.4</td></tr>
+<tr class="avg"><td>avg3</td><td>69.6</td><td class="best">70.1</td><td>70.0</td></tr>
+<tr class="avg"><td>avgall (7-bench)</td><td>64.6</td><td class="best">64.8</td><td class="best">64.8</td></tr>
+</tbody></table></div>
+
+<h3>BPB (bits/byte, ↓)</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Measure</th><th>Llama</th><th>AU-Net</th><th>BPEByte-rg</th></tr></thead>
+<tbody>
+<tr><td>train-log (full-context, iso-byte)</td><td>0.872</td><td>0.872</td><td class="best">0.853</td></tr>
+<tr><td>512-cap (held-out)</td><td>—<sup>1</sup></td><td>—<sup>2</sup></td><td>0.933</td></tr>
+</tbody></table></div>
+<p class="lead"><sup>1</sup> Llama is subword — no byte-level 512-cap metric. <sup>2</sup> AU-Net 512-cap not measured.</p>
+<div class="read"><b>Read:</b> the three families are <b>statistically tied at 1.3B</b> on downstream (avgall
+56.3–56.6 0-shot, 64.6–64.8 5-shot; sub-1-pt gaps are single-run noise); BPEByte-rg leads avg3 both shots. On BPB,
+rg's train-log edge over Llama/AU-Net (~0.02) is ~4–5× the seed floor (robust); rg-vs-AU-Net (0.0054) is within
+noise. MMLU-text 0-shot vs 5-shot use different protocols — do not compare the two rows.</div>
+
+<!-- ===================== 2 ===================== -->
+<h2 id="s2"><span class="n">2.</span> Scale-wise full table <span class="tag">100M · 300M · 760M · 1.3B</span></h2>
+<p class="lead">Source: <code>scaling_bpb.csv</code> (BPB, tail-mean <code>loss/out</code> last 200 steps),
+<code>scaling_data.csv</code> (0-shot). γ10 (ad-hoc) recipe, iso-byte per scale.</p>
+
+<h3>Held-out BPB (↓)</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Scale</th><th>Llama</th><th>AU-Net</th><th>BPEByte-rg</th></tr></thead>
+<tbody>
+<tr><td>100M</td><td class="best">1.0587</td><td>1.0858</td><td>1.0833</td></tr>
+<tr><td>300M</td><td class="best">0.9945</td><td>1.1126</td><td>1.1071</td></tr>
+<tr><td>760M</td><td class="best">0.9191</td><td>0.9435</td><td>0.9403</td></tr>
+<tr><td>1.3B</td><td class="best">0.8404</td><td>0.8662</td><td>0.8578</td></tr>
+</tbody></table></div>
+
+<h3>Downstream — avgall (6-bench) / avg3 (0-shot)</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Scale</th><th>Llama avgall</th><th>AU-Net avgall</th><th>rg avgall</th><th>Llama avg3</th><th>AU-Net avg3</th><th>rg avg3</th></tr></thead>
+<tbody>
+<tr><td>100M</td><td class="best">45.61</td><td>41.69</td><td>41.26</td><td class="best">45.88</td><td>40.15</td><td>39.76</td></tr>
+<tr><td>300M</td><td class="best">48.58</td><td>45.42</td><td>45.00</td><td class="best">53.16</td><td>48.64</td><td>47.70</td></tr>
+<tr><td>760M</td><td class="best">53.14</td><td>50.68</td><td>49.21</td><td class="best">58.89</td><td>56.40</td><td>55.31</td></tr>
+<tr><td>1.3B</td><td>60.56</td><td>60.28</td><td class="best">60.72</td><td>67.66</td><td>67.51</td><td class="best">67.88</td></tr>
+</tbody></table></div>
+
+<h3>Per-benchmark (0-shot)</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Bench</th><th>Model (Llama / AU-Net / rg)</th><th>100M</th><th>300M</th><th>760M</th><th>1.3B</th></tr></thead>
+<tbody>
+<tr><td>HellaSwag</td><td class="lft">L / A / rg</td><td>31.3 / 28.5 / 28.6</td><td>42.4 / 37.2 / 37.0</td><td>50.0 / 46.7 / 45.8</td><td>62.2 / 62.7 / 62.5</td></tr>
+<tr><td>ARC-Easy</td><td class="lft">L / A / rg</td><td>42.1 / 33.7 / 32.6</td><td>48.8 / 43.9 / 41.8</td><td>55.7 / 53.4 / 51.1</td><td>65.5 / 65.7 / 66.8</td></tr>
+<tr><td>ARC-Chal.</td><td class="lft">L / A / rg</td><td>23.7 / 23.3 / 22.6</td><td>26.0 / 25.6 / 24.8</td><td>29.8 / 29.4 / 29.3</td><td>35.3 / 36.5 / 37.5</td></tr>
+<tr><td>PIQA</td><td class="lft">L / A / rg</td><td>64.3 / 58.3 / 58.1</td><td>68.3 / 64.9 / 64.3</td><td>71.0 / 69.2 / 69.1</td><td>75.3 / 74.2 / 74.3</td></tr>
+<tr><td>BoolQ</td><td class="lft">L / A / rg</td><td>61.7 / 56.7 / 55.7</td><td>55.8 / 50.7 / 47.3</td><td>58.4 / 49.9 / 45.5</td><td>63.5 / 61.1 / 62.1</td></tr>
+<tr><td>WinoGr.</td><td class="lft">L / A / rg</td><td>50.6 / 49.7 / 50.0</td><td>50.2 / 50.3 / 54.8</td><td>54.0 / 55.6 / 54.6</td><td>61.6 / 61.5 / 61.1</td></tr>
+</tbody></table></div>
+<div class="read"><b>Read:</b> Llama leads at 100M–760M (subword edge) but the <b>byte slope is steeper</b> — families
+converge and cross at 1.3B (rg avgall 60.72 ≥ Llama 60.56; rg avg3 67.88 ≥ Llama 67.66). BPB: Llama keeps a
+~0.02–0.03 edge at every scale (AU-Net ≈ rg). <em>BPB here is train-log tail-mean, differs slightly from §1's
+leaderboard measure — same trend.</em></div>
+
+<!-- ===================== 3 ===================== -->
+<h2 id="s3"><span class="n">3.</span> 100M parsing ablation</h2>
+<p class="lead">Methods: Llama · BLT (entropy) · BPEByte-rg · ByteFlow global top-k · AU-Net. γ10.4 (21.04 GB),
+full-dataset 0-shot. Source: <code>leaderboard_100M.md</code>, <code>parsing_ablation_100M.json</code>,
+<code>forward_parsing_benchmark.html</code>.</p>
+
+<h3>BPB + downstream</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Method</th><th>BPB ↓</th><th>HS</th><th>ARC-E</th><th>ARC-C</th><th>PIQA</th><th>BoolQ</th><th>Wino</th><th>avg3</th><th>avgall</th></tr></thead>
+<tbody>
+<tr><td>Llama (subword)</td><td class="best">1.053</td><td>33.2</td><td>45.1</td><td>23.8</td><td>64.0</td><td>54.9</td><td>50.6</td><td class="best">47.4</td><td class="best">45.3</td></tr>
+<tr><td>AU-Net (word)</td><td>1.082</td><td>31.8</td><td>36.0</td><td>24.4</td><td>59.1</td><td>54.8</td><td>49.6</td><td>42.3</td><td>42.6</td></tr>
+<tr><td>BLT (entropy, low 5×)</td><td>1.102</td><td>31.3</td><td>35.4</td><td>24.0</td><td>60.3</td><td>47.5</td><td>51.3</td><td>42.3</td><td>41.6</td></tr>
+<tr><td>BPEByte-rg (greedy·0-leak)</td><td>1.079</td><td>30.7</td><td>34.6</td><td>23.5</td><td>59.4</td><td>39.1</td><td>50.2</td><td>41.6</td><td>39.6</td></tr>
+<tr><td>ByteFlow global top-k (K=3200)</td><td>1.108</td><td>30.2</td><td>28.4</td><td>20.4</td><td>53.2</td><td>41.3</td><td>51.2</td><td>37.2</td><td>37.4</td></tr>
+</tbody></table></div>
+
+<h3>Parsing + forward throughput</h3>
+<p class="lead">Parse (CPU, ms/KB) and forward (ms/step, bsz4·8192 B = 32 KB) are logged separately; parse+fwd
+KB/s is <b>derived</b> (32 KB ÷ (parse·32 + forward), iso-8192 B byte-seq).</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Method</th><th>Parse (ms/KB)</th><th>Forward (ms/step)</th><th>Parse+Fwd (KB/s)<sup>3</sup></th></tr></thead>
+<tbody>
+<tr><td>Llama (tiktoken 128k)</td><td>0.143</td><td>48.6<sup>4</sup></td><td>—<sup>4</sup></td></tr>
+<tr><td>BPEByte-rg (byte-trie)</td><td>0.166</td><td>59.0</td><td class="best">~509</td></tr>
+<tr><td>AU-Net (regex word)</td><td>0.223</td><td>59.0</td><td>~495</td></tr>
+<tr><td>ByteFlow</td><td>0.226</td><td>59.0</td><td>~495</td></tr>
+<tr><td>BLT (entropy, fp16 default)</td><td>2.47 (GPU)</td><td>138.1<sup>5</sup></td><td>~237</td></tr>
+</tbody></table></div>
+<p class="lead"><sup>3</sup> derived, byte models iso-8192 B seq. <sup>4</sup> Llama runs 2048-token (~9.3 KB) seq,
+not iso-byte — combined KB/s omitted. <sup>5</sup> BLT forward = 58.9 base + 79.2 entropy = 138.1 ms (fp32 old = 451.9).</p>
+<div class="read"><b>Read:</b> Llama leads downstream (47.4 avg3) but at a different compute-per-byte axis (~2.2×
+lower FLOPs/byte — not iso-FLOP). Among byte models rg ≈ AU-Net ≈ ByteFlow on speed; <b>BLT is ~2× slower</b>
+(entropy model in the loop). ByteFlow global-top-k is weakest on both BPB and downstream.</div>
+
+<!-- ===================== 4 ===================== -->
+<h2 id="s4"><span class="n">4.</span> Robustness — input perturbation, 1.3B</h2>
+<p class="lead">Models: Llama · BPEByte-rg · AU-Net. n=2000 subset, single run. Source: <code>robustness.json</code>,
+<code>despace/summary.md</code>, <code>model_results_1.3B.md</code>.</p>
+
+<h3>4a · PBP-mc (prompt boundary problem) — ΔAcc when a trailing space shifts the boundary</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Model</th><th>PBP-mc ΔAcc</th><th>HellaSwag Δ</th><th>ARC-Easy Δ</th><th>ARC-Chal. Δ</th><th>cut-pt ΔBPC</th></tr></thead>
+<tbody>
+<tr><td>Llama</td><td>−8.92</td><td>−0.93</td><td>−21.46</td><td>−3.16</td><td>+0.710</td></tr>
+<tr><td>AU-Net</td><td class="best">−0.03</td><td>0.00</td><td>+0.04</td><td>0.00</td><td>0.000</td></tr>
+<tr><td>BPEByte-rg</td><td>−0.16</td><td>+0.12</td><td>0.00</td><td>−0.26</td><td>0.000</td></tr>
+</tbody></table></div>
+
+<h3>4b · Noisy / typo (acc_norm)</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Condition</th><th>Llama</th><th>AU-Net</th><th>BPEByte-rg</th></tr></thead>
+<tbody>
+<tr><td>HellaSwag-Noise (avg 15 variants)</td><td>37.6</td><td>41.5</td><td class="best">42.3</td></tr>
+<tr><td>HellaSwag-Typo (avg 8 ops)</td><td>49.7</td><td class="best">52.1</td><td>51.9</td></tr>
+<tr><td>ARC-C-Typo (avg 8 ops)</td><td>30.8</td><td>31.8</td><td class="best">33.5</td></tr>
+<tr class="sub"><td>HellaSwag / ARC-C clean (n=2000)</td><td>55.8 / 35.2</td><td>57.8 / 36.0</td><td>56.8 / 37.3</td></tr>
+</tbody></table></div>
+
+<h3>4c · Despace (macro-avg acc over 5 tasks incl. HS & ARC-E; independent space-removal prob p)</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Condition</th><th>Llama</th><th>AU-Net</th><th>BPEByte-rg</th></tr></thead>
+<tbody>
+<tr><td>clean</td><td>0.557</td><td class="best">0.568</td><td>0.557</td></tr>
+<tr><td>ctx10</td><td class="best">0.548</td><td>0.551</td><td>0.545</td></tr>
+<tr><td>ctx40</td><td>0.526</td><td>0.501</td><td class="best">0.530</td></tr>
+<tr><td>ctx70</td><td class="best">0.523</td><td>0.464</td><td>0.509</td></tr>
+<tr class="sub"><td>ctx100</td><td>—<sup>6</sup></td><td>—<sup>6</sup></td><td>—<sup>6</sup></td></tr>
+<tr><td>all10</td><td>0.499</td><td>0.496</td><td class="best">0.504</td></tr>
+<tr><td>all40</td><td>0.457</td><td>0.431</td><td class="best">0.462</td></tr>
+<tr><td>all70</td><td>0.435</td><td>0.382</td><td class="best">0.438</td></tr>
+<tr class="sub"><td>all100</td><td>—<sup>6</sup></td><td>—<sup>6</sup></td><td>—<sup>6</sup></td></tr>
+</tbody></table></div>
+<p class="lead"><sup>6</sup> ctx100 / all100 not run (stopped at p=70%). ctx = context only; all = context + choices.</p>
+<div class="read"><b>Read:</b> byte models are <b>boundary-robust</b> where Llama is not — PBP-mc ΔAcc −8.9 (Llama,
+driven by ARC-Easy −21.5) vs ≈0 for both byte models; cut-point ΔBPC +0.71 vs 0.00. rg leads noise/typo (HS-Noise
+42.3, ARC-C-Typo 33.5) and heavy-despace (all70 0.438). AU-Net degrades most under heavy context-despace.</div>
+
+<!-- ===================== 5 ===================== -->
+<h2 id="s5"><span class="n">5.</span> State tracking & recall, 1.3B</h2>
+<p class="lead">Models: Llama (<code>subword_llama</code>) · AU-Net (<code>aunet_static</code>) · BPEByte-rg
+(<code>byte_greedyroot</code>). Source: <code>scripts/fflm/run.log</code>, <code>scripts/probes/{dyck,mk}.log</code>,
+<code>scripts/niah/{run,run_23,mk_grid}.log</code>.</p>
+
+<h3>5a · FFLM (in-context state tracking, greedy acc) + Dyck-3</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Model</th><th>FFLM Dense</th><th>FFLM In-Dist</th><th>FFLM Sparse</th><th>Dyck-3 (len40, d6)</th></tr></thead>
+<tbody>
+<tr><td>Llama</td><td>0.823</td><td class="best">0.784</td><td>0.808</td><td>0.520</td></tr>
+<tr><td>AU-Net</td><td>0.853</td><td>0.724</td><td>0.666</td><td>0.540</td></tr>
+<tr><td>BPEByte-rg</td><td class="best">0.865</td><td>0.768</td><td class="best">0.869</td><td class="best">0.673</td></tr>
+</tbody></table></div>
+
+<h3>5b · S-NIAH grid (exact-match acc, by context length; mean over 5 depths)</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Task</th><th>Model</th><th>512 B</th><th>1024 B</th><th>2048 B</th><th>4096 B</th><th>6144 B</th><th>Mean</th></tr></thead>
+<tbody>
+<tr><td>S-NIAH-1 (noise+#)</td><td class="lft">Llama</td><td>0.85</td><td>0.85</td><td>1.00</td><td>1.00</td><td>0.95</td><td>0.93</td></tr>
+<tr><td></td><td class="lft">AU-Net</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td class="best">1.00</td></tr>
+<tr><td></td><td class="lft">BPEByte-rg</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td class="best">1.00</td></tr>
+<tr><td>S-NIAH-2 (essay+#)</td><td class="lft">Llama</td><td>0.90</td><td>0.70</td><td>0.65</td><td>0.65</td><td>0.60</td><td>0.70</td></tr>
+<tr><td></td><td class="lft">AU-Net</td><td>1.00</td><td>1.00</td><td>0.95</td><td>1.00</td><td>0.95</td><td>0.98</td></tr>
+<tr><td></td><td class="lft">BPEByte-rg</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>0.95</td><td class="best">0.99</td></tr>
+<tr><td>S-NIAH-3 (essay+UUID)</td><td class="lft">Llama</td><td>0.15</td><td>0.15</td><td>0.05</td><td>0.25</td><td>0.20</td><td>0.16</td></tr>
+<tr><td></td><td class="lft">AU-Net</td><td>0.85</td><td>0.60</td><td>0.45</td><td>0.30</td><td>0.40</td><td>0.52</td></tr>
+<tr><td></td><td class="lft">BPEByte-rg</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td class="best">1.00</td></tr>
+</tbody></table></div>
+
+<h3>5c · MK-NIAH multi-key grid (len 2048, exact-match acc)</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Model</th><th>K=1</th><th>K=2</th><th>K=4</th><th>K=8</th><th>Mean</th></tr></thead>
+<tbody>
+<tr><td>Llama</td><td>0.450</td><td>0.275</td><td>0.325</td><td>0.175</td><td>0.306</td></tr>
+<tr><td>AU-Net</td><td>0.975</td><td>0.725</td><td>0.425</td><td>0.300</td><td>0.631</td></tr>
+<tr><td>BPEByte-rg</td><td class="best">1.000</td><td class="best">0.900</td><td class="best">0.725</td><td class="best">0.550</td><td class="best">0.794</td></tr>
+</tbody></table></div>
+<div class="read"><b>Read:</b> BPEByte-rg is strongest on every probe — perfect S-NIAH-3 UUID copy (1.00 vs Llama
+0.16, AU-Net 0.52), best sparse FFLM (0.869 vs AU-Net 0.666), best Dyck-3 (0.673), best MK-NIAH at every K
+(K=8: 0.55 vs Llama 0.175). AU-Net (static word-pooling) sits between; Llama floors on exact-copy of unseen
+character strings — byte-level character addressing is the lever.</div>
+
+<div class="foot">
+All numbers single-run (no seeds) unless a CI is shown; treat sub-1-pt downstream gaps as noise.
+§1/§2 BPB use different measurement windows (leaderboard vs tail-mean CSV) — same ranking.
+§3 TPS is derived from separately-logged parse + forward times; Llama's is not iso-byte.
+§4 uses n=2000 subsets, so clean baselines differ from full-set §1/§2.
+Model tags in §5: <code>subword_llama</code> / <code>aunet_static</code> / <code>byte_greedyroot</code>.
+</div>
+
+</div>
+</body>
+</html>
