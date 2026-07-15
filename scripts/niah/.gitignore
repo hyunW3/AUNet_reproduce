@@ -1,0 +1,4 @@
+*.log
+_*.jsonl
+mk_grid.png
+__pycache__/

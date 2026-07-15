@@ -1,0 +1,4 @@
+*.log
+_*.jsonl
+.cache/
+__pycache__/
