@@ -25,7 +25,7 @@ still filling (see notes).
 |  | BPEByte hybrid (greedyQ) | 31.6 | 33.3 | 22.6 | 60.9 | 58.3 | 51.6 | — | **41.9** | **43.1** |
 | **300M** | Llama | 39.3 | 48.0 | 24.7 | 67.4 | 59.2 | 52.2 | — | **51.6** | **48.5** |
 |  | AU-Net | ⟳ | ⟳ | ⟳ | ⟳ | ⟳ | ⟳ | — | ⟳ | ⟳ |
-|  | BPEByte rg | ⟳ | ⟳ | ⟳ | ⟳ | ⟳ | ⟳ | — | ⟳ | ⟳ |
+|  | BPEByte rg | 37.8 | 38.5 | 25.2 | 64.8 | 49.1 | 51.8 | — | **47.0** | **44.5** |
 |  | BPEByte hybrid (leafQ) | 40.6 | 42.3 | 25.7 | 64.9 | 57.2 | 52.8 | — | **49.3** | **47.3** |
 |  | BPEByte hybrid (greedyQ) | 39.7 | 38.5 | 25.3 | 65.6 | 54.6 | 50.4 | — | **47.9** | **45.7** |
 | **760M** | BPEByte hybrid (leafQ) | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | — | ⏳ | ⏳ |
@@ -66,10 +66,12 @@ still filling (see notes).
 - **Identical byte config:** at each scale rg/AU-Net/hybrid share dims [512,768]@100M / [512,1280]@300M /
   larger@1.3B, LR, batch, steps, budget — differing only in `data.regex` (rg=online-greedy-root,
   AU-Net=word, hybrid=offline-leaf-prefill). Llama = subword baseline, matched data budget.
-- **300M-law (⟳) is filling:** Llama (17836, complete) + hybrid (`hybrid_300M`@120752, complete) are in;
-  **rg/AU-Net are resuming on ece GPU 7** (`rgllaw`/`aunetllaw` from their 40128 checkpoints → 80256).
-  ⚠️ Budget caveat: law-300M rg/aunet target **42B** (80256×64 seq/step) while the law-300M hybrid ran
-  **63B** (120752) — not iso-budget within the law-300M row (the γ10-300M row *is* iso-budget at 62.3B).
+- **300M-law status:** Llama (17836), **rg (`rgllaw`@80256, done 2026-07-15, 47.0 Avg3)**, and hybrid
+  (`hybrid_300M`@120752) are in. **AU-Net (⟳) still resuming** on ece GPU 7 (`aunetllaw` 40128→80256,
+  single-GPU dp1 — slow, ~1 day; the word-AU-Net crashes/hangs under `torch.compile` on B200, so it
+  can't use the fast path). ⚠️ Budget caveat: law-300M rg/AU-Net target **42B** (80256×64 seq/step)
+  while the law-300M hybrid ran **63B** (120752) — not iso-budget within the law-300M row (the γ10-300M
+  row *is* iso-budget at 62.3B). Also law-rg **47.0** ≈ γ10-rg **47.7** despite 42B<62B (law efficiency).
 - **Hybrid checkpoints:** 100M-law `hybrid_100M`@53504, 100M-γ10 `hybrid_100M_g10`@3344, 300M-law
   `hybrid_300M`@120752, 300M-γ10 `hybrid_300M_g10`@9900, 1.3B `hybrid_1p3B_leaf_B3`@180000, 760M-law
   `hybrid_760M`@193867 (**⏳ gated: trains after 02:00 when all B200 GPUs idle**, `hybrid_760M_aunetlaw.yaml`,
