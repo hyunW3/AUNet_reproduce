@@ -1,0 +1,12 @@
+/home/hwbae/AUNet/lingua/.venv/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/home/hwbae/AUNet/lingua/.venv/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/home/hwbae/AUNet/lingua/.venv/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[rank0]:[W711 22:57:49.694143559 ProcessGroupNCCL.cpp:4715] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 as device used by this process is currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. You can pecify device_id in init_process_group() to force use of a particular device.
+[hybrid-bpb] ckpt=/home/hwbae/AUNet/runs/cmp_g10/rg_300M/checkpoints/0000009900 prefill=offline_leaf docs=400 max_bytes=8192 force_hybrid=True
+  b/N=0.25  Full BPB=3.8471 [3.8040,3.8848]  Partial/decode BPB=4.0838 [4.0407,4.1205] (764651 B, 75% of seq)
+  b/N=0.50  Full BPB=3.9190 [3.8802,3.9519]  Partial/decode BPB=4.1657 [4.1333,4.1948] (509769 B, 50% of seq)
+  b/N=0.75  Full BPB=3.9961 [3.9579,4.0285]  Partial/decode BPB=4.2405 [4.2103,4.2679] (254968 B, 25% of seq)
+[rank0]:[W711 22:58:56.609811591 ProcessGroupNCCL.cpp:1476] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())

@@ -1,0 +1,14 @@
+{
+ "meta":{"recipe":"AU-Net scaling-law HP (γ10.4 · 53,504 steps × batch 48 × 8192 · 21.04 GB)",
+         "note":"100M trunk-matched. BPB = last-20-window training loss/ln2 (byte) or /(ln2·4.5483) (Llama). Downstream 0-shot, full dataset, native regime.",
+         "source":"reports/leaderboard_100M.md"},
+ "rows":[
+  {"model":"Llama (subword)","rule":"fixed BPE vocab","bpb":1.053,"hs":33.2,"arce":45.1,"arcc":23.8,"boolq":54.9,"piqa":64.0,"wino":50.6,"avg3":47.43,"all6":45.27},
+  {"model":"Hybrid leaf_mid","rule":"offline-leaf prefill · mid","bpb":1.041,"hs":31.6,"arce":34.9,"arcc":24.4,"boolq":53.6,"piqa":61.4,"wino":51.6,"avg3":42.62,"all6":42.91},
+  {"model":"AU-Net (word)","rule":"whitespace / word","bpb":1.082,"hs":31.8,"arce":36.0,"arcc":24.4,"boolq":54.8,"piqa":59.1,"wino":49.6,"avg3":42.32,"all6":42.63},
+  {"model":"Entropy / BLT (low 5×)","rule":"entropy patching","bpb":1.102,"hs":31.3,"arce":35.4,"arcc":24.0,"boolq":47.5,"piqa":60.3,"wino":51.3,"avg3":42.33,"all6":41.63},
+  {"model":"BPEByte root_greedy","rule":"online greedy · causal (0-leak)","bpb":1.079,"hs":30.7,"arce":34.6,"arcc":23.5,"boolq":39.1,"piqa":59.4,"wino":50.2,"avg3":41.59,"all6":39.60},
+  {"model":"Hybrid bt","rule":"online-bt (backtracking) · mid","bpb":1.043,"hs":31.2,"arce":34.9,"arcc":23.5,"boolq":61.7,"piqa":57.9,"wino":50.8,"avg3":41.33,"all6":43.33},
+  {"model":"ByteFlow global_topk","rule":"coding-rate top-K (K=3200)","bpb":1.108,"hs":30.2,"arce":28.4,"arcc":20.4,"boolq":41.3,"piqa":53.2,"wino":51.2,"avg3":37.24,"all6":37.44}
+ ]
+}

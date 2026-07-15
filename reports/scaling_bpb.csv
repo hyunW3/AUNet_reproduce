@@ -1,0 +1,16 @@
+model,scale,params,bpb,laststep,run
+aunet(word),1.3B,1300000000,0.8662,180000,main/1.3B/aunet2_1.3B
+aunet(word),100M,100000000,1.0858,53500,main/100M/aunet_100M
+aunet(word),300M,300000000,1.1126,40128,main/300M/aunet_300M
+aunet(word),760M,760000000,0.9435,29200,main/760M/aunet2_760M
+bpebyte_rg,1.3B,1300000000,0.8578,180000,main/1.3B/bpebyte_br_greedy_root_1.3B
+bpebyte_rg,100M,100000000,1.0833,53500,main/100M/rg_100M
+bpebyte_rg,300M,300000000,1.1071,40128,main/300M/rg_300M
+bpebyte_rg,760M,760000000,0.9403,29200,main/760M/bpebyte_root_greedy_760M
+hybrid,1.3B,1300000000,0.8268,180000,main/1.3B/hybrid_1p3B_leaf_B3
+hybrid,300M,300000000,0.9512,120750,main/300M/hybrid_300M
+llama,1.3B,1300000000,0.8404,60000,main/1.3B/llama_1.8B_paper
+llama,100M,100000000,1.0587,11890,main/100M/llama_100M
+llama,300M,300000000,0.9945,17830,main/300M/llama_300M
+llama,760M,760000000,0.9191,12900,main/760M/llama_760M
+hybrid,100M,100000000,1.0467,53500,main/100M/hybrid_100M

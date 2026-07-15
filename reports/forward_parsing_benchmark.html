@@ -1,0 +1,657 @@
+<title>AU-Net forward-latency benchmark</title>
+<style>
+  :root{
+    --bg:#F4F6F8; --surface:#FFFFFF; --surface-2:#EEF2F5;
+    --ink:#141A1F; --ink-soft:#54626D; --ink-faint:#8A97A2;
+    --line:#E0E6EB; --line-strong:#CBD4DB;
+    --accent:#0C8F9C; --accent-ink:#0A727D; --accent-soft:rgba(12,143,156,.10);
+    --good:#2E9463; --good-soft:rgba(46,148,99,.12);
+    --warn:#C1462A; --warn-soft:rgba(193,70,42,.10);
+    --violet:#6A5AB0;
+    --shadow:0 1px 2px rgba(20,26,31,.04),0 8px 24px rgba(20,26,31,.05);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0C1015; --surface:#141B22; --surface-2:#1B242D;
+      --ink:#E9EEF2; --ink-soft:#9BA8B3; --ink-faint:#63717C;
+      --line:#232E38; --line-strong:#32404C;
+      --accent:#2BC3D2; --accent-ink:#5AD6E2; --accent-soft:rgba(43,195,210,.12);
+      --good:#48C089; --good-soft:rgba(72,192,137,.14);
+      --warn:#E76A4C; --warn-soft:rgba(231,106,76,.14);
+      --violet:#9E8CE6;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#F4F6F8; --surface:#FFFFFF; --surface-2:#EEF2F5;
+    --ink:#141A1F; --ink-soft:#54626D; --ink-faint:#8A97A2;
+    --line:#E0E6EB; --line-strong:#CBD4DB;
+    --accent:#0C8F9C; --accent-ink:#0A727D; --accent-soft:rgba(12,143,156,.10);
+    --good:#2E9463; --good-soft:rgba(46,148,99,.12);
+    --warn:#C1462A; --warn-soft:rgba(193,70,42,.10); --violet:#6A5AB0;
+    --shadow:0 1px 2px rgba(20,26,31,.04),0 8px 24px rgba(20,26,31,.05);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0C1015; --surface:#141B22; --surface-2:#1B242D;
+    --ink:#E9EEF2; --ink-soft:#9BA8B3; --ink-faint:#63717C;
+    --line:#232E38; --line-strong:#32404C;
+    --accent:#2BC3D2; --accent-ink:#5AD6E2; --accent-soft:rgba(43,195,210,.12);
+    --good:#48C089; --good-soft:rgba(72,192,137,.14);
+    --warn:#E76A4C; --warn-soft:rgba(231,106,76,.14); --violet:#9E8CE6;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Helvetica Neue","Segoe UI",ui-sans-serif,system-ui,Roboto,Arial,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;}
+  .mono{font-family:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums;}
+  .wrap{max-width:980px; margin:0 auto; padding:0 24px}
+  a{color:var(--accent-ink)}
+
+  header{border-bottom:1px solid var(--line);
+    background:radial-gradient(120% 100% at 100% 0%, var(--accent-soft), transparent 60%);}
+  .eyebrow{font:600 11px/1.4 ui-monospace,monospace; letter-spacing:.18em; text-transform:uppercase; color:var(--accent-ink);}
+  h1{font-size:clamp(28px,4.6vw,44px); line-height:1.04; letter-spacing:-.02em; font-weight:800; margin:.5rem 0 .4rem; text-wrap:balance;}
+  .lede{font-size:clamp(16px,2vw,19px); color:var(--ink-soft); max-width:64ch; margin:0}
+  .meta{display:flex; flex-wrap:wrap; gap:8px; margin:22px 0 4px}
+  .chip{display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border:1px solid var(--line-strong);
+    border-radius:999px; background:var(--surface); font:500 12.5px/1 inherit; color:var(--ink-soft);}
+  .chip b{color:var(--ink); font-weight:650}
+  .chip .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+
+  section{padding:44px 0}
+  section+section{border-top:1px solid var(--line)}
+  h2{font-size:22px; letter-spacing:-.01em; font-weight:750; margin:0 0 6px}
+  .sub{color:var(--ink-soft); margin:0 0 22px; max-width:72ch}
+  .kicker{font:600 11px/1 ui-monospace,monospace; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:10px}
+
+  .cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+  @media(max-width:720px){.cards{grid-template-columns:1fr}}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:8px}
+  .card .n{font:700 12px/1 ui-monospace,monospace; color:var(--accent-ink); letter-spacing:.04em}
+  .card h3{margin:0; font-size:16.5px; font-weight:700; letter-spacing:-.01em}
+  .card p{margin:0; color:var(--ink-soft); font-size:14px}
+  .card .fig.big{font-size:26px; font-weight:800; letter-spacing:-.01em}
+
+  .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--surface); box-shadow:var(--shadow)}
+  table{border-collapse:collapse; width:100%; min-width:660px}
+  th,td{padding:11px 13px; text-align:right; border-bottom:1px solid var(--line); white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  thead th{font:600 11px/1.3 ui-monospace,monospace; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-faint); background:var(--surface-2); position:sticky; top:0}
+  tbody tr:last-child td{border-bottom:none}
+  td.num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+  .model{font-weight:700}
+  tr.hi td{background:var(--warn-soft)}
+  .cap{color:var(--ink-faint); font-size:12.5px; margin:10px 2px 0}
+  .cap b{color:var(--ink-soft)}
+
+  .bars{display:flex; flex-direction:column; gap:12px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px; box-shadow:var(--shadow)}
+  .bar{display:grid; grid-template-columns:150px 1fr; align-items:center; gap:14px}
+  @media(max-width:560px){.bar{grid-template-columns:104px 1fr}}
+  .bar .lab{font-size:13.5px; font-weight:650}
+  .bar .lab span{display:block; color:var(--ink-faint); font-weight:500; font-size:11.5px}
+  .track{position:relative; height:30px; background:var(--surface-2); border-radius:7px; overflow:hidden}
+  .fill{position:absolute; inset:0 auto 0 0; border-radius:7px; display:flex; align-items:center; justify-content:flex-end;
+    padding-right:10px; color:#fff; font:600 12.5px/1 ui-monospace,monospace; font-variant-numeric:tabular-nums;}
+  .fill.accent{background:linear-gradient(90deg,var(--accent),var(--accent-ink))}
+  .fill.good{background:linear-gradient(90deg,var(--good),color-mix(in srgb,var(--good),#000 18%))}
+  .fill.warn{background:linear-gradient(90deg,var(--warn),color-mix(in srgb,var(--warn),#000 16%))}
+  .fill.violet{background:linear-gradient(90deg,var(--violet),color-mix(in srgb,var(--violet),#000 16%))}
+  .fill.muted{background:linear-gradient(90deg,var(--ink-faint),var(--ink-soft))}
+  .stack{position:absolute; inset:0 auto 0 0; height:100%; display:flex; align-items:center; justify-content:center;
+    color:#fff; font:600 11.5px/1 ui-monospace,monospace}
+  .seg-a{background:linear-gradient(90deg,var(--accent),var(--accent-ink))}
+  .seg-b{background:repeating-linear-gradient(45deg,var(--warn),var(--warn) 7px,color-mix(in srgb,var(--warn),#000 12%) 7px,color-mix(in srgb,var(--warn),#000 12%) 14px)}
+  .seg-g{background:repeating-linear-gradient(45deg,var(--good),var(--good) 7px,color-mix(in srgb,var(--good),#000 12%) 7px,color-mix(in srgb,var(--good),#000 12%) 14px)}
+  .legend{display:flex; flex-wrap:wrap; gap:16px; margin-top:4px; color:var(--ink-soft); font-size:12.5px}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .prow{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-soft)}
+  .prow i{width:11px;height:11px;border-radius:3px;flex:none}
+  .prow .pn{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .prow b{color:var(--ink); font-family:ui-monospace,monospace; font-variant-numeric:tabular-nums}
+  .prow code{font-size:11.5px; background:var(--surface-2); padding:1px 4px; border-radius:4px; border:1px solid var(--line)}
+
+  .callout{border:1px solid var(--line); border-left:3px solid var(--accent); background:var(--surface); border-radius:10px; padding:16px 18px; box-shadow:var(--shadow)}
+  .callout.good{border-left-color:var(--good)} .callout.warn{border-left-color:var(--warn)}
+  .callout h4{margin:0 0 6px; font-size:14.5px; letter-spacing:.01em}
+  .callout p{margin:0; color:var(--ink-soft); font-size:14px}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+
+  pre{margin:0; overflow-x:auto; background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:16px 18px;
+    font:13px/1.6 ui-monospace,"SF Mono",Menlo,Consolas,monospace; color:var(--ink)}
+  pre .c{color:var(--ink-faint)} pre .k{color:var(--accent-ink)} pre .g{color:var(--good)}
+  svg{display:block; width:100%; height:auto}
+  .chartcard{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px; box-shadow:var(--shadow)}
+  ul.notes{margin:0; padding-left:18px; color:var(--ink-soft); font-size:14px}
+  ul.notes li{margin:7px 0}
+  ul.notes code,.cap code{font-family:ui-monospace,monospace; background:var(--surface-2); padding:1px 5px; border-radius:5px; font-size:12.5px; border:1px solid var(--line)}
+  footer{border-top:1px solid var(--line); color:var(--ink-faint); font-size:12.5px; padding:26px 0 44px}
+</style>
+
+<header>
+  <div class="wrap" style="padding-top:40px;padding-bottom:34px">
+    <div class="eyebrow">AU-Net · model forward + parsing benchmark</div>
+    <h1>What actually costs time in a byte-model step</h1>
+    <p class="lede">Six 100M models, matched on compute params. The transformer forward is nearly identical
+      across the byte family — the real spread is in <b>boundary computation</b>: cheap for regex/trie
+      parsers, model-side (in the forward) for byteflow, and dominated by the entropy LM for BLT. fp16
+      tames the last one.</p>
+    <div class="meta">
+      <span class="chip"><span class="dot"></span>6 models · ~98.6M compute params</span>
+      <span class="chip">batch <b>4</b> · seq <b>8192</b> B</span>
+      <span class="chip">bf16 · eager <span style="color:var(--ink-faint)">(no compile)</span></span>
+      <span class="chip">A100-80GB · A5000 · B200</span>
+      <span class="chip">forward + FLOPs/byte + parsing</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- KEY FINDINGS -->
+<section><div class="wrap">
+  <div class="kicker">The three findings</div>
+  <div class="cards">
+    <div class="card">
+      <div class="n">01 · shared backbone</div>
+      <h3>The byte family forwards identically</h3>
+      <p>aunet-word, bpebyte, hybrid, byteflow and BLT share one
+        <span class="mono">[512,768]/[3,10]</span> backbone — all within <b>0.5%</b>.</p>
+      <div class="fig big mono" style="color:var(--accent-ink)">58.9&nbsp;ms</div>
+      <p style="font-size:12.5px">forward-only, any byte variant, A100, bsz 4</p>
+    </div>
+    <div class="card">
+      <div class="n" style="color:var(--warn)">02 · the outlier</div>
+      <h3>BLT’s entropy model dominates</h3>
+      <p>The differentiator is the parser, not the forward. BLT runs a second 50M LM every step; in fp32
+        that is <b>6.7×</b> the backbone.</p>
+      <div class="fig big mono" style="color:var(--warn)">+393&nbsp;ms</div>
+      <p style="font-size:12.5px">entropy forward, fp32, bsz 4</p>
+    </div>
+    <div class="card">
+      <div class="n" style="color:var(--good)">03 · the fix</div>
+      <h3>fp16 recovers ~5× — almost for free</h3>
+      <p>fp16 flips only <b>0.02%</b> of boundaries vs fp32 (bf16: 0.20%). Now the shipped default.</p>
+      <div class="fig big mono" style="color:var(--good)">4.9×</div>
+      <p style="font-size:12.5px">393 ms → 79 ms, 6/32768 bytes change</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- CROSS MODEL TABLE -->
+<section><div class="wrap">
+  <div class="kicker">Cross-model · one A100, idle</div>
+  <h2>Forward latency &amp; FLOPs/byte across families</h2>
+  <p class="sub">All 100M-class, matched on ~98.6M non-embedding (compute) params, measured back-to-back on
+    one idle A100-80GB. <b>FLOPs/byte</b> normalises compute to text processed — the fair way to compare a
+    subword model against byte models, since llama packs 4.5 bytes into each token.</p>
+  <div class="tablewrap"><table>
+    <thead><tr>
+      <th>Model</th><th>Boundaries</th><th>seq</th><th>sec / forward</th>
+      <th>FLOPs / byte</th><th>MFU</th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="model">llama</td><td>128k subword vocab</td><td class="num">2048</td>
+        <td class="num">48.6 ms</td><td class="num">165 M</td><td class="num">13.5%</td></tr>
+      <tr><td class="model">aunet</td><td>word / space</td><td class="num">8192</td>
+        <td class="num">58.9 ms</td><td class="num">367 M</td><td class="num">21.8%</td></tr>
+      <tr><td class="model">bpebyte</td><td>BPE-byte (root-greedy)</td><td class="num">8192</td>
+        <td class="num">58.9 ms</td><td class="num">367 M</td><td class="num">21.8%</td></tr>
+      <tr><td class="model">bpebyte-hybrid</td><td>prefill BPE + decode greedy</td><td class="num">8192</td>
+        <td class="num">59.0 ms</td><td class="num">367 M</td><td class="num">21.8%</td></tr>
+      <tr><td class="model">byteflow</td><td>model-side coding-rate</td><td class="num">8192</td>
+        <td class="num">59.2 ms</td><td class="num">367 M</td><td class="num">21.7%</td></tr>
+      <tr class="hi"><td class="model">blt</td><td>entropy patcher</td><td class="num">8192</td>
+        <td class="num">58.9 + <b>79.2</b><span style="color:var(--ink-faint)"> fp16</span></td>
+        <td class="num">367 M <span style="color:var(--ink-faint)">+ LM</span></td><td class="num">—</td></tr>
+    </tbody>
+  </table></div>
+  <p class="cap"><b>FLOPs/byte flips the ranking:</b> llama costs more per <i>token</i> but only
+    <span class="mono">165 M</span>/byte — <b>2.2× less</b> than the byte models’ <span class="mono">367 M</span>,
+    because it processes 4.5× fewer tokens per byte (hierarchical pooling only partly closes the gap).
+    <b>blt</b> shown with the new fp16 entropy default; fp32 makes the entropy term 393 ms and the step total 452 ms.</p>
+</div></section>
+
+<!-- PARAM BUDGET -->
+<section><div class="wrap">
+  <div class="kicker">Parameter budget · llama vs byte</div>
+  <h2>Matched on non-embed params — not the same shape</h2>
+  <p class="sub">The two models carry the same ~99 M compute (non-embedding) parameters, but spend them
+    differently, and their <b>trunks are not identical</b>. llama’s 3× larger total is entirely its
+    128k-vocab embeddings (compute-free lookups), which is why the fair match is on non-embed params.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Component</th><th>byte model (AU-Net)</th><th>llama (flat)</th></tr></thead>
+    <tbody>
+      <tr><td>tok-embeddings (in)</td><td class="num">132,096</td><td class="num">98,500,608</td></tr>
+      <tr><td>encoder · dim512 ×3L</td><td class="num">10,226,688</td><td class="num">—</td></tr>
+      <tr style="background:var(--accent-soft)"><td><b>trunk / stack · dim768</b></td>
+        <td class="num">70,794,240 <span style="color:var(--ink-faint)">×10L</span></td>
+        <td class="num">99,111,936 <span style="color:var(--ink-faint)">×14L</span></td></tr>
+      <tr><td>decoder · dim512 ×3L</td><td class="num">10,226,688</td><td class="num">—</td></tr>
+      <tr><td>transitions (down/up)</td><td class="num">7,079,168</td><td class="num">—</td></tr>
+      <tr><td>vocab head (out)</td><td class="num">132,096</td><td class="num">98,500,608</td></tr>
+      <tr style="font-weight:700"><td>non-embed params</td><td class="num">98,327,296</td><td class="num">99,112,704</td></tr>
+      <tr><td>total params</td><td class="num">98,591,488</td><td class="num">296,113,920</td></tr>
+      <tr style="font-weight:700"><td>FLOPs / byte</td><td class="num">366.9 M</td><td class="num">164.9 M</td></tr>
+    </tbody>
+  </table></div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="callout">
+      <h4>Trunks: same layer, different depth</h4>
+      <p>Both use the identical dim-768 block (<b>7,079,424 params/layer</b>), but the byte trunk is
+        <b>10 layers</b> and llama is <b>14</b>. The byte model trades ~4 dim-768 layers (~28 M) for a
+        dim-512 encoder + decoder + transitions (~28 M) — same budget, different shape.</p>
+    </div>
+    <div class="callout">
+      <h4>Match params or FLOPs/byte?</h4>
+      <p>Different questions. <b>iso-param</b> controls capacity but lets the byte model spend 2.2× the
+        compute/byte; <b>iso-FLOPs/byte</b> controls what you pay and pairs with BPB — the more defensible
+        axis for byte-vs-subword. Even FLOPs isn’t the last word: wall-clock here is only ~<b>1.4×</b>
+        (not 2.2×), because the byte model’s MFU is higher (21.8% vs 13.5%).</p>
+    </div>
+  </div>
+  <p class="cap">Why FLOPs/byte differs: llama amortizes all 99 M params over 4.541 bytes/token; the byte model
+    amortizes only its 70.8 M <b>trunk</b> over patches but runs its 27.5 M <b>local layers</b>
+    (encoder+decoder+transitions) on <i>every byte</i> — that un-amortized per-byte compute is the 2.2×.</p>
+</div></section>
+
+<!-- ISO-FLOP PROPOSAL -->
+<section><div class="wrap">
+  <div class="kicker" style="color:var(--violet)">Proposed · not yet measured</div>
+  <h2>What a compute-matched (iso-FLOP) comparison would take</h2>
+  <p class="sub">Everything above is <b>iso-param</b>. The fairer test equalizes <b>FLOPs/byte</b> and compares
+    <b>BPB</b> (bits/byte). The catch: at equal compute/byte, llama carries <b>~2.4× more parameters</b> than
+    the byte model — so the real question becomes “does byte-level representation beat having 2.4× fewer
+    weights at the same compute?” That needs training runs, not just the measurements in this report.</p>
+
+  <div class="tablewrap"><table>
+    <thead><tr><th>Equalize at</th><th>byte model</th><th>llama</th><th>who moves</th></tr></thead>
+    <tbody>
+      <tr><td class="num">165 M/byte</td><td>[384,512]/[3,8] · <b>≈40 M</b></td>
+        <td>dim768/14L · 99 M <span style="color:var(--ink-faint)">(today)</span></td>
+        <td>shrink byte ~2.5×</td></tr>
+      <tr><td class="num">365 M/byte</td><td>[512,768]/[3,10] · 98 M <span style="color:var(--ink-faint)">(today)</span></td>
+        <td>dim1024/18L · <b>≈226 M</b></td><td>grow llama ~2.3×</td></tr>
+    </tbody>
+  </table></div>
+  <p class="cap">Non-embed params. New sizes are FLOPs-solved estimates (via <code>flops_per_token</code>), not
+    trained. Either row is a valid iso-FLOP point — pick one budget and size both to it.</p>
+
+  <div class="grid2" style="margin-top:16px">
+    <div class="chartcard">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <h4 style="margin:0;font-size:14.5px">The comparison you'd actually plot</h4>
+        <span style="font:600 10px/1 ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--violet);border:1px solid var(--violet);border-radius:5px;padding:3px 6px">schematic</span>
+      </div>
+      <svg viewBox="0 0 620 250" role="img" aria-label="Schematic BPB vs training FLOPs frontier comparison">
+        <line x1="52" y1="20" x2="52" y2="210" stroke="var(--line-strong)" stroke-width="1"/>
+        <line x1="52" y1="210" x2="600" y2="210" stroke="var(--line-strong)" stroke-width="1"/>
+        <text x="46" y="26" fill="var(--ink-faint)" font-size="11" text-anchor="end" font-family="ui-monospace,monospace">BPB</text>
+        <text x="30" y="120" fill="var(--ink-soft)" font-size="11" text-anchor="middle" font-family="ui-monospace,monospace" transform="rotate(-90 30 120)">lower = better</text>
+        <text x="596" y="228" fill="var(--ink-soft)" font-size="11" text-anchor="end" font-family="ui-monospace,monospace">training FLOPs (log) →</text>
+        <!-- iso-FLOP budget line -->
+        <line x1="360" y1="20" x2="360" y2="210" stroke="var(--ink-faint)" stroke-width="1.3" stroke-dasharray="3 4"/>
+        <text x="360" y="16" fill="var(--ink-faint)" font-size="10.5" text-anchor="middle" font-family="ui-monospace,monospace">iso-FLOP budget</text>
+        <!-- two projected frontiers (dashed = not measured), crossing at the budget -->
+        <path d="M70,70 C180,120 280,150 360,150 S540,178 596,188" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-dasharray="6 5"/>
+        <path d="M70,105 C180,132 280,148 360,150 S540,162 596,168" fill="none" stroke="var(--violet)" stroke-width="2.4" stroke-dasharray="6 5"/>
+        <circle cx="360" cy="150" r="5" fill="none" stroke="var(--ink-soft)" stroke-width="1.5"/>
+        <text x="372" y="146" fill="var(--ink)" font-size="15" font-weight="700" font-family="ui-monospace,monospace">?</text>
+        <text x="600" y="192" fill="var(--accent)" font-size="11" text-anchor="end" font-family="ui-monospace,monospace" font-weight="600">byte</text>
+        <text x="600" y="164" fill="var(--violet)" font-size="11" text-anchor="end" font-family="ui-monospace,monospace" font-weight="600">llama</text>
+      </svg>
+      <p class="cap" style="margin-top:6px">Dashed = illustrative. Which frontier is lower at the shared budget
+        is exactly the unknown BPB result — the curves here assert nothing.</p>
+    </div>
+    <div class="callout">
+      <h4>What’s required to run it</h4>
+      <ul class="notes" style="margin-top:2px">
+        <li>Train <b>each family at ≥3 sizes</b> on the same data, logging total training FLOPs (a
+          compute-frontier, not one point).</li>
+        <li>Evaluate <b>BPB</b> on a common held-out byte stream — the only tokenizer-independent metric;
+          never per-token perplexity.</li>
+        <li>Match <b>total</b> training compute (FLOPs/byte × bytes seen), ideally Chinchilla-optimal
+          params/data per point; per-model-tuned HP; ≥2 seeds + CIs.</li>
+        <li>Plot BPB vs training-FLOPs; the lower frontier wins. This slots straight into the existing
+          root_greedy compute-frontier — just add llama points to the same axes.</li>
+        <li>Optionally also throughput-matched, since wall-clock ≠ FLOPs (byte MFU is higher).</li>
+      </ul>
+    </div>
+  </div>
+</div></section>
+
+<!-- SCALING -->
+<section><div class="wrap">
+  <div class="kicker">Scaling · 100M → 1.3B</div>
+  <h2>The ~1.9× compute penalty is scale-invariant</h2>
+  <p class="sub">FLOPs/byte grows with model size, but the <b>ratio</b> between the byte model and a
+    param-matched llama stays near 2× across an order of magnitude — so the iso-param comparison flatters
+    the byte model by the same ~1.9× at every scale, and iso-FLOP needs a ~2×-params llama throughout.</p>
+
+  <div class="grid2">
+    <div class="tablewrap"><table>
+      <thead><tr><th>scale</th><th>byte FLOP/B</th><th>llama FLOP/B</th><th>ratio</th><th>iso-FLOP mult</th></tr></thead>
+      <tbody>
+        <tr><td class="model">100M</td><td class="num">365 M</td><td class="num">165 M</td><td class="num">2.21×</td><td class="num">2.2×</td></tr>
+        <tr><td class="model">300M</td><td class="num">886 M</td><td class="num">463 M</td><td class="num">1.91×</td><td class="num">2.0×</td></tr>
+        <tr><td class="model">760M</td><td class="num">2011 M</td><td class="num">1014 M</td><td class="num">1.98×</td><td class="num">2.0×</td></tr>
+        <tr><td class="model">1.3B</td><td class="num">3536 M</td><td class="num">1859 M</td><td class="num">1.90×</td><td class="num">1.9×</td></tr>
+      </tbody>
+    </table></div>
+    <div class="chartcard">
+      <h4 style="margin:0 0 8px;font-size:14px">FLOP/byte ratio vs scale</h4>
+      <svg viewBox="0 0 620 220" role="img" aria-label="byte-to-llama FLOP/byte ratio across scales">
+        <g stroke="var(--line)" stroke-width="1">
+          <line x1="52" y1="200" x2="600" y2="200"/><line x1="52" y1="110" x2="600" y2="110"/><line x1="52" y1="20" x2="600" y2="20"/>
+        </g>
+        <g fill="var(--ink-faint)" font-family="ui-monospace,monospace" font-size="11" text-anchor="end">
+          <text x="46" y="204">1.5×</text><text x="46" y="114">2.0×</text><text x="46" y="24">2.5×</text>
+        </g>
+        <!-- reference at 2.0x -->
+        <line x1="52" y1="110" x2="600" y2="110" stroke="var(--ink-faint)" stroke-width="1.2" stroke-dasharray="3 4"/>
+        <g fill="var(--ink-faint)" font-family="ui-monospace,monospace" font-size="11" text-anchor="middle">
+          <text x="70" y="216">100M</text><text x="243" y="216">300M</text><text x="417" y="216">760M</text><text x="590" y="216">1.3B</text>
+        </g>
+        <polyline fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round"
+          points="70,72.2 243,126.2 417,113.6 590,128"/>
+        <g fill="var(--accent)"><circle cx="70" cy="72.2" r="4.5"/><circle cx="243" cy="126.2" r="4.5"/><circle cx="417" cy="113.6" r="4.5"/><circle cx="590" cy="128" r="4.5"/></g>
+        <text x="70" y="62" fill="var(--accent)" font-size="10.5" text-anchor="middle" font-family="ui-monospace,monospace">2.21</text>
+        <text x="590" y="140" fill="var(--accent)" font-size="10.5" text-anchor="middle" font-family="ui-monospace,monospace">1.90</text>
+      </svg>
+      <div class="legend" style="margin-top:6px"><span>Only 100M is elevated — its fixed dim-512 local layers are a bigger share.</span></div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:16px">
+    <h4>When iso-param is the right axis (and when it isn’t)</h4>
+    <p>iso-<b>param</b> answers capacity/representational questions and static memory footprint — legitimate,
+      but it hides this ~1.9× training-compute gap and doesn’t help at inference (byte models emit ~4.5× more
+      decode steps per unit text). For a training-compute or BPB-per-FLOP comparison, iso-<b>FLOP</b> /
+      compute-frontier is the defensible axis; iso-param is a secondary lens. Note the “iso-param” here
+      already excludes embeddings — itself a compute-motivated choice, so it’s really iso-<i>compute</i>-param.</p>
+  </div>
+  <p class="cap">Non-embed FLOP/byte from the estimator (byte seq 8192, llama seq 2048, 4.541 B/tok). “iso-FLOP
+    mult” = the llama non-embed multiplier needed to match the byte model’s FLOP/byte at that scale.</p>
+</div></section>
+
+<!-- PARSING TIME -->
+<section><div class="wrap">
+  <div class="kicker">Data-side · tokenization &amp; level_mask</div>
+  <h2>Parsing cost — where the families actually differ</h2>
+  <p class="sub">Time to turn one document into training targets (tokens + <span class="mono">level_mask</span>),
+    per KB of text, on CPU — one consistent 400-doc run. The regex / trie / BPE parsers sit in a tight band;
+    BLT’s entropy “parser” is in another league; byteflow’s data-side mask is a discardable placeholder. The
+    new <b>hybrid-bt</b> variant swaps hybrid’s real-BPE prefill for a byte-trie one — 38% cheaper.</p>
+  <div class="bars">
+    <div class="bar"><div class="lab">llama <span>tiktoken 128k</span></div>
+      <div class="track"><div class="fill accent" style="width:40.9%">0.143</div></div></div>
+    <div class="bar"><div class="lab">bpebyte <span>greedy byte-trie</span></div>
+      <div class="track"><div class="fill accent" style="width:47.4%">0.166</div></div></div>
+    <div class="bar"><div class="lab">hybrid-bt <span>byte-trie prefill · NEW</span></div>
+      <div class="track"><div class="fill good" style="width:54.9%">0.192</div></div></div>
+    <div class="bar"><div class="lab">aunet-word <span>word regex</span></div>
+      <div class="track"><div class="fill accent" style="width:63.7%">0.223</div></div></div>
+    <div class="bar"><div class="lab">byteflow <span>word placeholder → discarded</span></div>
+      <div class="track"><div class="fill muted" style="width:64.6%">0.226</div></div></div>
+    <div class="bar"><div class="lab">hybrid <span>real-BPE prefill</span></div>
+      <div class="track"><div class="fill violet" style="width:88.0%">0.308</div></div></div>
+    <div class="legend"><span>Parsing time · <b>ms per KB of text</b> · CPU · lower is better · scale 0–0.35</span></div>
+  </div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="callout good">
+      <h4>hybrid-bt: 38% cheaper, verified equivalent</h4>
+      <p>Parsing the prefill region with a byte-trie (longest-match) instead of real-BPE drops hybrid from
+        <b>0.308 → 0.192 ms/KB</b> — it skips the UTF-8 decode + <span class="mono">map_codepoint_to_byte</span>
+        and the tiktoken offset call. The patch-length distribution is <b>statistically identical</b>
+        (bytes/patch 4.575 vs 4.570; matching p50/p90/p99; 12% byte-fallback), it’s deterministic, and every
+        doc tiles validly — a one-line <span class="mono">bpe_hybrid_prefill: bt</span> flip.</p>
+    </div>
+    <div class="callout warn">
+      <h4>BLT’s entropy parser is off this chart</h4>
+      <p>The entropy LM costs <b>2.47 ms/KB</b> on GPU (fp16) — <b>~8×</b> the priciest regex/BPE parser — and
+        <b>~1700 ms/KB</b> on CPU. That CPU cost is why BLT training uses Option-A: move the parser onto the
+        GPU, batched, in the training step.</p>
+    </div>
+  </div>
+  <p class="cap"><b>Why hybrid is the priciest:</b> it runs <b>two</b> parsers per document — real-BPE on the
+    prefill region (<code>_bpe_end_offsets</code>, ~56% of the time) <i>and</i> the greedy byte-trie on the
+    decode region (~30%) — plus <code>md5</code> sampling, a UTF-8 decode, and set/loop merge bookkeeping.
+    <b>hybrid-bt</b> removes the real-BPE half. byteflow’s real boundaries come from the model-side lossy
+    coding-rate calc (in the forward, ~0.3 ms), so its 0.226 above is only the discardable word placeholder.</p>
+
+  <div class="chartcard" style="margin-top:20px">
+    <h4 style="margin:0 0 4px; font-size:15px; letter-spacing:.01em">Where hybrid’s parsing time goes</h4>
+    <p class="cap" style="margin:0 0 16px">Per-part profile of <code>hybrid_levels_mask</code> — the two full
+      parsers are ~86% of the cost. <b>hybrid-bt</b> replaces the offline-BPE group (violet) with a byte-trie
+      that skips the whole UTF-8 → char-offset path.</p>
+    <div class="track" style="height:42px; margin-bottom:18px">
+      <div class="stack" style="left:0; width:55.9%; background:linear-gradient(90deg,var(--violet),color-mix(in srgb,var(--violet),#000 16%))">offline-BPE prefill · 56%</div>
+      <div class="stack" style="left:55.9%; width:29.5%; background:linear-gradient(90deg,var(--accent),var(--accent-ink))">greedy decode · 30%</div>
+      <div class="stack" style="left:85.4%; width:14.6%; background:linear-gradient(90deg,var(--ink-faint),var(--ink-soft))">glue · 15%</div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px 28px">
+      <div class="prow"><i style="background:var(--violet)"></i><span class="pn"><code>_bpe_end_offsets</code> (real-BPE)</span><b>44%</b></div>
+      <div class="prow"><i style="background:var(--accent)"></i><span class="pn">greedy byte-trie decode</span><b>30%</b></div>
+      <div class="prow"><i style="background:var(--violet)"></i><span class="pn"><code>map_codepoint_to_byte</code></span><b>11%</b></div>
+      <div class="prow"><i style="background:var(--ink-faint)"></i><span class="pn">prefill placement loop</span><b>6%</b></div>
+      <div class="prow"><i style="background:var(--ink-faint)"></i><span class="pn"><code>level_mask</code> build</span><b>5%</b></div>
+      <div class="prow"><i style="background:var(--ink-faint)"></i><span class="pn">md5 sample · encode · snap · utf8</span><b>4%</b></div>
+    </div>
+    <p class="cap" style="margin-top:14px"><b>Removing the violet group</b> (56%) is exactly what hybrid-bt
+      does — it trades the real-BPE prefill for a byte-trie one, at ~2.2× lower prefill cost, which is why the
+      total drops 0.308 → 0.192 ms/KB.</p>
+  </div>
+
+  <div class="callout" style="margin-top:18px">
+    <h4>Two things these numbers don’t depend on — and one they do</h4>
+    <p><b>Boundary sampling is free:</b> the actual leaderboard models sample the prefill/decode split with
+      <code>uniform_mid</code> (N/3–2N/3), not <code>uniform_full</code> (0–N) — but both average the split at
+      ~N/2, so parsing cost is identical (leaf 0.550 vs 0.561, bt 0.331 vs 0.330 ms/KB; &lt;2%). The bt-prefill
+      saving (~40%) holds on the exact <code>uniform_mid</code> models. <b>But absolute ms/KB is CPU-bound:</b>
+      parsing runs on the host CPU, so the scale shifts with the machine — the same configs profiled ~1.7×
+      higher on the A100 host than on the B200 host used for this chart (every builder scaled uniformly). The
+      <i>relative</i> ordering and the bt-vs-leaf ratio are portable; the absolute values are not.</p>
+  </div>
+</div></section>
+
+<!-- ENTROPY DTYPE CENTERPIECE -->
+<section><div class="wrap">
+  <div class="kicker" style="color:var(--warn)">Centerpiece · why BLT was slow</div>
+  <h2>The entropy model ran in fp32 — that was the whole cost</h2>
+  <p class="sub">fp32 does two expensive things at once: it forgoes the tensor cores (fp32 matmul ≈ 19.5 vs
+    bf16 ≈ 312 TFLOP/s on A100) and it disables the flash / memory-efficient SDPA kernel — fp16/bf16-only —
+    so attention falls back to the O(n²) math path over 8192 tokens. Lowering precision fixes both.</p>
+
+  <div class="grid2">
+    <div class="bars">
+      <div class="bar"><div class="lab">fp32 <span>as shipped</span></div>
+        <div class="track"><div class="fill warn" style="width:100%">391.8 ms</div></div></div>
+      <div class="bar"><div class="lab">fp16 <span>new default</span></div>
+        <div class="track"><div class="fill good" style="width:20.2%; min-width:66px">79.2 ms</div></div></div>
+      <div class="bar"><div class="lab">bf16 <span>comparison</span></div>
+        <div class="track"><div class="fill muted" style="width:20.1%; min-width:66px">78.8 ms</div></div></div>
+      <div class="legend"><span>Entropy-model forward · A100 · bsz 4 · seq 8192</span></div>
+    </div>
+    <div class="callout good" style="align-self:start">
+      <h4>Why fp16 over bf16 here</h4>
+      <p>Both hit the tensor cores and flash-SDPA, so both land near 79 ms. But fp16 keeps
+        <b>10 mantissa bits</b> vs bf16’s 7, so entropy values near the threshold survive rounding —
+        <b>10× fewer</b> boundary flips (0.02% vs 0.20%), total boundary count off by just −2 of 4725.
+        fp16 captures the speed and nearly all the fp32 boundaries.</p>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:16px">
+    <div class="tablewrap"><table>
+      <thead><tr><th>Precision</th><th>sec/fwd</th><th>speedup</th><th>flips vs fp32</th></tr></thead>
+      <tbody>
+        <tr><td class="model">fp32</td><td class="num">391.8 ms</td><td class="num">1.0×</td><td class="num">— ref</td></tr>
+        <tr><td class="model" style="color:var(--good)">fp16</td><td class="num">79.2 ms</td><td class="num">4.9×</td><td class="num">0.02%</td></tr>
+        <tr><td class="model">bf16</td><td class="num">78.8 ms</td><td class="num">5.0×</td><td class="num">0.20%</td></tr>
+      </tbody>
+    </table></div>
+    <div class="chartcard">
+      <svg viewBox="0 0 640 268" role="img" aria-label="Entropy forward vs batch size, fp16 vs fp32">
+        <g stroke="var(--line)" stroke-width="1">
+          <line x1="52" y1="226" x2="624" y2="226"/><line x1="52" y1="175.2" x2="624" y2="175.2"/>
+          <line x1="52" y1="124.4" x2="624" y2="124.4"/><line x1="52" y1="73.6" x2="624" y2="73.6"/>
+          <line x1="52" y1="22.8" x2="624" y2="22.8"/>
+        </g>
+        <g fill="var(--ink-faint)" font-family="ui-monospace,monospace" font-size="11" text-anchor="end">
+          <text x="46" y="230">0</text><text x="46" y="179">400</text><text x="46" y="128">800</text>
+          <text x="46" y="77">1200</text><text x="46" y="26">1600</text>
+        </g>
+        <g fill="var(--ink-faint)" font-family="ui-monospace,monospace" font-size="11" text-anchor="middle">
+          <text x="52" y="248">2</text><text x="243" y="248">4</text><text x="433" y="248">8</text><text x="624" y="248">16</text>
+          <text x="338" y="264" fill="var(--ink-soft)">batch size · entropy forward (ms)</text>
+        </g>
+        <polyline fill="none" stroke="var(--warn)" stroke-width="2.5" stroke-linejoin="round" points="52,199.8 243,175.6 433,125.2 624,22.5"/>
+        <g fill="var(--warn)"><circle cx="52" cy="199.8" r="4"/><circle cx="243" cy="175.6" r="4"/><circle cx="433" cy="125.2" r="4"/><circle cx="624" cy="22.5" r="4"/></g>
+        <polyline fill="none" stroke="var(--good)" stroke-width="2.5" stroke-linejoin="round" points="52,220.7 243,215.9 433,206.5 624,187.6"/>
+        <g fill="var(--good)"><circle cx="52" cy="220.7" r="4"/><circle cx="243" cy="215.9" r="4"/><circle cx="433" cy="206.5" r="4"/><circle cx="624" cy="187.6" r="4"/></g>
+        <text x="610" y="16" fill="var(--warn)" font-family="ui-monospace,monospace" font-size="11.5" font-weight="600" text-anchor="end">fp32 · 1602 ms @16</text>
+        <text x="610" y="182" fill="var(--good)" font-family="ui-monospace,monospace" font-size="11.5" font-weight="600" text-anchor="end">fp16 · 303 ms @16</text>
+      </svg>
+      <div class="legend" style="margin-top:8px"><span>~5× at every batch size — cross-checked on B200 (330→76 ms).</span></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- BLT TOTAL STACK -->
+<section><div class="wrap">
+  <div class="kicker">Step cost · what changes</div>
+  <h2>BLT’s per-step forward, before and after</h2>
+  <p class="sub">The AU-Net backbone (solid) is fixed; the entropy forward (hatched) is what the precision
+    switch moves. It takes BLT from ~7.7× a plain bpebyte step down to ~2.3×.</p>
+  <div class="bars">
+    <div class="bar"><div class="lab">fp32 entropy <span>old</span></div>
+      <div class="track"><div class="stack seg-a" style="width:13.0%">59</div>
+        <div class="stack seg-b" style="left:13.0%; width:87.0%">+393 ms entropy</div></div></div>
+    <div class="bar"><div class="lab">fp16 entropy <span>new default</span></div>
+      <div class="track"><div class="stack seg-a" style="width:12.7%; min-width:34px">59</div>
+        <div class="stack seg-g" style="left:12.7%; width:17.1%; min-width:96px">+79 ms</div></div></div>
+    <div class="legend">
+      <span><i class="seg-a"></i>backbone · 58.9 ms</span>
+      <span><i class="seg-b"></i>entropy fp32 · 393 ms</span>
+      <span><i class="seg-g"></i>entropy fp16 · 79 ms</span>
+    </div>
+  </div>
+  <p class="cap">Bars to scale against the fp32 total (<b>452 ms</b>). fp16 total: <b>138 ms</b>.</p>
+</div></section>
+
+<!-- PER GPU + BATCH SCALING -->
+<section><div class="wrap">
+  <div class="kicker">Hardware · across GPUs &amp; batch sizes</div>
+  <h2>How the forward scales</h2>
+  <p class="sub">Left: the byte backbone (bpebyte) across three idle GPUs, with llama and byteflow for
+    context. Right: forward vs batch on the A100 — llama (subword, seq 2048) against the byte backbone
+    (seq 8192); byteflow tracks the backbone within 1%.</p>
+
+  <div class="grid2">
+    <div class="bars">
+      <div class="bar"><div class="lab">B200 <span>bpebyte · byteflow 27.1</span></div>
+        <div class="track"><div class="fill accent" style="width:21.4%; min-width:56px">26.8 ms</div></div></div>
+      <div class="bar"><div class="lab">A100 <span>bpebyte · byteflow 59.2</span></div>
+        <div class="track"><div class="fill accent" style="width:46.9%">58.9 ms</div></div></div>
+      <div class="bar"><div class="lab">A5000 <span>bpebyte</span></div>
+        <div class="track"><div class="fill accent" style="width:100%">125.5 ms</div></div></div>
+      <div class="bar"><div class="lab">A100 <span>llama · seq 2048</span></div>
+        <div class="track"><div class="fill violet" style="width:38.7%">48.6 ms</div></div></div>
+      <div class="bar"><div class="lab">A5000 <span>llama · seq 2048</span></div>
+        <div class="track"><div class="fill violet" style="width:86.5%">108.5 ms</div></div></div>
+      <div class="legend"><span>Forward · bsz 4 · byte backbone relative 1.0 : 2.2 : 4.7 (B200:A100:A5000)</span></div>
+    </div>
+
+    <div class="chartcard">
+      <svg viewBox="0 0 640 268" role="img" aria-label="Forward latency vs batch size on A100">
+        <g stroke="var(--line)" stroke-width="1">
+          <line x1="48" y1="226" x2="624" y2="226"/><line x1="48" y1="173.5" x2="624" y2="173.5"/>
+          <line x1="48" y1="121" x2="624" y2="121"/><line x1="48" y1="68.5" x2="624" y2="68.5"/><line x1="48" y1="16" x2="624" y2="16"/>
+        </g>
+        <g fill="var(--ink-faint)" font-family="ui-monospace,monospace" font-size="11" text-anchor="end">
+          <text x="42" y="230">0</text><text x="42" y="177">55</text><text x="42" y="125">110</text>
+          <text x="42" y="72">165</text><text x="42" y="20">220</text>
+        </g>
+        <g fill="var(--ink-faint)" font-family="ui-monospace,monospace" font-size="11" text-anchor="middle">
+          <text x="48" y="248">2</text><text x="240" y="248">4</text><text x="432" y="248">8</text><text x="624" y="248">16</text>
+          <text x="336" y="264" fill="var(--ink-soft)">batch size · forward (ms)</text>
+        </g>
+        <polyline fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" points="48,194.5 240,169.7 432,119.0 624,18.1"/>
+        <g fill="var(--accent)"><circle cx="48" cy="194.5" r="4"/><circle cx="240" cy="169.7" r="4"/><circle cx="432" cy="119.0" r="4"/><circle cx="624" cy="18.1" r="4"/></g>
+        <polyline fill="none" stroke="var(--violet)" stroke-width="2.5" stroke-linejoin="round" points="48,202.0 240,179.5 432,134.1 624,44.7"/>
+        <g fill="var(--violet)"><circle cx="48" cy="202.0" r="4"/><circle cx="240" cy="179.5" r="4"/><circle cx="432" cy="134.1" r="4"/><circle cx="624" cy="44.7" r="4"/></g>
+        <text x="616" y="14" fill="var(--accent)" font-family="ui-monospace,monospace" font-size="11.5" font-weight="600" text-anchor="end">byte · 218 ms</text>
+        <text x="616" y="58" fill="var(--violet)" font-family="ui-monospace,monospace" font-size="11.5" font-weight="600" text-anchor="end">llama · 190 ms</text>
+      </svg>
+      <div class="legend" style="margin-top:8px">
+        <span><i style="background:var(--accent)"></i>byte backbone · 33/59/112/218</span>
+        <span><i style="background:var(--violet)"></i>llama · 25/49/96/190</span>
+      </div>
+    </div>
+  </div>
+  <p class="cap">Both scale near-linearly with batch (MFU creeps 19→24% on the A100). A5000 fwd+bwd OOMs past
+    bsz 8 (24 GB). Small-batch numbers need a warm GPU — the A100 idle-clocks between runs, so a discarded
+    warmup pass precedes each sweep.</p>
+</div></section>
+
+<!-- THE CHANGE -->
+<section><div class="wrap">
+  <div class="kicker">Shipped · code change</div>
+  <h2>An <span class="mono">entropy_dtype</span> option, defaulting to fp16</h2>
+  <p class="sub">The precision is now configurable and wired through the production paths. fp16 is the main
+    default; fp32 stays one flag away for exact-boundary reproduction.</p>
+  <pre><span class="c"># apps/aunet/data/regex_cutting.py — RegexArgs</span>
+<span class="k">entropy_dtype</span>: str = <span class="g">"fp16"</span>   <span class="c"># "fp16" (default, ~5× faster, ~0.02% flips)</span>
+                          <span class="c"># | "bf16" (~0.2% flips) | "fp32" (exact, ~5× slower)</span>
+
+<span class="c"># plumbed to the GPU paths that run the entropy model:</span>
+train.py            <span class="c"># Option-A step:  EntropyModel(..., dtype=_rx.entropy_dtype)</span>
+regex_cutting.py    <span class="c"># eval GPU path:  EntropyModel(..., dtype=self.entropy_dtype)</span>
+EntropyModel        <span class="c"># cast AFTER building RoPE in fp32; CPU is forced back to fp32</span></pre>
+  <div class="grid2" style="margin-top:16px">
+    <div class="callout good">
+      <h4>Recommended setup</h4>
+      <p>Run Option-A training <b>and</b> the eval/GPU boundary path in fp16 — same code, so boundaries stay
+        self-consistent and you get the 5× across the board.</p>
+    </div>
+    <div class="callout warn">
+      <h4>Two things to watch</h4>
+      <p>The CPU / offline-precompute path stays fp32, so mixing it with fp16 training reintroduces the 0.02%
+        mismatch — keep one precision end-to-end. fp16’s narrower range was fine on this 50M model; re-check
+        on larger entropy models.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- METHOD -->
+<section><div class="wrap">
+  <div class="kicker">Method &amp; caveats</div>
+  <h2>How these were measured</h2>
+  <ul class="notes">
+    <li><b>Forward:</b> standalone <code>bench_model_forward</code> builds the real model on one GPU with
+      synthetic byte batches; forward-only timed with CUDA events after warmup. Not <code>torch.compile</code>d
+      — real training compiles, so live latency is lower; these are apples-to-apples eager numbers.</li>
+    <li><b>FLOPs/byte:</b> <code>model.flops_per_token()</code> (the 6·N·D figure the loop logs as
+      <code>speed/FLOPS</code>). Byte models: 1 token = 1 byte. llama: divided by 4.541 bytes/token measured
+      on the eval shard.</li>
+    <li><b>Parsing:</b> <code>bench_data_processing</code> times <code>tokenizer.encode</code> plus each
+      <code>RegexPool</code> <code>level_mask</code> builder per document, reported per KB. Entropy parsing is
+      <code>entropy_level_mask_gpu</code> (Option-A GPU) or the per-seq CPU patcher.</li>
+    <li><b>Entropy precision:</b> softmax/entropy always in fp32; only the transformer downcast. Boundary
+      flips compared against the fp32 mask on identical input.</li>
+    <li>The byte variants (aunet-word, bpebyte, hybrid, byteflow, BLT) share the
+      <code>[512,768]/[3,10]</code> backbone, so their forwards match within 0.5% — every real difference
+      between them lives in the parser, measured above.</li>
+  </ul>
+</div></section>
+
+</main>
+
+<footer><div class="wrap">
+  AU-Net forward + parsing benchmark · 100M family · A100-80GB (ece-agpu11), RTX A5000 (snu55), B200 ·
+  forward-only, bf16, eager · entropy dtype fp32/fp16/bf16. Generated with Claude Code.
+</div></footer>

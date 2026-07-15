@@ -1,0 +1,12 @@
+/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua/.venv/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua/.venv/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/lingua/.venv/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[rank0]:[W711 23:40:09.548830276 ProcessGroupNCCL.cpp:4715] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 as device used by this process is currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. You can pecify device_id in init_process_group() to force use of a particular device.
+[hybrid-bpb] ckpt=/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet/runs/1.3B/bpebyte_br_greedy_root_1.3B/checkpoints/0000162000 prefill=offline_leaf docs=400 max_bytes=8192 force_hybrid=True
+  b/N=0.25  Full BPB=3.9947 [3.9483,4.0350]  Partial/decode BPB=4.2403 [4.1921,4.2812] (764651 B, 75% of seq)
+  b/N=0.50  Full BPB=4.0594 [4.0216,4.0927]  Partial/decode BPB=4.3693 [4.3334,4.4020] (509769 B, 50% of seq)
+  b/N=0.75  Full BPB=4.0814 [4.0457,4.1113]  Partial/decode BPB=4.4438 [4.4099,4.4733] (254968 B, 25% of seq)
+[rank0]:[W711 23:41:26.561115279 ProcessGroupNCCL.cpp:1476] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())

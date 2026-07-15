@@ -2,7 +2,7 @@
 
 # 1.3B model results — full benchmark dump
 
-Models: **Llama 1.8B** (BPE, `llama_1.8B_paper` @60k) · AU-Net2 (byte, word patches) · BPEByte root_greedy. All @ final ckpt, 0-shot, full dataset. `—` = not run, `·` = metric absent. _(BPEByte online-bt is a secondary variant; its results are in [Supplements — BPEByte online-bt](#supplements--bpebyte-online-bt) at the end.)_
+Models: **Llama 1.8B** (BPE, `llama_1.8B_paper` @60k) · AU-Net2 (byte, word patches) · BPEByte root_greedy. All @ final ckpt, 0-shot, full dataset. `—` = not run, `·` = metric absent. _(BPEByte online-bt is a secondary variant; its results are in [Supplements — BPEByte online-bt](#supplements--bpebyte-online-bt) at the end. **BPEByte hybrid** (offline-leaf prefill / online-root decode) has its own section — [BPEByte hybrid](#bpebyte-hybrid-offline-leaf-prefill--online-root-decode) — with both eval regimes root-grQ / leafQ.)_
 Headline table: `consolidated_1.3B_table.md`. BLT-format: `cute_table3_format.md`.
 **Scoring mode** is noted per section: _likelihood_ = option-loglikelihood argmax (acc/acc_norm) or BPC; _generation_ = generate_until + exact_match.
 
@@ -360,6 +360,74 @@ Answer:
 [2] C
 [3] D
 ```
+
+## BPEByte hybrid (offline-leaf prefill / online-root decode)
+
+Secondary variant `hybrid_1p3B_leaf_B3` @180k: trained with **offline-leaf prefill** (real-BPE leaf tokens on the prompt) + **online-root-greedy decode** (causal byte-trie on the answer). It is evaluated under **two prompt-parsing regimes**, both scoring the answer online-root-greedy:
+
+- **root-grQ** — question parsed **online root-greedy** (model's native decode regime; no tokenizer override). Same regime as the `root_greedy` column above.
+- **leafQ** — question parsed **offline-leaf** (`offline_question_loglikelihood=true` + `regex_bpe_tokenizer_path` + `force_bpe_online_mode=greedy`), matching the hybrid's **training** prefill. Answer stays online-root-greedy.
+
+### Core reasoning (0-shot, likelihood)
+
+| benchmark | hybrid root-grQ | hybrid leafQ | (ref) root_greedy |
+| --- | --- | --- | --- |
+| HellaSwag (acc_norm) | 62.62 | 62.04 | 62.47 |
+| ARC-Easy (acc_norm) | 64.98 | 58.84 | 66.84 |
+| ARC-Challenge (acc_norm) | 37.03 | 35.75 | 37.54 |
+| BoolQ (acc) | 63.55 | 64.28 | 62.05 |
+| PIQA (acc_norm) | 73.78 | 74.21 | 74.32 |
+| WinoGrande (acc) | 61.48 | 61.40 | 61.09 |
+| MMLU-letter (acc) | 25.77 | 26.83 | 25.49 |
+| MMLU-text (acc_norm) | 33.74 | 32.45 | 34.14 |
+| **5-bench mean** (HS, ARC-E, BoolQ, PIQA, Wino) | **65.28** | **64.15** | **65.35** |
+
+**root-grQ ≈ root_greedy** (5-bench 65.28 vs 65.35) — the hybrid checkpoint is healthy; its offline-leaf prefill neither helps nor hurts when the question is read root-greedy. **leafQ costs ~1.1 pt** (64.15), concentrated almost entirely in **ARC-Easy (−6.1 pt, 64.98→58.84)**: offline-leaf question segmentation is off-distribution for the model (~6% boundary overlap with root-greedy) plus a mid-sequence regime switch (leaf question → root answer). So the hybrid's *own* training-matched eval regime is the weaker one for clean MC.
+
+### Robustness (leafQ regime; root-grQ suite not run)
+
+| metric | hybrid root-grQ | hybrid leafQ |
+| --- | --- | --- |
+| CUTE avg (exact_match) | — | 22.51 |
+| HellaSwag-Noise avg (acc_norm) | — | 41.45 |
+| HellaSwag-typo avg (acc_norm) | — | 51.51 |
+
+leafQ robustness matches the byte family (cf. `root_greedy` HS-Noise 42.3 / HS-typo avg 51.9, CUTE 20.6) — the hybrid keeps byte-level noise/typo robustness.
+
+### PBP — cut-invariance (the regime-dependent part)
+
+| metric (→0 ideal) | hybrid root-grQ | hybrid leafQ |
+| --- | --- | --- |
+| ΔBPC overall | −0.000 | +0.049 |
+| ΔBPC en / code / zh | 0.000 / 0.000 / −0.002 | +0.001 / +0.005 / **+0.140** |
+| pbp_mc ΔAcc avg | −0.08 | +0.05 |
+
+**The hybrid's boundary-sensitivity is entirely an eval-regime artifact.** Under **root-grQ it is perfectly cut-invariant** (ΔBPC ≈ 0, like `root_greedy`/AU-Net2). Under **leafQ the offline-leaf *question* parsing reintroduces BPE-style sensitivity** (ΔBPC +0.049, driven by Chinese zh +0.140) — but nowhere near Llama's +0.710, and MCQ-boundary ΔAcc stays ~0 in both regimes. So the offline-leaf prefill leaves only a faint BPE fingerprint on ΔBPC, and only when the question is parsed offline.
+
+**Net.** The hybrid is a healthy byte model: root-grQ ties `root_greedy` on clean MC and is fully cut-invariant; leafQ (its training-matched regime) trades ~1 pt of clean MC — mostly ARC-Easy — for nothing measurable, and adds a small Chinese-localized ΔBPC. Byte robustness (noise/typo/CUTE) is retained.
+
+## Confidence intervals (1.3B, 0-shot) — what actually separates the models
+
+All numbers in this doc are **single runs, no seeds**. The intervals below are the **within-run 95% CI** (±1.96·binomial SE, `n` = eval-set size); they bound sampling noise only (not run-to-run/seed variance, which would be larger). Metric per row: HS/ARC-E/ARC-C/PIQA = acc_norm; BoolQ/WinoG/MMLU-text = acc.
+
+| benchmark (n) | Llama 1.8B | AU-Net2 | root_greedy | Hybrid root-grQ | Hybrid leafQ |
+|:--|:--|:--|:--|:--|:--|
+| HS norm (10042) | 62.24±0.95 | 62.65±0.95 | 62.47±0.95 | 62.62±0.95 | 62.04±0.95 |
+| ARC-E norm (2376) | 65.45±1.91 | 65.66±1.91 | 66.84±1.89 | 64.98±1.92 | **58.84±1.98** |
+| ARC-C norm (1172) | 35.32±2.74 | 36.52±2.76 | 37.54±2.77 | 37.03±2.77 | 35.75±2.75 |
+| PIQA norm (1838) | 75.30±1.97 | 74.21±2.00 | 74.32±2.00 | 73.78±2.01 | 74.21±2.00 |
+| BoolQ acc (3270) | 63.46±1.65 | 61.13±1.67 | 62.05±1.66 | 63.55±1.65 | 64.28±1.64 |
+| WinoG acc (1267) | 61.56±2.68 | 61.48±2.68 | 61.09±2.69 | 61.48±2.68 | 61.40±2.68 |
+| MMLU-txt norm (14042) | 33.70±0.77 | 33.66±0.77 | 34.14±0.77 | 33.74±0.77 | 32.45±0.77 |
+| **Avg⁴** (HS·ARC-E·ARC-C·PIQA) | 59.6±1.0 | 59.8±1.0 | **60.3±1.0** | 59.6±1.0 | **57.7±1.0** |
+
+(Avg⁴ CI propagated as √ΣSE²/4 ≈ 0.51 → ±1.0 pt.)
+
+**Only two differences survive the CIs at 1.3B:**
+1. **Hybrid leafQ's ARC-E deficit.** 58.84 [56.9, 60.8] overlaps *no* other model (≥3-CI-width gap vs root_greedy [64.9, 68.7]) — genuinely significant. It also drags leafQ's Avg⁴ (57.7) significantly below the pack (Δ≈2.0 vs combined CI≈1.4).
+2. **Hybrid leafQ's MMLU-text dip.** 32.45 [31.7, 33.2] sits below root_greedy [33.4, 34.9] with no overlap (marginal vs Llama/AU-Net2/root-grQ).
+
+**Everything else is a statistical tie.** HS, ARC-C, PIQA, WinoG, BoolQ all overlap across all five models; BoolQ's apparent hybrid/Llama edge is marginal (AU-Net2's interval still touches). On **Avg⁴, Llama ≈ AU-Net2 ≈ root_greedy ≈ Hybrid root-grQ** — the 0.7-pt spread (59.6–60.3) is inside ±1.0, so "root_greedy is best" is **not** significant. Treat every sub-1-pt gap in this doc as noise; the robust story is byte/subword parity plus the leafQ ARC-E regime cost.
 
 ## CUTE — character manipulation (generation — generate_until → exact_match)
 

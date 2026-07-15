@@ -53,6 +53,29 @@ train-log BPB is available for all four even though held-out eval at 30% is not.
 - **hybrid@60% / 100%** fill in as training progresses (currently ~45% trained; 108k ≈ 15h, 180k ≈ 2d).
 - Train-log BPB at 100% matches held-out full-context (gr 0.853 train ≈ 0.858 scaling), so it's a sound proxy.
 
+## Checkpoints used (verified)
+
+Each downstream/BPB number was traced back to a specific checkpoint and re-checked against its
+`results.json` / `metrics.jsonl`. gr & hybrid downstream ran on **A100** (`ece:/home/hwbae/AUNet/runs/poc_ece_1p3b/`,
+native + `force_bpe_online_mode=greedy`); AU-Net & Llama on **B200** (canonical `evals_5bench`, 0-shot).
+
+| row | source run (B200) | step | % | downstream eval (dir → avg) | BPB train-log |
+|---|---|---|---|---|---|
+| gr 30% | `runs/1.3B/bpebyte_br_greedy_root_1.3B` | 54,000 | 30% | A100 `gr54k` → 0.512 ✓ | 0.965 ✓ |
+| gr 60% | `runs/1.3B/bpebyte_br_greedy_root_1.3B` | 108,000 | 60% | A100 `gr108k` → 0.573 ✓ | 0.935 ✓ |
+| gr 100% | `runs/1.3B/bpebyte_br_greedy_root_1.3B` | 180,000 | 100% | A100 `ctrl_1p3b` (`ctrl_native_fg`) → 0.647 ✓ | 0.853 ✓ |
+| hybrid 30% | `runs/small/poc/scale/hybrid_1p3B_leaf_B3` | 54,000 | 30% | A100 `ms_0000054000` (`hyb54k_native_fg`) → 0.535 ✓ | Full 0.938 ✓ |
+| AU-Net 100% | `runs/1.3B/aunet2_1.3B` | 180,000 | 100% | B200 `evals_5bench` → 0.650 ✓ | 0.872 ✓ |
+| Llama (1.8B) 100% | `runs/1.3B/llama_1.8B_paper` | 60,000 | 100% | B200 `evals_5bench` → 0.656 ✓ | 0.872 ✓ |
+
+30%-stage BPB table steps: gr/hybrid/AU-Net at **54k**, Llama at **18k** (each = 30% of that run's
+total). BPB 512-cap (gr & hybrid) = `eval_hybrid_bpb` on the same checkpoints. ✓ = value in the main
+table reproduced from the checkpoint's `results.json`/`metrics.jsonl`.
+
+Note: the A100 eval dirs use **staged consolidated copies** of the B200 checkpoints —
+`poc_ece_1p3b/{gr54k, gr108k, ctrl_1p3b, ms_0000054000}` are the step-54k/108k/180k/hybrid-54k
+consolidations, not independent runs.
+
 ## Footnotes
 1. **512-cap vs train-log are different measures** (512-cap = held-out, capped context; train-log = training loss, full context) — compare within a column, not across.
 2. **AU-Net 512-cap** not run (`aunet2_1.3B` not staged on ece); **Llama 512-cap = N/A** (byte-only scorer, Llama is subword).
