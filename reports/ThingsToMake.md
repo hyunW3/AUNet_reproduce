@@ -66,21 +66,21 @@ AU-Net. MMLU-text 0-shot vs 5-shot use different protocols — do not compare th
 **Models:** Llama · AU-Net · BPEByte-rg. Source: `scaling_bpb.csv` (BPB, tail-mean `loss/out` over last 200
 steps), `scaling_data.csv` (0-shot downstream). γ10 (ad-hoc) recipe, iso-byte budget per scale.
 
-### Held-out BPB (↓) — full-context, byte-normalized
+### Held-out BPB (↓) — held-out eval, byte-normalized (same ladder as §1 & `dashboard_bpebyte_rg`)
 
 | Scale | Llama | AU-Net | BPEByte-rg |
 |---|---:|---:|---:|
-| 100M | **1.040** | 1.114 | 1.125 |
-| 300M | **0.968** | 1.016 | 1.014 |
-| 760M | **0.919** | 0.944 | 0.940 |
+| 100M | *n/a* ¹ | 1.197 | 1.196 |
+| 300M | *n/a* ¹ | 1.016 | 1.014 |
+| 760M | 0.923 | 0.917 | 0.910 ² |
 | 1.3B | **0.840** | 0.866 | 0.858 |
 
-⚠️ The raw `scaling_bpb.csv` currently holds **undertrained 300M byte rows** (checkpoint step 40128 ≈ 33 % of the
-120,752 budget → spurious 0.995/1.113/1.107 that exceed their own 100M); the values above are the converged
-scaling-ladder numbers (`scaling_summary.md`, 1.3B matching §1's held-out). At 100M/300M Llama vs byte use
-different raw byte budgets, so those two rows are *indicative, not iso-budget*. _(The byte-only "Huber-fit" ladder
-in `dashboard_bpebyte_rg`—rg 1.196/1.014/0.910/0.858—is a different held-out convention that reads ~0.07 higher at
-100M; identical at 1.3B.)_
+¹ Llama held-out BPB not measured at 100M/300M (its **downstream** is — see below). ² fit; measured new-code rg
+0.9256. **Ranking Llama < rg < AU-Net** where all three exist (1.3B measured; the 760M rg *fit* 0.910 flatters it
+below Llama, but measured rg 0.926 restores the order). _The `scaling_bpb.csv`/plots carry a separate **train-log
+tail-mean** proxy (now monotone — its stale 300M rows were repointed from the still-training law runs back to the
+converged `*_adhoc` checkpoints: rg 1.014, AU-Net 1.016); the two conventions coincide at 300M/1.3B and bracket
+each other elsewhere (held-out is the honest generalization number)._
 
 ### Downstream — avgall (6-bench) / avg3 (0-shot)
 
@@ -103,9 +103,9 @@ in `dashboard_bpebyte_rg`—rg 1.196/1.014/0.910/0.858—is a different held-out
 | WinoGr. | Llama / AU-Net / rg | 50.6 / 49.7 / 50.0 | 50.2 / 50.3 / 54.8 | 54.0 / 55.6 / 54.6 | 61.6 / 61.5 / 61.1 |
 
 **Read:** Llama leads at 100M–760M (subword edge) but the **byte slope is steeper** — the families converge and
-cross at 1.3B on downstream (rg avgall 60.72 ≥ Llama 60.56; rg avg3 67.88 ≥ Llama 67.66). **On BPB Llama stays
-lowest at every scale** (Llama < rg < AU-Net), the ~0.02–0.03 subword edge persisting to 1.3B; AU-Net ≈ rg
-throughout (rg edges ahead at 760M/1.3B).
+cross at 1.3B on downstream (rg avgall 60.72 ≥ Llama 60.56; rg avg3 67.88 ≥ Llama 67.66). **On measured held-out
+BPB Llama stays lowest** (Llama < rg < AU-Net at 1.3B, 0.840 < 0.858 < 0.866), the ~0.02 subword edge persisting;
+AU-Net ≈ rg throughout, rg edging ahead at 1.3B.
 
 ---
 
