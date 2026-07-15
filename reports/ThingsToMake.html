@@ -241,12 +241,30 @@ split exists — a 15-variant HellaSwag-Noise suite and an 8-op typo suite (appl
 <tr><td>all70</td><td>0.435 (−.122)</td><td>0.382 (−.186)</td><td class="best">0.438 (−.119)</td></tr>
 <tr class="sub"><td>all100</td><td>—<sup>6</sup></td><td>—<sup>6</sup></td><td>—<sup>6</sup></td></tr>
 </tbody></table></div>
-<p class="lead"><sup>6</sup> ctx100 / all100 not run (stopped at p=70%). ctx = context only; all = context + choices.
+<p class="lead"><sup>6</sup> ctx100 / all100 for the 5-task macro not run; the full-despace endpoint was
+measured on <b>HS + ARC-Easy only</b> — see 4d. ctx = context only; all = context + choices.
 Δ = condition − clean; rg has the smallest drop in every "all" condition, AU-Net degrades most under heavy
 context-despace (ctx70 −.104).</p>
 <div class="read"><b>Read:</b> byte models are <b>boundary-robust</b> where Llama is not — PBP-mc ΔAcc −8.9 (Llama,
 driven by ARC-Easy −21.5) vs ≈0 for both byte models; cut-point ΔBPC +0.71 vs 0.00. rg leads noise/typo (HS-Noise
 42.3, ARC-C-Typo 33.5) and heavy-despace (all70 0.438). AU-Net degrades most under heavy context-despace.</div>
+
+<h3>4d · Full-despace endpoint — HS &amp; ARC-Easy, per-task acc (Δ vs clean); ctx100/all100 added</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Task</th><th>Model</th><th>clean</th><th>ctx70</th><th>ctx100</th><th>all70</th><th>all100</th></tr></thead>
+<tbody>
+<tr><td>HellaSwag</td><td class="lft">Llama</td><td>0.464</td><td>0.436</td><td>0.426 (−.038)</td><td>0.336</td><td>0.330 (−.134)</td></tr>
+<tr><td></td><td class="lft">AU-Net</td><td>0.480</td><td>0.414</td><td>0.398 (−.082)</td><td>0.318</td><td>0.300 (−.180)</td></tr>
+<tr><td></td><td class="lft">BPEByte-rg</td><td>0.462</td><td>0.432</td><td class="best">0.438 (−.024)</td><td>0.368</td><td class="best">0.358 (−.104)</td></tr>
+<tr><td>ARC-Easy</td><td class="lft">Llama</td><td>0.662</td><td>0.602</td><td>0.570 (−.092)</td><td>0.488</td><td>0.434 (−.228)</td></tr>
+<tr><td></td><td class="lft">AU-Net</td><td>0.696</td><td>0.470</td><td>0.356 (−.340)</td><td>0.396</td><td>0.274 (−.422)</td></tr>
+<tr><td></td><td class="lft">BPEByte-rg</td><td>0.692</td><td>0.622</td><td class="best">0.576 (−.116)</td><td>0.496</td><td class="best">0.474 (−.218)</td></tr>
+</tbody></table></div>
+<p class="lead">Full despace (every intra-line space removed). <b>AU-Net craters on ARC-Easy</b>: ctx100
+0.696→0.356 (−.34) and all100 →0.274 — near 4-choice chance (.25) — because whitespace <em>is</em> its pooling
+boundary. <b>BPEByte-rg is the most robust at the endpoint on both tasks</b> (ARC-E ctx100 .576 / all100 .474),
+edging even flat-subword Llama; content-based (BPE) boundaries survive space removal. Source
+<code>evals_despace_p100/</code> (n=500).</p>
 
 <!-- ===================== 5 ===================== -->
 <h2 id="s5"><span class="n">5.</span> State tracking & recall, 1.3B</h2>
