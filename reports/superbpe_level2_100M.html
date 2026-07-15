@@ -1,0 +1,273 @@
+<title>SuperBPE level-2 — learned vs fixed coarse pooling in AU-Net-3</title>
+<style>
+:root{
+ --ground:#f6f8fb; --surface:#ffffff; --surface2:#eef2f8; --ink:#152232; --ink2:#4a596c;
+ --muted:#6b7a8d; --border:#dbe3ee; --hair:#e8edf4; --accent:#3b6fe0; --accent-soft:#e7eefc;
+ --good:#12805c; --warn:#b45309;
+ --s-super:#CC79A7; --s-sub:#0072B2; --s-word:#009E73;   /* Okabe-Ito, colorblind-safe */
+ --font-sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+ --font-mono:ui-monospace,"SF Mono","Cascadia Code","Roboto Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+ --ground:#0e141c; --surface:#161e29; --surface2:#1d2733; --ink:#e6edf6; --ink2:#aab7c7;
+ --muted:#8494a6; --border:#273341; --hair:#202b38; --accent:#5b8bff; --accent-soft:#1a2740;
+ --good:#3fbf92; --warn:#e0a24a; --s-super:#e58fc0; --s-sub:#4aa3e0; --s-word:#37c79a;}}
+:root[data-theme="light"]{--ground:#f6f8fb;--surface:#fff;--surface2:#eef2f8;--ink:#152232;--ink2:#4a596c;--muted:#6b7a8d;--border:#dbe3ee;--hair:#e8edf4;--accent:#3b6fe0;--accent-soft:#e7eefc;--good:#12805c;--warn:#b45309;--s-super:#CC79A7;--s-sub:#0072B2;--s-word:#009E73}
+:root[data-theme="dark"]{--ground:#0e141c;--surface:#161e29;--surface2:#1d2733;--ink:#e6edf6;--ink2:#aab7c7;--muted:#8494a6;--border:#273341;--hair:#202b38;--accent:#5b8bff;--accent-soft:#1a2740;--good:#3fbf92;--warn:#e0a24a;--s-super:#e58fc0;--s-sub:#4aa3e0;--s-word:#37c79a}
+*{box-sizing:border-box} body{margin:0}
+.wrap{background:var(--ground);color:var(--ink);font-family:var(--font-sans);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.page{max-width:1180px;margin:0 auto;padding:0 24px 80px}
+header.top{padding:40px 0 22px;border-bottom:1px solid var(--border)}
+.kick{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+h1{font-size:clamp(26px,3.4vw,38px);line-height:1.08;margin:0;letter-spacing:-.02em;text-wrap:balance;font-weight:680}
+.sub{color:var(--ink2);margin:12px 0 0;max-width:72ch;font-size:15px}
+.sub b{color:var(--ink)}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:26px 0 4px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 16px 14px}
+.tile.hl{border-color:color-mix(in srgb,var(--s-super) 45%,var(--border))}
+.tile .t-lab{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.tile .t-val{font-family:var(--font-mono);font-size:24px;font-weight:600;margin:7px 0 3px;letter-spacing:-.01em}
+.tile.hl .t-val{color:var(--s-super)}
+.tile .t-note{font-size:12px;color:var(--ink2)}
+nav.sticky{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--ground) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);margin-top:26px}
+nav.sticky ul{list-style:none;display:flex;gap:4px;margin:0 auto;padding:8px 24px;max-width:1180px;flex-wrap:wrap}
+nav.sticky a{font-family:var(--font-mono);font-size:12.5px;color:var(--ink2);text-decoration:none;padding:7px 13px;border-radius:8px;letter-spacing:.02em}
+nav.sticky a:hover{background:var(--surface2);color:var(--ink)}
+nav.sticky a.on{background:var(--accent-soft);color:var(--accent)}
+section{padding:38px 0 8px;scroll-margin-top:52px}
+h2{font-size:20px;margin:0 0 4px;letter-spacing:-.01em;font-weight:640}
+.lede{color:var(--ink2);font-size:14px;margin:0 0 18px;max-width:80ch}
+.lede b{color:var(--ink)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px}
+.chartbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.chip{font-family:var(--font-mono);font-size:12px;border:1px solid var(--border);background:var(--surface);color:var(--ink2);padding:5px 11px;border-radius:999px;cursor:pointer}
+.chip:hover{border-color:var(--accent)} .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.chart{width:100%;overflow-x:auto}
+svg .grid{stroke:var(--hair)} svg .axis{stroke:var(--border)}
+svg text{fill:var(--muted);font-family:var(--font-mono);font-size:11px}
+svg text.vlab{fill:var(--ink);font-weight:600}
+svg text.mlab{fill:var(--ink2);font-family:var(--font-sans);font-size:11px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:12.5px;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend i{width:14px;height:10px;border-radius:3px;display:inline-block}
+.tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:14px;margin-top:16px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:9px 12px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{font-family:var(--font-mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);background:var(--surface2);position:sticky;top:0}
+td{font-family:var(--font-mono);font-variant-numeric:tabular-nums;border-bottom:1px solid var(--hair);color:var(--ink2)}
+td.fam{font-family:var(--font-sans);color:var(--ink)}
+tr.grouplead td{border-top:2px solid var(--border)}
+td.avg{color:var(--ink);font-weight:600;background:var(--surface2)}
+td.best{color:var(--good);font-weight:700}
+td.chance{color:var(--muted);font-style:italic}
+td.bad{color:var(--warn)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:7px;vertical-align:middle}
+.grouprow td{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:color-mix(in srgb,var(--accent) 5%,var(--surface));text-align:left}
+.note{font-size:12.5px;color:var(--muted);margin-top:12px;max-width:82ch}
+.note b{color:var(--ink2)}
+.foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--border);color:var(--muted);font-size:12px}
+@media (max-width:760px){.tiles{grid-template-columns:repeat(2,1fr)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap"><div class="page">
+<header class="top">
+ <p class="kick">Ablation · 100M · leak-free · AU-Net scaling-law recipe</p>
+ <h1>SuperBPE level-2: does a <span style="color:var(--s-super)">learned</span> coarse pool beat a fixed one?</h1>
+ <p class="sub">Six 100M byte models, one variable — the level-2 pooling rule (learned SuperBPE superwords vs static 2-subword vs none/word). Each in two boundary regimes: <b>offline</b> (real-BPE, boundaries peek at the future) and <b>causal</b> (root_greedy, leak-free). BPB and full 6-bench downstream. <b>Leak-free, the learned superword wins both.</b></p>
+ <div class="tiles" id="tiles"></div>
+</header>
+
+<nav class="sticky"><ul>
+ <li><a href="#bpb" class="on">Bits-per-byte</a></li>
+ <li><a href="#downstream">Downstream</a></li>
+ <li><a href="#pertask">Per-benchmark</a></li>
+ <li><a href="#regimes">Offline vs causal</a></li>
+ <li><a href="#config">Configuration</a></li>
+</ul></nav>
+
+<section id="bpb">
+ <h2>Bits-per-byte (final)</h2>
+ <p class="lede">Lower is better. Final-window training loss ÷ ln2 — a same-budget cross-model proxy (all models predict bytes, so directly comparable). <b>Learned superword is best in both regimes</b>; causal BPBs sit ~0.09 above offline (the leak the future-peeking offline boundaries hide).</p>
+ <div class="card">
+  <div class="chart" id="bpb-chart"></div>
+  <div class="legend" id="legend1"></div>
+ </div>
+ <div class="tablewrap" id="bpb-table"></div>
+ <p class="note">BPB = mean(last-20 <span class="mono">loss/out</span>) ÷ ln2. Offline = <span class="mono">bpe_br</span> (non-causal, boundaries use future bytes). Causal = <span class="mono">root_greedy</span> (streaming-reproducible, leak-free). Reference in each group is the word baseline (offline) / 2-stage root_greedy (causal).</p>
+</section>
+
+<section id="downstream">
+ <h2>Downstream accuracy</h2>
+ <p class="lede">0-shot, full test sets. <b>all-6</b> = mean(HS, ARC-E, ARC-C, BoolQ, PIQA, WinoGrande); <b>avg3</b> = mean(HS, ARC-E, PIQA). Offline → the word baseline leads; causal → the learned superword leads all-6 (BPB rank = downstream rank). But the causal all-6 gap is BoolQ-driven — on avg3 the ordering flips.</p>
+ <div class="card">
+  <div class="chartbar" id="ds-bar"></div>
+  <div class="chart" id="ds-chart"></div>
+  <div class="legend" id="legend2"></div>
+ </div>
+ <div class="tablewrap" id="ds-table"></div>
+ <p class="note">acc_norm for HS/ARC-E/ARC-C/PIQA, acc for BoolQ/WinoGrande. Plain <span class="mono">apps.aunet.eval</span> (offline models) / native online-3-valued eval path (causal models); train==eval boundaries verified.</p>
+</section>
+
+<section id="pertask">
+ <h2>Per-benchmark</h2>
+ <p class="lede">Every task, both regimes. <b style="color:var(--good)">Bold</b> = best in regime · <i>italic</i> = near-chance at 100M (ARC-C chance ≈ 25, WinoGrande ≈ 50) · <b style="color:var(--warn)">amber</b> = the root_greedy BoolQ collapse a level-2 repairs.</p>
+ <div class="tablewrap" id="pt-table"></div>
+ <p class="note"><b>The swing task is BoolQ.</b> The causal 2-stage reference drops to 41.3 (a known root_greedy weakness); adding <em>any</em> level-2 lifts it to 52–57. That single column is most of the causal all-6 story. HellaSwag is a ~30 near-tie everywhere.</p>
+</section>
+
+<section id="regimes">
+ <h2>Offline vs causal — the leak</h2>
+ <p class="lede">Offline <span class="mono">bpe_br</span> decides boundaries from the whole text, so a boundary can depend on <b>future</b> bytes an autoregressive decoder never has — an optimistic ~0.09-BPB "leak". root_greedy commits left-to-right (leak-free), reproducible at generation. The two regimes disagree on the downstream winner; <b>the leak-free result is the honest one.</b></p>
+ <div class="tablewrap" id="reg-table"></div>
+ <p class="note">Δ = causal − offline for the two shared families (superword, 2-subword). The word baseline (offline) and 2-stage ref (causal) are the respective "no learned level-2" references and aren't paired. Leak penalty is consistent (~+0.09 BPB) across arms — the offline advantage is future-peeking, not modeling.</p>
+</section>
+
+<section id="config">
+ <h2>Configuration</h2>
+ <p class="lede">All six share the arch family and the AU-Net scaling-law recipe (global batch 48 · 53,504 steps · 21 GB · seq 8192). The only deliberate difference is the level-2 pooling rule; the 2-stage ref drops the level-2 stage.</p>
+ <div class="tablewrap" id="cfg-table"></div>
+ <p class="note">llama3-derived SuperBPE tokenizer (128k→200k, 72,713 superwords over full llama3, 99.98% clean-nesting). Level-2 nests exactly inside level-1 (verified 100%). 2-stage ref ran micro 24 / grad-acc 2 (global 48 held) to fit the 80 GB A100.</p>
+</section>
+
+<p class="foot">100M / law recipe on ece-agpu11 (A100-80GB). BPB from per-run <span class="mono">metrics.jsonl</span>; downstream from <span class="mono">*/eval_6bench/results.json</span> (<span class="mono">apps.aunet.eval</span>, 6-bench 0-shot). Configs <span class="mono">apps/aunet/configs/{bpebyte_100M_superword,static2subword,rootgreedy_2stage_ref,…}.yaml</span>. Tokenizer <span class="mono">tokenizer/llama3_superbpe/</span>. · 2026-07-15</p>
+</div></div>
+
+<script>
+(function(){
+ var M={
+  A:  {name:"arm A · superword",   fam:"super", reg:"offline"},
+  C:  {name:"arm C · 2-subword",   fam:"sub",   reg:"offline"},
+  B:  {name:"baseline · word",     fam:"word",  reg:"offline"},
+  Arg:{name:"arm A_rg · superword",fam:"super", reg:"causal"},
+  Crg:{name:"arm C_rg · 2-subword",fam:"sub",   reg:"causal"},
+  Ref:{name:"rg 2-stage ref",      fam:"word",  reg:"causal"}
+ };
+ var COL={super:"var(--s-super)",sub:"var(--s-sub)",word:"var(--s-word)"};
+ var BPB={A:0.943,C:0.999,B:1.094,Arg:1.032,Crg:1.099,Ref:1.085};
+ var TASK={ // HS,ARCE,ARCC,BoolQ,PIQA,Wino, avg3, all6
+  A:[30.7,33.7,21.3,57.2,60.2,50.0,41.54,42.20],
+  C:[30.6,35.1,21.9,55.1,60.1,51.8,41.92,42.43],
+  B:[30.8,37.2,23.0,58.9,59.1,50.8,42.38,43.31],
+  Arg:[30.7,35.1,22.1,56.8,60.4,52.0,42.09,42.87],
+  Crg:[29.9,36.7,24.0,52.4,59.5,51.1,42.03,42.26],
+  Ref:[31.6,36.6,23.6,41.3,60.4,50.1,42.87,40.60]
+ };
+ var offline=["A","C","B"], causal=["Arg","Crg","Ref"];
+
+ // ---- tiles ----
+ document.getElementById("tiles").innerHTML=[
+  {hl:1,lab:"Best BPB · both regimes",val:"superword",note:"0.943 offline · 1.032 causal"},
+  {hl:1,lab:"Best downstream · causal",val:"superword",note:"all-6 = 42.87 (leads)"},
+  {hl:0,lab:"Leak penalty offline→causal",val:"+0.09",note:"future-peek removed (BPB)"},
+  {hl:0,lab:"Adding a coarse level · causal",val:"BoolQ ↑",note:"41.3 → 52–57 (repaired)"}
+ ].map(function(t){return '<div class="tile'+(t.hl?' hl':'')+'"><div class="t-lab">'+t.lab+'</div><div class="t-val">'+t.val+'</div><div class="t-note">'+t.note+'</div></div>';}).join("");
+
+ // ---- SVG grouped bar chart ----
+ function chart(el, keys2groups, valOf, lo, hi, lowerBetter, fmt){
+  var W=760,H=250,padL=44,padR=12,padT=18,padB=46, plotW=W-padL-padR, plotH=H-padT-padB;
+  var groups=keys2groups, gap=40;
+  var flat=[]; groups.forEach(function(g,gi){g.keys.forEach(function(k){flat.push({k:k,gi:gi});});});
+  var nB=flat.length, bw=Math.min(64,(plotW-gap*(groups.length-1))/nB);
+  var y=function(v){return padT+plotH-(v-lo)/(hi-lo)*plotH;};
+  // best per group
+  var bestK={}; groups.forEach(function(g){var b=g.keys[0];g.keys.forEach(function(k){if(lowerBetter?valOf(k)<valOf(b):valOf(k)>valOf(b))b=k;});bestK[g.name]=b;});
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" width="100%" preserveAspectRatio="xMidYMid meet" role="img">';
+  // gridlines
+  var ticks=5;
+  for(var t=0;t<=ticks;t++){var vv=lo+(hi-lo)*t/ticks, yy=y(vv);
+   svg+='<line class="grid" x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'"/>';
+   svg+='<text x="'+(padL-6)+'" y="'+(yy+3)+'" text-anchor="end">'+vv.toFixed(hi-lo>10?0:2)+'</text>';}
+  // bars
+  var x=padL, idx=0;
+  groups.forEach(function(g,gi){
+   if(gi>0)x+=gap;
+   var gx0=x;
+   g.keys.forEach(function(k){
+    var v=valOf(k), by=y(v), bh=padT+plotH-by;
+    var isb=bestK[g.name]===k;
+    svg+='<rect x="'+x+'" y="'+by+'" width="'+bw+'" height="'+bh+'" rx="4" fill="'+COL[M[k].fam]+'"'+(isb?' stroke="var(--good)" stroke-width="2"':'')+' opacity="'+(isb?1:.86)+'"/>';
+    svg+='<text class="vlab" x="'+(x+bw/2)+'" y="'+(by-5)+'" text-anchor="middle">'+fmt(v)+'</text>';
+    // model short label
+    var sl=M[k].name.split("·")[0].trim();
+    svg+='<text class="mlab" x="'+(x+bw/2)+'" y="'+(H-padB+15)+'" text-anchor="middle">'+sl+'</text>';
+    x+=bw+8; idx++;
+   });
+   // group label
+   svg+='<text x="'+((gx0+x-8)/2)+'" y="'+(H-padB+33)+'" text-anchor="middle" style="fill:var(--muted);letter-spacing:.08em">'+g.name.toUpperCase()+'</text>';
+  });
+  svg+='<line class="axis" x1="'+padL+'" y1="'+(padT+plotH)+'" x2="'+(W-padR)+'" y2="'+(padT+plotH)+'"/>';
+  svg+='</svg>';
+  el.innerHTML=svg;
+ }
+ function legend(el){el.innerHTML=[["super","learned superword"],["sub","static 2-subword"],["word","word baseline / 2-stage ref"]].map(function(p){return '<span><i style="background:'+COL[p[0]]+'"></i>'+p[1]+'</span>';}).join("");}
+
+ chart(document.getElementById("bpb-chart"),
+   [{name:"offline",keys:offline},{name:"causal",keys:causal}],
+   function(k){return BPB[k];}, 0.90,1.12,true,function(v){return v.toFixed(3);});
+ legend(document.getElementById("legend1"));
+
+ var dsMetric=7; // all6
+ function drawDS(){
+  chart(document.getElementById("ds-chart"),
+   [{name:"offline",keys:offline},{name:"causal",keys:causal}],
+   function(k){return TASK[k][dsMetric];}, 39.5,44.0,false,function(v){return v.toFixed(2);});
+ }
+ document.getElementById("ds-bar").innerHTML=[["all-6",7],["avg3 (HS/ARCE/PIQA)",6]].map(function(o,i){return '<span class="chip'+(i===0?' on':'')+'" data-m="'+o[1]+'">'+o[0]+'</span>';}).join("");
+ document.getElementById("ds-bar").querySelectorAll(".chip").forEach(function(c){c.onclick=function(){document.getElementById("ds-bar").querySelectorAll(".chip").forEach(function(x){x.classList.remove("on");});c.classList.add("on");dsMetric=+c.dataset.m;drawDS();};});
+ drawDS(); legend(document.getElementById("legend2"));
+
+ // ---- BPB table ----
+ function bpbRows(keys){var b=keys.reduce(function(x,k){return BPB[k]<BPB[x]?k:x;},keys[0]);
+  return keys.map(function(k){return '<tr><td class="fam"><span class="dot" style="background:'+COL[M[k].fam]+'"></span>'+M[k].name+'</td><td class="'+(k===b?'best':'')+'">'+BPB[k].toFixed(3)+'</td><td>'+M[k].fam.replace("super","learned superword").replace("sub","static 2-subword").replace("word","word / 2-stage ref")+'</td></tr>';}).join("");}
+ document.getElementById("bpb-table").innerHTML='<table><thead><tr><th>Model</th><th>BPB ↓</th><th>level-2 rule</th></tr></thead><tbody>'+
+   '<tr class="grouprow"><td colspan="3">offline · leaky bpe_br</td></tr>'+bpbRows(offline)+
+   '<tr class="grouprow"><td colspan="3">causal · root_greedy (leak-free)</td></tr>'+bpbRows(causal)+'</tbody></table>';
+
+ // ---- downstream summary table ----
+ function dsRows(keys){var b6=keys.reduce(function(x,k){return TASK[k][7]>TASK[x][7]?k:x;},keys[0]);var b3=keys.reduce(function(x,k){return TASK[k][6]>TASK[x][6]?k:x;},keys[0]);
+  return keys.map(function(k){return '<tr><td class="fam"><span class="dot" style="background:'+COL[M[k].fam]+'"></span>'+M[k].name+'</td><td>'+BPB[k].toFixed(3)+'</td><td class="avg '+(k===b3?'best':'')+'">'+TASK[k][6].toFixed(2)+'</td><td class="avg '+(k===b6?'best':'')+'">'+TASK[k][7].toFixed(2)+'</td></tr>';}).join("");}
+ document.getElementById("ds-table").innerHTML='<table><thead><tr><th>Model</th><th>BPB ↓</th><th>avg3 ↑</th><th>all-6 ↑</th></tr></thead><tbody>'+
+   '<tr class="grouprow"><td colspan="4">offline</td></tr>'+dsRows(offline)+
+   '<tr class="grouprow"><td colspan="4">causal</td></tr>'+dsRows(causal)+'</tbody></table>';
+
+ // ---- per-task table ----
+ var TH=["HS","ARC-E","ARC-C","BoolQ","PIQA","Wino"];
+ function ptRows(keys){var best=[];for(var c=0;c<6;c++){best[c]=keys.reduce(function(x,k){return TASK[k][c]>TASK[x][c]?k:x;},keys[0]);}
+  return keys.map(function(k){var tds='<td class="fam"><span class="dot" style="background:'+COL[M[k].fam]+'"></span>'+M[k].name+'</td>';
+   for(var c=0;c<6;c++){var cls=[];if(k===best[c])cls.push("best");if(c===2||c===5)cls.push("chance");if(k==="Ref"&&c===3)cls.push("bad");tds+='<td class="'+cls.join(" ")+'">'+TASK[k][c].toFixed(1)+'</td>';}
+   tds+='<td class="avg">'+TASK[k][6].toFixed(2)+'</td><td class="avg">'+TASK[k][7].toFixed(2)+'</td>';
+   return '<tr>'+tds+'</tr>';}).join("");}
+ document.getElementById("pt-table").innerHTML='<table><thead><tr><th>Model</th>'+TH.map(function(h){return '<th>'+h+'</th>';}).join("")+'<th>avg3</th><th>all-6</th></tr></thead><tbody>'+
+   '<tr class="grouprow"><td colspan="9">offline · leaky bpe_br</td></tr>'+ptRows(offline)+
+   '<tr class="grouprow"><td colspan="9">causal · root_greedy (leak-free)</td></tr>'+ptRows(causal)+'</tbody></table>';
+
+ // ---- offline vs causal (paired) ----
+ var pairs=[["superword","A","Arg"],["static 2-subword","C","Crg"]];
+ document.getElementById("reg-table").innerHTML='<table><thead><tr><th>Family</th><th>BPB offline</th><th>BPB causal</th><th>ΔBPB</th><th>all-6 offline</th><th>all-6 causal</th><th>Δall-6</th></tr></thead><tbody>'+
+   pairs.map(function(p){var bo=BPB[p[1]],bc=BPB[p[2]],ao=TASK[p[1]][7],ac=TASK[p[2]][7];
+    return '<tr><td class="fam"><span class="dot" style="background:'+COL[M[p[1]].fam]+'"></span>'+p[0]+'</td><td>'+bo.toFixed(3)+'</td><td>'+bc.toFixed(3)+'</td><td class="bad">+'+(bc-bo).toFixed(3)+'</td><td>'+ao.toFixed(2)+'</td><td>'+ac.toFixed(2)+'</td><td class="'+(ac-ao>=0?'best':'bad')+'">'+(ac-ao>=0?'+':'')+(ac-ao).toFixed(2)+'</td></tr>';}).join("")+
+   '<tr class="grouprow"><td colspan="7">un-paired references (no learned level-2)</td></tr>'+
+   '<tr><td class="fam"><span class="dot" style="background:'+COL.word+'"></span>word baseline (offline)</td><td colspan="3">'+BPB.B.toFixed(3)+' BPB</td><td colspan="3">'+TASK.B[7].toFixed(2)+' all-6</td></tr>'+
+   '<tr><td class="fam"><span class="dot" style="background:'+COL.word+'"></span>2-stage ref (causal)</td><td colspan="3">'+BPB.Ref.toFixed(3)+' BPB</td><td colspan="3">'+TASK.Ref[7].toFixed(2)+' all-6</td></tr>'+
+   '</tbody></table>';
+
+ // ---- config ----
+ var CFG=[
+  ["arm A / A_rg","super","[512,640,768] · L[3,4,3]","97.3M","bpe subword","learned superwords","1.19:1"],
+  ["arm C / C_rg","sub","[512,640,768] · L[3,4,3]","97.3M","bpe subword","static 2-subword","2:1"],
+  ["baseline (offline)","word","[512,640,768] · L[3,4,3]","97.3M","word (whitespace)","static 2-word","2:1"],
+  ["2-stage ref (causal)","word","[512,768] · L[3,10]","98.6M","root_greedy subword","— none —","—"]
+ ];
+ document.getElementById("cfg-table").innerHTML='<table><thead><tr><th>Model</th><th>dims</th><th>params</th><th>level-1</th><th>level-2</th><th>L1→L2</th></tr></thead><tbody>'+
+   CFG.map(function(r){return '<tr><td class="fam"><span class="dot" style="background:'+COL[r[1]]+'"></span>'+r[0]+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td><td>'+r[4]+'</td><td>'+r[5]+'</td><td>'+r[6]+'</td></tr>';}).join("")+'</tbody></table>';
+
+ // sticky nav active state
+ var links=[].slice.call(document.querySelectorAll('nav.sticky a'));
+ var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+ function onScroll(){var y=window.scrollY+70,cur=0;secs.forEach(function(s,i){if(s&&s.offsetTop<=y)cur=i;});links.forEach(function(a,i){a.classList.toggle('on',i===cur);});}
+ window.addEventListener('scroll',onScroll,{passive:true}); onScroll();
+})();
+</script>
