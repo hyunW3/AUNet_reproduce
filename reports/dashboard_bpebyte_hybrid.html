@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BPEByte hybrid — dashboard</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1d212b; --ink:#e7eaf0; --muted:#9aa4b2;
+    --line:#2a2f3a; --accent:#6ea8fe; --good:#66d19e; --warn:#e0b25a; --code:#0b0d11;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:960px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:26px;margin:0 0 6px;letter-spacing:-.02em}
+  h2{font-size:19px;margin:38px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  p{margin:12px 0}
+  .lead{color:var(--muted);font-size:14px}
+  code{background:var(--code);border:1px solid var(--line);border-radius:4px;
+    padding:1px 5px;font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cdd6e6}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .tablewrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+  th,td{padding:9px 13px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+  th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+  thead th{background:var(--panel2);color:var(--muted);font-weight:600;
+    position:sticky;top:0;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#1b1f28}
+  tr.control td{color:var(--muted)}
+  tr.scale300 td{background:#141821}
+  .best{color:var(--good);font-weight:700}
+  .tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);
+    border-radius:999px;padding:2px 10px;font-size:12px;color:var(--muted);margin-left:8px}
+  ul{margin:12px 0;padding-left:22px}
+  li{margin:8px 0}
+  ol{margin:12px 0;padding-left:22px}
+  ol li{margin:10px 0}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--warn);
+    border-radius:8px;padding:12px 16px;margin:16px 0;font-size:14px;color:var(--muted)}
+  .defs{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 18px;margin:16px 0}
+  .defs dt{color:var(--accent);font-weight:600;font-size:13.5px;margin-top:10px}
+  .defs dd{margin:2px 0 8px;color:var(--muted);font-size:13.5px}
+  .foot{margin-top:40px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+  .chip{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>BPEByte hybrid — dashboard <span class="tag">all BPEByte variants</span></h1>
+<p class="lead">All BPEByte variants in one view: the <b>rg control</b> (pure <code>root_greedy</code>,
+<a href="dashboard_bpebyte_rg.html">rg dashboard</a>) vs the <b>hybrid prefill/decode</b> family. Hybrid = an
+offline/online <b>prefill region</b> (leak-tolerant, non-causal) followed by a <code>root_greedy</code>
+<b>decode region</b> (0-leak, causal) — the decode part stays byte-reproducible while the prefill part gets
+BPE-like compression.</p>
+
+<dl class="defs">
+  <dt>Placement</dt><dd><code>leaf</code> = before_root, offline real-BPE · <code>bt</code> = before_root, online backtracking/longest-match · <code>root</code> = offline-BPE at root placement. Decode is always <code>root_greedy</code>.</dd>
+  <dt>Boundary (prefill fraction of doc length N)</dt><dd><code>(0,N)</code>=full · <code>N/2</code>=static-half · <code>(N/3,2N/3)</code>=mid.</dd>
+  <dt>Notation {placement}-{mode}</dt><dd>root-online-gr (=greedyQ) · leaf-offline (=leafQ) · root-offline (=rootQ) · leaf-online-bt (=btQ). MC scores the answer greedily, so question tokenization matters <b>only via placement</b> → the three before_root modes are <b>byte-identical</b>; only root-offline differs. This <i>collapse</i> holds at every scale/recipe.</dd>
+  <dt>BPB split</dt><dd><code>Decode@0.5</code> = leak-free, primary · <code>Full@0.5</code> = leak-contaminated diagnostic.</dd>
+</dl>
+
+<h2>Headline — hybrid vs rg control <span class="tag">native regime · AU-Net-law</span></h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Scale</th><th>Variant</th><th>3-bench (HS/ARC-E/PIQA)</th><th>Decode-BPB@0.5</th><th>Full-BPB@0.5</th></tr></thead>
+<tbody>
+<tr class="control"><td><b>100M</b></td><td>rg (control)</td><td>40.5</td><td>1.194</td><td>1.789</td></tr>
+<tr><td>100M</td><td>leaf · (N/3,2N/3)</td><td class="best">45.6</td><td>1.098</td><td>1.126</td></tr>
+<tr><td>100M</td><td>bt · (N/3,2N/3)</td><td class="best">45.6</td><td>1.094</td><td>1.129</td></tr>
+<tr><td>100M</td><td>leaf · N/2</td><td>45.4</td><td>1.100</td><td>1.130</td></tr>
+<tr><td>100M</td><td>root · N/2</td><td>40.1</td><td class="best">1.079</td><td>1.168</td></tr>
+<tr class="scale300"><td><b>300M</b></td><td>leaf · N/2</td><td class="best">52.8 ±1.7</td><td>0.993</td><td>1.018</td></tr>
+<tr class="scale300"><td>300M</td><td>leaf · MID</td><td>52.7 ±1.7</td><td>0.996</td><td>1.020</td></tr>
+<tr class="scale300"><td>300M</td><td>bt · N/2</td><td>51.3 ±1.8</td><td>0.992</td><td>1.026</td></tr>
+</tbody>
+</table>
+</div>
+<p class="lead">100M CIs ≈ ±1.7 by the same estimator; the leaf/bt cluster clears rg/root but within-cluster gaps are noise.</p>
+
+<h2>What the ablation says</h2>
+<ol>
+<li><b>Hybrid prefill beats the rg control on downstream by ~+5 pts at 100M</b> (leaf/bt 44.6–45.6 vs rg 40.5) and collapses <b>Full-BPB</b> 1.79 → ~1.13. The gain <b>scales</b>: all three 300M configs jump ~+7 pts (100M→300M) to 51–53.</li>
+<li><b>Placement is the only axis that moves anything.</b> <code>leaf ≈ bt</code> everywhere (offline real-BPE ≈ online backtracking); boundary rule is second-order. <code>root</code> prefill lands with the control on downstream (~40) despite the lowest leak-free Decode-BPB.</li>
+<li><b>Decode-BPB ⊥ downstream (a warning).</b> On the law recipe, root prefill wins Decode-BPB but <i>loses</i> downstream; the leaf/bt winners carry the <i>highest</i> Decode-BPB. <b>Full-BPB tracks downstream</b> correctly (leaf/bt ~1.13 &lt; root ~1.17 &lt; control 1.79). Don't rank hybrids by leak-free decode BPB alone.</li>
+<li><b>At 300M the config choice is statistically tied</b> (limit=1000, 3-bench CIs ±1.7–1.8 overlap): leaf·N/2 52.8, leaf·MID 52.7, bt·N/2 51.3, Decode-BPB all ~0.99. Only the <b>+7 pt scale gain</b> is robust; separating leaf-vs-bt / N/2-vs-MID needs full test sets or seeds, not more training.</li>
+</ol>
+
+<div class="note"><b>Recipe note.</b> Two recipes at the same γ10.4 token budget: <b>AU-Net-law</b> (batch 48,
+53,504 steps @100M — the numbers here) and <b>ad-hoc</b> (batch 768, 3,344 steps). Law runs ~0.05–0.10 BPB /
++3–4 downstream pts better; the ad-hoc 10-cell matrix (same relative ordering, worse absolutes) is the bottom
+half of <code>leaderboard_100M_hybrid_matrix.md</code>.</div>
+
+<h2>Checkpoints</h2>
+<ul>
+<li><b>100M</b> (law, 10 cells): <code>runs/…/lb_hyb_{leaf,bt,root}_{full,half,mid}_100M/checkpoints/0000053504</code>; configs <code>runs/poc/portable_aunetlaw/ablation_cfgs/</code>.</li>
+<li><b>300M</b>: leaf·N/2 <code>ece:~/AUNet/runs/poc/portable_aunetlaw/lb_hyb_leaf_half_300M/checkpoints/0000120752</code>; bt·N/2 <code>…/lb_hyb_bt_half_300M/…</code>; leaf·MID <code>…/lb_hyb_leaf_mid_300M/…</code> (copy of B200 <code>runs/300M/hybrid_300M</code>).</li>
+</ul>
+
+<div class="foot">
+Details: <a href="leaderboard_100M_hybrid_matrix.md">leaderboard_100M_hybrid_matrix.md</a> (10-cell law + ad-hoc),
+<a href="leaderboard_300M_hybrid.md">leaderboard_300M_hybrid.md</a>.
+&nbsp;·&nbsp; <a class="chip" href="dashboard_bpebyte_rg.html">→ BPEByte-rg dashboard</a>
+</div>
+
+</div>
+</body>
+</html>

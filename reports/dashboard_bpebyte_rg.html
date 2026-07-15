@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BPEByte root_greedy — dashboard</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1d212b; --ink:#e7eaf0; --muted:#9aa4b2;
+    --line:#2a2f3a; --accent:#6ea8fe; --good:#66d19e; --warn:#e0b25a; --code:#0b0d11;
+    --best:#243a2e;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:960px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:26px;margin:0 0 6px;letter-spacing:-.02em}
+  h1 .sub{color:var(--muted);font-weight:400;font-size:15px}
+  h2{font-size:19px;margin:38px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  p{margin:12px 0}
+  .lead{color:var(--muted);font-size:14px}
+  code{background:var(--code);border:1px solid var(--line);border-radius:4px;
+    padding:1px 5px;font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cdd6e6}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .tablewrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+  th,td{padding:9px 13px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  thead th{background:var(--panel2);color:var(--muted);font-weight:600;
+    position:sticky;top:0;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#1b1f28}
+  .best{color:var(--good);font-weight:700}
+  .tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);
+    border-radius:999px;padding:2px 10px;font-size:12px;color:var(--muted);margin-left:8px}
+  ul{margin:12px 0;padding-left:22px}
+  li{margin:7px 0}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--warn);
+    border-radius:8px;padding:12px 16px;margin:16px 0;font-size:14px;color:var(--muted)}
+  .foot{margin-top:40px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+  .chip{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>BPEByte <code>root_greedy</code> — dashboard <span class="tag">rg · scaling ladder</span></h1>
+<p class="lead">The <b>BPEByte-rg</b> family: online, 0-leak, byte-for-byte-reproducible <code>root_greedy</code>
+segmentation (<code>bpe_online_mode=greedy</code>, placement <code>root</code>). The deployable byte-tokenization
+baseline and the <b>control</b> for the hybrid ablation
+(see <a href="dashboard_bpebyte_hybrid.html">hybrid dashboard</a>).</p>
+<p class="lead">Protocol: ratio-10 (γ=10) scaling ladder, identical DCLM data. <b>BPB</b> = held-out bits/byte
+(↓ better); <b>downstream</b> = 0-shot mean accuracy (↑ better), <code>acc_norm</code> for HS/ARC-E/ARC-C/PIQA,
+<code>acc</code> for BoolQ/Wino.</p>
+
+<h2>Scaling ladder</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Scale (N)</th><th>Held-out BPB</th><th>Downstream 4-bench</th><th>5-bench</th><th>Checkpoint</th></tr></thead>
+<tbody>
+<tr><td><b>100M</b></td><td>1.1958</td><td>35.5%</td><td>—</td><td><code>cmp_g10/v4_root_greedy</code></td></tr>
+<tr><td><b>300M</b></td><td>1.0142</td><td>42.0%</td><td>—</td><td><code>lb_rg_300M</code></td></tr>
+<tr><td><b>760M</b></td><td>0.9098<sup>1</sup></td><td>52.6%</td><td>—</td><td><code>bpebyte_root_greedy_760M</code></td></tr>
+<tr><td><b>1.3B</b></td><td class="best">0.8578</td><td>60.3%</td><td>64.4%</td><td><code>bpebyte_br_greedy_root_1.3B</code> (180k)</td></tr>
+<tr><td><b>7B</b> <span class="tag">extrap.</span></td><td>0.764</td><td class="best">72.2%</td><td>—</td><td>fit prediction</td></tr>
+</tbody>
+</table>
+</div>
+<p class="lead"><sup>1</sup> fit; measured new-code rg = 0.9256. 1.3B BPB 95% CI [0.858, 0.860] (temporal, not seed).</p>
+
+<h2>rg vs the other mature families (same ladder)</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>100M</th><th>300M</th><th>760M</th><th>1.3B</th></tr></thead>
+<tbody>
+<tr><td><b>BPB</b> rg / AU-Net / Llama</td><td>1.196 / 1.197 / —</td><td>1.014 / 1.016 / —</td><td>0.910 / 0.917 / 0.923</td><td><span class="best">0.858</span> / 0.866 / <b>0.840</b></td></tr>
+<tr><td><b>4-bench</b> rg / AU-Net / Llama</td><td>35.5 / 35.9 / 40.3</td><td>42.0 / 42.9 / 46.4</td><td>52.6 / 52.8 / 55.7</td><td>60.3 / 59.8 / 60.3</td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li><b>BPB ranking: Llama &lt; rg &lt; AU-Net</b> at every real scale (subword keeps a ~0.02 iso-param edge).</li>
+<li><b>Downstream: Llama leads small, byte slope is steeper</b> — the cluster converges at 1.3B (rg ≈ Llama ≈ 60.3% on 4-bench; 5-shot already flips it: rg 67.9 &gt; Llama 67.4), and the fit predicts <b>rg overtakes Llama by 7B</b>.</li>
+<li><b>rg robustness edge (1.3B):</b> prompt-cut ΔBPC ~0 (Llama +0.71), HellaSwag-Noise 42.3 (Llama 37.6), CUTE spelling 59.3 (Llama 18.4) — bytes pay BPB but win character/robustness tasks.</li>
+</ul>
+
+<h2>1.3B training trajectory (held-out downstream)</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th>train %</th><th>HS</th><th>ARC-E</th><th>BoolQ</th><th>PIQA</th><th>Wino</th><th>5-bench</th><th>BPB train-log</th><th>BPB 512-cap</th></tr></thead>
+<tbody>
+<tr><td>30%</td><td>0.453</td><td>0.471</td><td>0.435</td><td>0.669</td><td>0.530</td><td>0.512</td><td>0.965</td><td>1.065</td></tr>
+<tr><td>60%</td><td>0.488</td><td>0.576</td><td>0.527</td><td>0.701</td><td>0.575</td><td>0.573</td><td>0.935</td><td>1.022</td></tr>
+<tr><td>100%</td><td>0.573</td><td>0.674</td><td>0.635</td><td>0.739</td><td>0.612</td><td class="best">0.647</td><td>0.853</td><td>0.933</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note"><b>Eval note.</b> ece/A100 byte downstream requires <code>force_bpe_online_mode=greedy</code>
+(a bare tokenizer override runs offline and tanks online byte models).</div>
+
+<div class="foot">
+Sources: <code>scaling_laws/scaling_laws_plan.md</code>, <code>performance_summary_per_scale.md</code>,
+<code>model_results_{760M,1.3B}.md</code>, <code>bpb_ci_1.3B.md</code>, <code>leaderboard_1B.md</code>.
+&nbsp;·&nbsp; <a class="chip" href="dashboard_bpebyte_hybrid.html">→ BPEByte hybrid dashboard</a>
+</div>
+
+</div>
+</body>
+</html>
