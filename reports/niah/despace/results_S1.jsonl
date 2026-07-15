@@ -1,0 +1,12 @@
+{"tag": "subword_clean", "family": "subword", "task": "1", "target_bytes": 1024, "avg_prompt_bytes": 1337, "n": 25, "exact_match": 0.84, "tok_frac": 0.96}
+{"tag": "subword_clean", "family": "subword", "task": "1", "target_bytes": 4096, "avg_prompt_bytes": 4409, "n": 25, "exact_match": 1.0, "tok_frac": 1.0}
+{"tag": "aunet_clean", "family": "aunet", "task": "1", "target_bytes": 1024, "avg_prompt_bytes": 1337, "n": 25, "exact_match": 1.0, "tok_frac": 1.0}
+{"tag": "aunet_clean", "family": "aunet", "task": "1", "target_bytes": 4096, "avg_prompt_bytes": 4409, "n": 25, "exact_match": 1.0, "tok_frac": 1.0}
+{"tag": "byte_clean", "family": "aunet", "task": "1", "target_bytes": 1024, "avg_prompt_bytes": 1337, "n": 25, "exact_match": 1.0, "tok_frac": 1.0}
+{"tag": "byte_clean", "family": "aunet", "task": "1", "target_bytes": 4096, "avg_prompt_bytes": 4409, "n": 25, "exact_match": 1.0, "tok_frac": 1.0}
+{"tag": "subword_despace", "family": "subword", "task": "1", "target_bytes": 1024, "avg_prompt_bytes": 1070, "n": 25, "exact_match": 0.0, "tok_frac": 0.75}
+{"tag": "subword_despace", "family": "subword", "task": "1", "target_bytes": 4096, "avg_prompt_bytes": 3493, "n": 25, "exact_match": 0.0, "tok_frac": 0.75}
+{"tag": "byte_despace", "family": "aunet", "task": "1", "target_bytes": 1024, "avg_prompt_bytes": 1070, "n": 25, "exact_match": 0.64, "tok_frac": 0.9485714285714286}
+{"tag": "byte_despace", "family": "aunet", "task": "1", "target_bytes": 4096, "avg_prompt_bytes": 3493, "n": 25, "exact_match": 0.48, "tok_frac": 0.9257142857142857}
+{"tag": "aunet_despace", "family": "aunet", "task": "1", "target_bytes": 1024, "avg_prompt_bytes": 1070, "n": 25, "exact_match": 0.96, "tok_frac": 0.9942857142857143}
+{"tag": "aunet_despace", "family": "aunet", "task": "1", "target_bytes": 4096, "avg_prompt_bytes": 3493, "n": 25, "exact_match": 1.0, "tok_frac": 1.0}

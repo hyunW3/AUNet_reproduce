@@ -1,0 +1,76 @@
+{
+ "tasks": {
+  "1": {
+   "desc": "noise + number",
+   "llama": {
+    "clean": 92.0,
+    "despace": 0.0,
+    "delta": -92.0,
+    "clean_tf": 98.0,
+    "despace_tf": 75.0
+   },
+   "aunet(word)": {
+    "clean": 100.0,
+    "despace": 98.0,
+    "delta": -2.0,
+    "clean_tf": 100.0,
+    "despace_tf": 99.7
+   },
+   "bpebyte_rg": {
+    "clean": 100.0,
+    "despace": 56.0,
+    "delta": -44.0,
+    "clean_tf": 100.0,
+    "despace_tf": 93.7
+   }
+  },
+  "2": {
+   "desc": "essay + number",
+   "llama": {
+    "clean": 64.0,
+    "despace": 0.0,
+    "delta": -64.0,
+    "clean_tf": 91.0,
+    "despace_tf": 74.5
+   },
+   "aunet(word)": {
+    "clean": 100.0,
+    "despace": 20.0,
+    "delta": -80.0,
+    "clean_tf": 100.0,
+    "despace_tf": 87.4
+   },
+   "bpebyte_rg": {
+    "clean": 100.0,
+    "despace": 68.0,
+    "delta": -32.0,
+    "clean_tf": 100.0,
+    "despace_tf": 95.4
+   }
+  },
+  "3": {
+   "desc": "essay + UUID",
+   "llama": {
+    "clean": 18.0,
+    "despace": 0.0,
+    "delta": -18.0,
+    "clean_tf": 95.9,
+    "despace_tf": 95.3
+   },
+   "aunet(word)": {
+    "clean": 48.0,
+    "despace": 8.0,
+    "delta": -40.0,
+    "clean_tf": 97.7,
+    "despace_tf": 91.7
+   },
+   "bpebyte_rg": {
+    "clean": 100.0,
+    "despace": 46.0,
+    "delta": -54.0,
+    "clean_tf": 100.0,
+    "despace_tf": 98.2
+   }
+  }
+ }
+}

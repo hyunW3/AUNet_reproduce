@@ -26,6 +26,9 @@ python reports/dashboard_src/extract_robust.py     # -> robustness.json
 # 4. despace — prompt space-strip, 6 benchmarks  (reads evals_pbp/despace_mc_{full,more}/)
 python reports/dashboard_src/extract_despace.py    # -> despace.json
 
+# 4b. despace on NIAH retrieval  (reads reports/niah/despace/results_S{1,2,3}.jsonl)
+python reports/dashboard_src/extract_niah_despace.py  # -> niah_despace.json
+
 # 5. (optional) standalone markdown downstream table
 python reports/dashboard_src/build_table.py        # -> scaling_downstream_table.md
 
@@ -44,6 +47,7 @@ of the HTML build.
 | `extract_dash.py`    | `model_config.json`, `training_bpb_curves.json` | `runs/**/config.yaml`, `metrics.jsonl`, `scaling_bpb.csv` |
 | `extract_robust.py`  | `robustness.json` | `runs/main/1.3B/*/evals_pbp/pbp_mc_full/`, `evals_noise/`, `downstream_data.json` |
 | `extract_despace.py` | `despace.json` | `runs/main/1.3B/*/evals_pbp/despace_mc_{full,more}/` |
+| `extract_niah_despace.py` | `niah_despace.json` | `reports/niah/despace/results_S{1,2,3}.jsonl` |
 | `build_table.py`     | `scaling_downstream_table.md` | `downstream_data.json` |
 | `build_dashboard.py` | `scaling_dashboard.html` | every JSON/CSV/MD above + `parsing_ablation_100M.json`, `leaderboard_100M.md` |
 
@@ -58,6 +62,10 @@ The robustness/despace extractors read eval dumps produced by the `lingua` submo
   ("I have a boy" → "Ihaveaboy") over arc_easy/arc_challenge/piqa/boolq/hellaswag/winogrande;
   `acc_norm` is the primary metric (matches the downstream table). Env `DESPACE_TASKS` selects a
   subset (used to split the 6 benchmarks across `despace_mc_full` + `despace_mc_more`).
+
+- **Despace-NIAH** (`scripts/niah/niah_probe.py --despace`) — verbatim retrieval (RULER S-NIAH-1/2/3)
+  with all prompt spaces stripped; headline `exact_match` (per the clean NIAH reports), `tok_frac`
+  diagnostic. Inference-only over consolidated 1.3B checkpoints; results in `reports/niah/despace/`.
 
 Byte families run through `apps.aunet.eval` (HierarchicalTransformer); Llama through
 `apps.main.eval` (LMTransformer) — the two harnesses share the sentinel modules.

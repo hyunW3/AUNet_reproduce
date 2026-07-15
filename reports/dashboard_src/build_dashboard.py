@@ -7,6 +7,7 @@ cfg=json.load(open(f"{ROOT}/reports/model_config.json"))
 bpb=list(csv.DictReader(open(f"{ROOT}/reports/scaling_bpb.csv")))
 robust=json.load(open(f"{ROOT}/reports/robustness.json"))
 despace=json.load(open(f"{ROOT}/reports/despace.json"))
+niah_despace=json.load(open(f"{ROOT}/reports/niah_despace.json"))
 ablation=json.load(open(f"{ROOT}/reports/parsing_ablation_100M.json"))
 
 D=dd["data"]
@@ -18,7 +19,7 @@ tiles=[
  ("1.3B Avg-all","%.1f–%.1f"%(min(av),max(av)),"4-way tie (Hybrid leafQ trails)"),
  ("Best BPB @1.3B","0.827","Hybrid (leaf/B3) · vs Llama 0.840"),
 ]
-payload={"downstream":dd,"curves":curves,"config":cfg,"bpb":bpb,"robust":robust,"despace":despace,"ablation":ablation}
+payload={"downstream":dd,"curves":curves,"config":cfg,"bpb":bpb,"robust":robust,"despace":despace,"niah_despace":niah_despace,"ablation":ablation}
 J=json.dumps(payload,separators=(",",":"))
 
 HTML=r'''<title>Tokenization Scaling — AU-Net / BPEByte / Hybrid</title>
@@ -166,6 +167,11 @@ td.avg{color:var(--ink);font-weight:600;background:var(--surface2)}
  <p class="lede" style="margin:16px 0 6px"><code>acc</code> (clean → despaced, Δ) — same runs, raw total log-prob. The un-normalized view sharpens AU-Net's collapse on the space-structured tasks: ARC-Easy 69.4→<b>35.3</b> (−34.1, near the 4-way chance floor) and BoolQ 61.2→<b>43.9</b> (−17.3, below the majority baseline).</p>
  <div class="tablewrap" id="dpbpnorm"></div>
  <p class="note">Despace Δ = accuracy change (pp) when all prompt spaces are removed (0 = robust), full test sets. Avg = macro-mean of Δ over the six benchmarks. Context-only strip (choices left intact), so the delta isolates prompt-reading. Byte families via <span class="mono">apps.aunet.eval</span>, Llama via <span class="mono">apps.main.eval</span>; sentinel <span class="mono">despace_mc</span>.</p>
+
+ <h3 style="font-size:15px;margin:30px 0 6px;letter-spacing:-.01em">Despace on retrieval — NIAH (<code>exact_match</code>, clean → despaced)</h3>
+ <p class="lede" style="margin-bottom:10px">The <b>opposite</b> task: verbatim needle-in-a-haystack retrieval (RULER S-NIAH). A "magic" value (7-digit number / UUID) is hidden in a haystack; the model must emit it verbatim (greedy teacher-forced <code>exact_match</code> — the metric the clean NIAH reports use). Despacing keeps the value intact (no internal spaces) but strips every other space. This <b>flips the ranking</b>: <b>BPEByte-rg is most robust</b> (byte-output copies the value regardless of pooling), <b>Llama collapses to 0</b> (its subword output can't re-align to the value buried in run-on text — <code>tok_frac</code> shows it still recovers 75–95% of the pieces), and <b>AU-Net is haystack-dependent</b> — near-immune on the repetitive-noise haystack (S1) but collapsing on natural essays (S2/S3), where despacing turns the essay into 16-char word-blobs that bury the needle.</p>
+ <div class="tablewrap" id="dniah"></div>
+ <p class="note">NIAH despace = <code>exact_match</code> retrieval clean → despaced (mean over lengths 1024/4096 × depths 0.1–0.9, n=25/cell), S-NIAH-1 noise+number · S-2 essay+number · S-3 essay+UUID. <code>exact_match</code> is all-or-nothing and per-subword (Llama) vs per-byte (byte families) — not strictly cross-family comparable; the within-family clean→despace Δ is the honest signal. Inference-only probe <span class="mono">scripts/niah/niah_probe.py --despace</span>.</p>
 </section>
 
 <section id="bpb">
@@ -395,6 +401,24 @@ function drawDespace(){
  }
  document.getElementById("dpbp").innerHTML=dTable("clean_norm","degraded_norm","delta_norm","avg_delta_norm");
  document.getElementById("dpbpnorm").innerHTML=dTable("clean","degraded","delta","avg_delta");
+ drawNiahDespace();
+}
+
+// ---- despace on NIAH retrieval ----
+function drawNiahDespace(){
+ const N=DATA.niah_despace&&DATA.niah_despace.tasks; if(!N){return;}
+ const fam=[["llama","Llama","--s-llama"],["aunet(word)","AU-Net","--s-aunet"],["bpebyte_rg","BPEByte-rg","--s-rg"]];
+ const TASKS=[["1","S1 noise+num"],["2","S2 essay+num"],["3","S3 essay+UUID"]];
+ let hh="<table><thead><tr><th>Family</th>"+TASKS.map(t=>`<th>${t[1]}</th>`).join("")+"</tr></thead><tbody>";
+ fam.forEach(([k,name,col])=>{
+  hh+=`<tr><td class="fam"><span class="dot" style="background:${cssv(col)}"></span>${name}</td>`;
+  TASKS.forEach(([tk])=>{const o=(N[tk]||{})[k];
+   if(!o){hh+="<td>—</td>";return;}
+   const dl=o.delta,a=Math.min(0.9,Math.abs(dl)/92*0.85+(dl<=-1?0.06:0));
+   const txt=`${o.clean.toFixed(0)}→${o.despace.toFixed(0)} <span style="opacity:.7">(${dl>0?'+':''}${dl.toFixed(0)})</span><br><span style="opacity:.55;font-size:11px">tf ${o.clean_tf!=null?o.clean_tf.toFixed(0):'–'}→${o.despace_tf!=null?o.despace_tf.toFixed(0):'–'}</span>`;
+   hh+=`<td style="background:rgba(213,94,0,${a.toFixed(3)});color:${a>0.5?'#fff':'var(--ink2)'}">${txt}</td>`;});
+  hh+="</tr>";});
+ document.getElementById("dniah").innerHTML=hh+"</tbody></table>";
 }
 
 // ---- 100M parsing ablation ----
