@@ -67,6 +67,7 @@ avg3 = HS·ARC-E·PIQA, avgall = mean of the listed set. <span class="best">Gree
 <a href="#s4">4 · Robustness — input perturbation, 1.3B</a>
 <a href="#s5">5 · State tracking & recall, 1.3B</a>
 <a href="#s6">6 · Examples — what each eval / benchmark looks like</a>
+<a href="#s7">7 · Tokenization on numerical values, 1.3B</a>
 </div>
 
 <!-- ===================== 1 ===================== -->
@@ -305,7 +306,15 @@ than the n=500 pass; all other §4d cells remain n=500.</p>
 <tr><td>S-NIAH-3 (essay+UUID)</td><td class="lft">Llama</td><td>0.15</td><td>0.15</td><td>0.05</td><td>0.25</td><td>0.20</td><td>0.16</td></tr>
 <tr><td></td><td class="lft">AU-Net</td><td>0.85</td><td>0.60</td><td>0.45</td><td>0.30</td><td>0.40</td><td>0.52</td></tr>
 <tr><td></td><td class="lft">BPEByte-rg</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td class="best">1.00</td></tr>
+<tr><td>S-NIAH-word (essay+word)<sup>8</sup></td><td class="lft">Llama</td><td>0.25</td><td>0.30</td><td>0.35</td><td>0.25</td><td>0.20</td><td>0.27</td></tr>
+<tr><td></td><td class="lft">AU-Net</td><td>1.00</td><td>0.95</td><td>0.95</td><td>1.00</td><td>0.95</td><td>0.97</td></tr>
+<tr><td></td><td class="lft">BPEByte-rg</td><td>1.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>0.95</td><td class="best">0.99</td></tr>
 </tbody></table></div>
+<p class="lead"><sup>8</sup> S-NIAH-word: the retrieved value is a distinctive <b>word</b> (e.g. <code>quokka</code>,
+<code>gobbledygook</code>) verified <b>absent from the haystack</b>, so it is a genuine unseen copy. Byte models copy it
+near-perfectly (AU-Net 0.97, BPEByte 0.99); <b>Llama floors at 0.27</b> — it can't reliably reproduce the subword
+tokenization of an unseen word. <b>AU-Net recovers on words (0.97) vs UUIDs (0.52)</b>: a word is one whitespace pool
+unit, whereas a UUID's hyphens/hex break its word-pooling; BPEByte (content-derived boundaries) is robust to both.</p>
 
 <h3>5c · MK-NIAH multi-key grid (len 2048, exact-match acc)</h3>
 <div class="tablewrap"><table>
@@ -406,11 +415,63 @@ ctx100: "<span class="d">Question:Thechildwantedtoplaysoshe</span>\nAnswer:"   <
 query:  ...The special magic number for <span class="k">planet</span> is   ->   predict <span class="g">4167211</span>
 S-NIAH-3 needle uses a UUID:  ...magic UUIDs for planet is: <span class="g">93cf4220-c917-b853-8608-86599b2ac757</span>.</div>
 
+<p class="exl"><b>S-NIAH-4 / -5 (word value)</b> <span class="m">— S-NIAH-2 / -1 with the value swapped from a number to an unseen WORD, verified absent from the haystack (a genuine unseen copy)</span></p>
+<div class="ex">S-NIAH-5  (= S-NIAH-1 + word, noise haystack):  ...magic words for <span class="k">violin</span> is: <span class="g">zephyr</span>.        query -> predict <span class="g">zephyr</span>
+S-NIAH-4  (= S-NIAH-2 + word, essay haystack):  ...magic words for <span class="k">compass</span> is: <span class="g">flibbertigibbet</span>.   query -> predict <span class="g">flibbertigibbet</span>
+Only the value type changes (number -> word); haystack, needle/query template and the length×depth sweep are identical. Words: <code>quokka</code>, <code>gobbledygook</code>, ...
+byte models copy the unseen word ~1.0 (AU-Net 0.97, BPEByte 0.99); Llama 0.27 under the default query (see §5b note 8 and the query-format example below).</div>
+
+<p class="exl"><b>Query format — paper (<code>...is</code>) vs aligned (<code>...is:</code>)</b> <span class="m">— the needle stores "<code>is: value</code>"; the default query omits the colon, so the subword model greedily emits it and exact-match penalizes the boundary, not retrieval</span></p>
+<div class="ex">needle in haystack:  ...for <span class="k">compass</span> is<span class="d">:</span> <span class="g">ee65f53e-9421-ce50-2116-70eae679f02e</span>.
+PAPER   query end :  ...The special magic UUID for <span class="k">compass</span> is       -> model emits "<span class="d">:</span>" (learned from needle) -> exact-match of " <span class="g">ee65...</span>" <b>FAILS</b>
+ALIGNED query end :  ...The special magic UUID for <span class="k">compass</span> is<span class="d">:</span>      -> ":" already in prompt -> model emits <span class="g">ee65...</span>   (S-NIAH-3 Llama 0.16 -> 0.91)
+Both prompts contain the needle's "is:"; only the QUERY end differs. Aligning barely moves byte models (invariant) but recovers Llama sharply.</div>
+
 <p class="exl"><b>MK-NIAH</b> <span class="m">— K needles with distinct keys; retrieve the value for ONE queried key (disambiguation)</span></p>
 <div class="ex">...number for <span class="k">harbor</span> is: 8823140. ... number for <span class="k">planet</span> is: 4167211. ... number for <span class="k">candle</span> is: 5590318. ...
 query key = <span class="k">planet</span>   ->   must pick <span class="g">4167211</span> (not the distractor needles)</div>
 <p class="lead"><b>S5 permutation</b> (hardest state-tracking rung; all families ≈ chance, not tabled in §5): track 5 slots
 under swaps — <code>start A B C D E . swap 4 0 . swap 3 2 . get 0 = ?</code> -> predict the symbol now in slot 0.</p>
+
+<h3>Number probes (§7) — cloze: score both options, pick the higher length-normalized loglikelihood</h3>
+<p class="exl"><b>Magnitude comparison</b> <span class="m">— which of two d-digit numbers is larger (chance 0.50)</span></p>
+<div class="ex">Which number is larger, <span class="k">296</span> or <span class="k">834</span>? Answer:     options: "296"  /  "<span class="g">834</span>"     -> pick the higher-LL option (gold = the larger number)</div>
+
+<p class="exl"><b>Copy fidelity / Arithmetic / Reverse</b> <span class="m">— correct answer vs a RANDOM distractor; the distractor is what varies (one digit flipped, or the un-reversed original)</span></p>
+<div class="ex">Copy    : "Write 489,853 without commas:"                    correct <span class="g">489853</span>   vs   distractor <span class="d">489353</span>   (one random digit flipped)
+Arith   : "361 x 859 ="                                       correct <span class="g">310099</span>   vs   distractor <span class="d">319099</span>   (one random digit flipped)
+Reverse : "The digits of 3569 written in reverse order are:"   correct <span class="g">9653</span>     vs   distractor <span class="d">3569</span>     (the un-reversed original)
+scored: LL(correct) vs LL(distractor), length-normalized; correct iff the model prefers the exact number. chance = 0.50.
+(byte models copy near-perfectly; Llama is uncertain — see §7. reverse fails for all; arithmetic ~0.61, reasoning-bound.)</div>
+
+<!-- ===================== 7 ===================== -->
+<h2 id="s7"><span class="n">7.</span> Tokenization on numerical values <span class="tag">1.3B · cloze / exact-match</span></h2>
+<p class="lead">Does tokenization affect how models handle <b>numbers</b>? Three probes that isolate number representation —
+option-loglikelihood <b>cloze</b> (magnitude, copy, arithmetic) / teacher-forced exact-match, no free generation;
+separators aligned so the §5 boundary-format confound does not apply. Source: <code>scripts/probes/numprobe.py</code>.</p>
+
+<h3>7a · Magnitude comparison (cloze) — "which is larger, A or B?", by #digits (chance 0.50)</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Model</th><th>1d</th><th>5d</th><th>10d</th><th>15d</th><th>20d</th><th>Mean (1–20)</th></tr></thead>
+<tbody>
+<tr><td>Llama</td><td>0.41</td><td>0.58</td><td>0.52</td><td>0.51</td><td>0.49</td><td>0.52</td></tr>
+<tr><td>AU-Net</td><td>0.61</td><td>0.57</td><td>0.60</td><td>0.54</td><td>0.39</td><td>0.56</td></tr>
+<tr><td>BPEByte-rg</td><td>0.69</td><td>0.65</td><td>0.72</td><td>0.70</td><td>0.62</td><td class="best">0.69</td></tr>
+</tbody></table></div>
+
+<h3>7b · Copy fidelity &amp; arithmetic (cloze, correct vs 1-digit-flip distractor; mean over 2–20 digits)</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Task</th><th>Llama</th><th>AU-Net</th><th>BPEByte-rg</th></tr></thead>
+<tbody>
+<tr><td>Copy (strip commas: 1,234,567 → 1234567)</td><td>0.74</td><td class="best">1.00</td><td class="best">1.00</td></tr>
+<tr><td>Arithmetic (a +/−/× b)</td><td>0.61</td><td>0.62</td><td>0.61</td></tr>
+</tbody></table></div>
+<div class="read"><b>Read:</b> byte / content-derived tokenization gives more faithful <b>number representations</b>. On
+<b>magnitude comparison</b> Llama sits at <b>chance (0.52)</b> across 1–20 digits while BPEByte reaches 0.69 — byte
+access preserves place value that subword tokenization scrambles. On <b>exact copy</b> under comma-grouping the byte
+models are <b>perfect (1.00) even at 20 digits</b> vs Llama 0.74 (its number tokenization fragments around separators).
+<b>Arithmetic is a wash (~0.61 all)</b> — 1.3B <em>reasoning</em> capacity, not tokenization, is the bottleneck there;
+reverse-digits fails for everyone (~0, models copy rather than reverse). Cloze/distractor examples in §6.</div>
 
 <div class="foot">
 All numbers single-run (no seeds) unless a CI is shown; treat sub-1-pt downstream gaps as noise.

@@ -14,9 +14,10 @@ from __future__ import annotations
 import argparse
 import glob
 import json
+import os
 import random
 
-L = "/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet"
+L = os.environ.get("AUNET_ROOT", "/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet")
 DCLM_GLOB = f"{L}/data/dclm_baseline_1.0_2shards_shuffled/*.jsonl"
 
 NOISE = ("The grass is green. The sky is blue. The sun is yellow. "
@@ -27,6 +28,8 @@ TASKS = {
     "1": ("noise", "number"),   # S-NIAH-1: repeated noise + magic number
     "2": ("essay", "number"),   # S-NIAH-2: natural essay + magic number
     "3": ("essay", "uuid"),     # S-NIAH-3: natural essay + magic UUID
+    "4": ("essay", "word"),     # S-NIAH-4: natural essay + unseen magic WORD (absent from haystack)
+    "5": ("noise", "word"),     # S-NIAH-5: repeated noise + unseen magic WORD
 }
 
 _essay_cache = {}
@@ -59,6 +62,35 @@ def _uuid(rng: random.Random) -> str:
     h = "0123456789abcdef"
     return "-".join("".join(rng.choice(h) for _ in range(n)) for n in (8, 4, 4, 4, 12))
 
+
+# Distinctive words for the "word" value type: the retrieved value is a WORD (not a
+# number/UUID), and we require it to be ABSENT from the haystack so retrieval is a
+# genuine copy of an unseen lexical string rather than something the haystack primes.
+_MAGIC_WORDS = [
+    "quokka", "sassafras", "zeugma", "obsidian", "zephyr", "kumquat", "marzipan",
+    "gargoyle", "xylophone", "quagmire", "syzygy", "pemmican", "zydeco", "kerfuffle",
+    "brouhaha", "vellum", "cummerbund", "persimmon", "tamarind", "saffron", "juniper",
+    "peregrine", "albatross", "manticore", "basilisk", "obelisk", "ziggurat", "pergola",
+    "trellis", "filigree", "sarsaparilla", "flibbertigibbet", "collywobbles", "gobbledygook",
+]
+_CONS, _VOW = "bcdfghjklmnpqrstvwz", "aeiou"
+
+
+def _magic_word(rng: random.Random, avoid: str = "") -> str:
+    """A distinctive word guaranteed not to occur (case-insensitively) in `avoid`
+    (the haystack + instruction + keys). Falls back to a pronounceable nonce."""
+    av = avoid.lower()
+    cands = _MAGIC_WORDS[:]
+    rng.shuffle(cands)
+    for w in cands:
+        if w.lower() not in av:
+            return w
+    for _ in range(50):  # nonce fallback: consonant-vowel syllables + final consonant
+        w = "".join(rng.choice(_CONS) + rng.choice(_VOW) for _ in range(rng.randint(2, 3))) + rng.choice(_CONS)
+        if w.lower() not in av:
+            return w
+    return w
+
 # generic keys so the model can't lean on a memorized association
 KEYS = ["forest", "harbor", "candle", "marble", "engine", "meadow", "lantern",
         "planet", "river", "cactus", "violin", "pebble", "glacier", "orchard",
@@ -76,21 +108,25 @@ def make_sample(target_bytes: int, depth: float, value_digits: int,
     (teacher-forced) value is absent from the context. A model that genuinely
     retrieves must score ~0 here; if it still scores high the metric is leaking."""
     key = rng.choice(KEYS)
-    if value_type == "uuid":
-        value = _uuid(rng)
-        noun = "UUID"
-    else:
-        value = "".join(rng.choice("0123456789") for _ in range(value_digits))
-        noun = "number"
-    needle = f"One of the special magic {noun}s for {key} is: {value}. "
+    noun = {"uuid": "UUID", "word": "word"}.get(value_type, "number")
 
-    body_target = max(target_bytes, len(needle) + 200)
+    # Build the haystack body first, so a "word" value can be chosen to be absent
+    # from it (unseen retrieval target). ~80 B covers the longest needle template.
+    body_target = max(target_bytes, 80 + 200)
     if haystack_type == "essay":
         pool = _essay_pool()
         start = rng.randint(0, max(0, len(pool) - body_target - 1))
         body = pool[start:start + body_target]
     else:
         body = (NOISE * (body_target // len(NOISE) + 3))[:body_target]
+
+    if value_type == "uuid":
+        value = _uuid(rng)
+    elif value_type == "word":
+        value = _magic_word(rng, avoid=body + " " + INSTRUCTION + " " + " ".join(KEYS))
+    else:
+        value = "".join(rng.choice("0123456789") for _ in range(value_digits))
+    needle = f"One of the special magic {noun}s for {key} is: {value}. "
 
     cut = int(len(body) * depth)
     while 0 < cut < len(body) and body[cut] != " ":   # snap to a word boundary

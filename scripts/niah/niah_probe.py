@@ -59,19 +59,49 @@ def score(generator, tokenizer, pairs, batch):
     return out
 
 
-def build_pairs(samples, family):
+def build_pairs(samples, family, variant=None, sep="", answer_sep=None):
+    """(context, continuation) per sample.
+
+    variant=None keeps the family-default cut (unchanged legacy behavior).
+    The two PBP variants place exactly ONE space at the prompt/answer cut, on
+    opposite sides; the total text is identical, only the cut position moves
+    (mirror of apps/aunet/eval_pbp_mc.py):
+      canonical : context ends before the space, continuation = " " + value
+      space     : trailing space committed into the context, continuation = value
+    A byte model sees identical bytes either way (delta == 0 exactly); a subword
+    model re-tokenizes the prompt tail, so exact-match can drop -- that drop is
+    the prompt-boundary problem (PBP).
+    """
     pairs = []
     for s in samples:
-        if family == "subword":
-            ctx, cont = s["prompt"], " " + s["value"]
-        else:  # bytes: fold separating space into context
-            ctx, cont = s["prompt"] + " ", s["value"]
+        if variant is None:
+            if answer_sep is not None:
+                # put the needle separator on the ANSWER side: the model must emit
+                # e.g. ": <value>" (its natural continuation of "...is"), which is the
+                # arguably-more-natural cut than scoring only " <value>".
+                ctx, cont = s["prompt"].rstrip(" "), answer_sep + s["value"]
+            elif family == "subword":
+                ctx, cont = s["prompt"], " " + s["value"]
+            else:  # bytes: fold separating space into context
+                ctx, cont = s["prompt"] + " ", s["value"]
+        else:
+            # `sep` (e.g. ":") aligns the query end to the needle's value separator
+            # ("...is: <value>"), so the boundary shift is a pure trailing space and
+            # not confounded by the model expecting the memorized colon after "is".
+            base = s["prompt"].rstrip(" ") + sep
+            if variant == "canonical":
+                ctx, cont = base, " " + s["value"]
+            elif variant == "space":
+                ctx, cont = base + " ", s["value"]
+            else:
+                raise ValueError(f"unknown PBP variant {variant!r}")
         pairs.append((ctx, cont))
     return pairs
 
 
 def run(family, ckpt, tag, lengths, depths, n_per_cell, value_digits, seed,
-        batch, tok_path, max_tokens, out, per_out, task="1", control=False, despace=False):
+        batch, tok_path, max_tokens, out, per_out, task="1", control=False, despace=False,
+        pbp=False, pbp_sep="", query_sep="", answer_sep=None):
     ht, vt = TASKS[task]
     generator, tokenizer = build_generator(family, ckpt, tok_path, max_tokens)
     rows, per_rows = [], []
@@ -83,8 +113,42 @@ def run(family, ckpt, tag, lengths, depths, n_per_cell, value_digits, seed,
             for s in samples:
                 s["prompt"] = _despace(s["prompt"])
                 s["prompt_bytes"] = len(s["prompt"].encode())
-        pairs = build_pairs(samples, family)
+        if query_sep and not pbp:
+            # Align the query end to the needle's value separator (e.g. ":") so the
+            # scored continuation follows the same format as "...is: <value>" in the
+            # needle. Without this the model greedily emits the memorized separator
+            # after "is" and exact-match penalizes the format mismatch, not retrieval.
+            for s in samples:
+                s["prompt"] = s["prompt"].rstrip(" ") + query_sep
+                s["prompt_bytes"] = len(s["prompt"].encode())
         avg_bytes = sum(s["prompt_bytes"] for s in samples) / len(samples)
+
+        if pbp:
+            # Score BOTH boundary variants (identical total text; the single cut
+            # space sits on opposite sides) and report delta = space - canonical.
+            # Byte models: identical bytes -> delta == 0 exactly. Subword: the
+            # re-tokenized tail can drop exact-match -> that drop is the PBP.
+            stats = {}
+            for var in ("canonical", "space"):
+                r = score(generator, tokenizer, build_pairs(samples, family, var, pbp_sep), batch)
+                stats[var] = (sum(x[0] for x in r) / len(r),
+                              sum((x[1] / x[2] if x[2] else 0.0) for x in r) / len(r))
+            d_exact = stats["space"][0] - stats["canonical"][0]
+            d_frac = stats["space"][1] - stats["canonical"][1]
+            row = {"tag": tag, "family": family, "task": task, "target_bytes": tb,
+                   "avg_prompt_bytes": round(avg_bytes), "n": len(samples),
+                   "exact_canonical": stats["canonical"][0], "exact_space": stats["space"][0],
+                   "pbp_delta_exact": round(d_exact, 4),
+                   "tok_frac_canonical": round(stats["canonical"][1], 4),
+                   "tok_frac_space": round(stats["space"][1], 4),
+                   "pbp_delta_tok_frac": round(d_frac, 4)}
+            rows.append(row)
+            print(f"[{tag}] S-NIAH-{task} len~{tb} ({avg_bytes:.0f}B) PBP | exact "
+                  f"canon={stats['canonical'][0]:.3f} space={stats['space'][0]:.3f} "
+                  f"Δ={d_exact:+.3f}  (tok_frac Δ={d_frac:+.3f})", flush=True)
+            continue
+
+        pairs = build_pairs(samples, family, answer_sep=answer_sep)
         print(f"[{tag}] S-NIAH-{task} len~{tb} ({avg_bytes:.0f}B prompt) x {len(samples)} ...",
               flush=True)
         res = score(generator, tokenizer, pairs, batch)
@@ -132,13 +196,25 @@ def main():
                     help="remove the needle (absent-value control for leak checks)")
     ap.add_argument("--despace", action="store_true",
                     help="strip ALL spaces from the prompt (haystack+needle+query); value survives")
+    ap.add_argument("--pbp", action="store_true",
+                    help="prompt-boundary problem: score canonical vs trailing-space cut, "
+                         "report delta (byte models ~0, subword drops)")
+    ap.add_argument("--pbp_sep", default="",
+                    help="align the query end to the needle value separator (e.g. ':') so the "
+                         "PBP shift is a pure trailing space, not the memorized-colon confound")
+    ap.add_argument("--query_sep", default="",
+                    help="append this to the query end (e.g. ':') in the STANDARD eval to match "
+                         "the needle format '...is: <value>' and remove the boundary-format confound")
+    ap.add_argument("--answer_sep", default=None,
+                    help="put the needle separator on the ANSWER side (e.g. ': '): score the "
+                         "continuation as '<sep><value>' so the model emits its natural '...is: value'")
     ap.add_argument("--out", required=True)
     ap.add_argument("--per_out", default=None)
     args = ap.parse_args()
     run(args.family, args.ckpt, args.tag, args.lengths, args.depths,
         args.n_per_cell, args.value_digits, args.seed, args.batch_size,
         args.tok_path, args.max_tokens, args.out, args.per_out, args.task, args.control,
-        args.despace)
+        args.despace, args.pbp, args.pbp_sep, args.query_sep, args.answer_sep)
 
 
 if __name__ == "__main__":
