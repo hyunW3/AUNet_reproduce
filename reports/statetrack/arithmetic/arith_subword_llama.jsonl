@@ -1,0 +1,10 @@
+{"tag": "subword_llama", "config": "2da", "n": 500, "exact": 0.04, "digit_acc": 0.52}
+{"tag": "subword_llama", "config": "2ds", "n": 500, "exact": 0.04, "digit_acc": 0.269}
+{"tag": "subword_llama", "config": "2dm", "n": 500, "exact": 0.062, "digit_acc": 0.4623333333333333}
+{"tag": "subword_llama", "config": "3da", "n": 500, "exact": 0.004, "digit_acc": 0.41833333333333333}
+{"tag": "subword_llama", "config": "3ds", "n": 500, "exact": 0.0, "digit_acc": 0.237}
+{"tag": "subword_llama", "config": "4da", "n": 500, "exact": 0.002, "digit_acc": 0.35433333333333333}
+{"tag": "subword_llama", "config": "4ds", "n": 500, "exact": 0.0, "digit_acc": 0.2053333333333333}
+{"tag": "subword_llama", "config": "5da", "n": 500, "exact": 0.0, "digit_acc": 0.336}
+{"tag": "subword_llama", "config": "5ds", "n": 500, "exact": 0.0, "digit_acc": 0.174}
+{"tag": "subword_llama", "config": "1dc", "n": 500, "exact": 0.054, "digit_acc": 0.433}

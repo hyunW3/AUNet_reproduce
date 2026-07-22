@@ -1,0 +1,10 @@
+{"tag": "aunet_static", "config": "2da", "n": 500, "exact": 0.028, "digit_acc": 0.3898333333333333}
+{"tag": "aunet_static", "config": "2ds", "n": 500, "exact": 0.004, "digit_acc": 0.35766666666666663}
+{"tag": "aunet_static", "config": "2dm", "n": 500, "exact": 0.052, "digit_acc": 0.40603333333333336}
+{"tag": "aunet_static", "config": "3da", "n": 500, "exact": 0.004, "digit_acc": 0.3041666666666667}
+{"tag": "aunet_static", "config": "3ds", "n": 500, "exact": 0.0, "digit_acc": 0.2911666666666667}
+{"tag": "aunet_static", "config": "4da", "n": 500, "exact": 0.002, "digit_acc": 0.2567}
+{"tag": "aunet_static", "config": "4ds", "n": 500, "exact": 0.0, "digit_acc": 0.2679666666666667}
+{"tag": "aunet_static", "config": "5da", "n": 500, "exact": 0.0, "digit_acc": 0.23614285714285713}
+{"tag": "aunet_static", "config": "5ds", "n": 500, "exact": 0.0, "digit_acc": 0.23946666666666666}
+{"tag": "aunet_static", "config": "1dc", "n": 500, "exact": 0.056, "digit_acc": 0.4995}

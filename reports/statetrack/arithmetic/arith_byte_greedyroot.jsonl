@@ -1,0 +1,10 @@
+{"tag": "byte_greedyroot", "config": "2da", "n": 500, "exact": 0.018, "digit_acc": 0.403}
+{"tag": "byte_greedyroot", "config": "2ds", "n": 500, "exact": 0.018, "digit_acc": 0.3775}
+{"tag": "byte_greedyroot", "config": "2dm", "n": 500, "exact": 0.038, "digit_acc": 0.4081}
+{"tag": "byte_greedyroot", "config": "3da", "n": 500, "exact": 0.004, "digit_acc": 0.3208666666666667}
+{"tag": "byte_greedyroot", "config": "3ds", "n": 500, "exact": 0.0, "digit_acc": 0.30543333333333333}
+{"tag": "byte_greedyroot", "config": "4da", "n": 500, "exact": 0.0, "digit_acc": 0.2979}
+{"tag": "byte_greedyroot", "config": "4ds", "n": 500, "exact": 0.0, "digit_acc": 0.26376666666666665}
+{"tag": "byte_greedyroot", "config": "5da", "n": 500, "exact": 0.0, "digit_acc": 0.2669238095238095}
+{"tag": "byte_greedyroot", "config": "5ds", "n": 500, "exact": 0.0, "digit_acc": 0.2271952380952381}
+{"tag": "byte_greedyroot", "config": "1dc", "n": 500, "exact": 0.034, "digit_acc": 0.4608333333333333}
