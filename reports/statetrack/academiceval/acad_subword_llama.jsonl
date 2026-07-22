@@ -1,0 +1,3 @@
+{"tag": "subword_llama", "config": "title_10K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.6104828477684852, "exact": 0.0}
+{"tag": "subword_llama", "config": "abs_9K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.522628248587477, "exact": 0.0}
+{"tag": "subword_llama", "config": "intro_8K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.48396901255915276, "exact": 0.0}
