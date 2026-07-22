@@ -246,24 +246,33 @@ dilute it). No fix (token healing / alignment) is applied — this is the benchm
 <p class="lead">Δ = degraded − clean; rg degrades <b>least</b> on all three (smallest |Δ|). No separate "Arc-c-noise"
 split exists — a 15-variant HellaSwag-Noise suite and an 8-op typo suite (applied to both HS and ARC-C).</p>
 
-<h3>4c · Despace (macro-avg acc over 5 tasks incl. HS & ARC-E) — degraded value (Δ vs clean), bold = smallest drop</h3>
+<h3>4c · Despace — <b>FULL grid</b>: ctx / ans / all × p ∈ {10,20,40,70,100}% (macro-avg acc over 5 tasks; value, Δ vs clean; bold = smallest drop)</h3>
 <div class="tablewrap"><table>
 <thead><tr><th>Condition</th><th>Llama</th><th>AU-Net</th><th>BPEByte-rg</th></tr></thead>
 <tbody>
-<tr><td>clean</td><td>0.557</td><td>0.568</td><td>0.557</td></tr>
-<tr><td>ctx10</td><td class="best">0.548 (−.009)</td><td>0.551 (−.017)</td><td>0.545 (−.012)</td></tr>
-<tr><td>ctx40</td><td>0.526 (−.031)</td><td>0.501 (−.067)</td><td class="best">0.530 (−.027)</td></tr>
-<tr><td>ctx70</td><td class="best">0.523 (−.034)</td><td>0.464 (−.104)</td><td>0.509 (−.048)</td></tr>
-<tr class="sub"><td>ctx100</td><td>—<sup>6</sup></td><td>—<sup>6</sup></td><td>—<sup>6</sup></td></tr>
-<tr><td>all10</td><td>0.499 (−.058)</td><td>0.496 (−.072)</td><td class="best">0.504 (−.053)</td></tr>
-<tr><td>all40</td><td>0.457 (−.100)</td><td>0.431 (−.137)</td><td class="best">0.462 (−.095)</td></tr>
-<tr><td>all70</td><td>0.435 (−.122)</td><td>0.382 (−.186)</td><td class="best">0.438 (−.119)</td></tr>
-<tr class="sub"><td>all100</td><td>—<sup>6</sup></td><td>—<sup>6</sup></td><td>—<sup>6</sup></td></tr>
+<tr><td>clean</td><td>0.558</td><td>0.569</td><td>0.553</td></tr>
+<tr><td>ctx10</td><td>0.547 (−.011)</td><td>0.549 (−.020)</td><td class="best">0.543 (−.010)</td></tr>
+<tr><td>ctx20</td><td>0.542 (−.017)</td><td>0.538 (−.031)</td><td class="best">0.538 (−.014)</td></tr>
+<tr><td>ctx40</td><td>0.526 (−.032)</td><td>0.500 (−.070)</td><td class="best">0.530 (−.023)</td></tr>
+<tr><td>ctx70</td><td class="best">0.522 (−.036)</td><td>0.462 (−.107)</td><td>0.508 (−.045)</td></tr>
+<tr class="sub"><td>ctx100</td><td>0.501 (−.057)</td><td>0.418 (−.152)</td><td class="best">0.497 (−.056)</td></tr>
+<tr><td>ans10</td><td>0.487 (−.071)</td><td>0.494 (−.075)</td><td class="best">0.490 (−.063)</td></tr>
+<tr><td>ans20</td><td>0.470 (−.088)</td><td>0.463 (−.106)</td><td class="best">0.480 (−.072)</td></tr>
+<tr><td>ans40</td><td>0.466 (−.093)</td><td>0.446 (−.124)</td><td class="best">0.465 (−.088)</td></tr>
+<tr><td>ans70</td><td>0.460 (−.098)</td><td>0.431 (−.138)</td><td class="best">0.456 (−.097)</td></tr>
+<tr class="sub"><td>ans100</td><td>0.447 (−.112)</td><td>0.390 (−.179)</td><td class="best">0.451 (−.102)</td></tr>
+<tr><td>all10</td><td>0.500 (−.058)</td><td>0.492 (−.077)</td><td class="best">0.503 (−.050)</td></tr>
+<tr><td>all20</td><td>0.480 (−.079)</td><td>0.463 (−.106)</td><td class="best">0.481 (−.072)</td></tr>
+<tr><td>all40</td><td>0.455 (−.103)</td><td>0.430 (−.139)</td><td class="best">0.460 (−.092)</td></tr>
+<tr><td>all70</td><td>0.432 (−.126)</td><td>0.383 (−.186)</td><td class="best">0.436 (−.117)</td></tr>
+<tr class="sub"><td>all100</td><td>0.414 (−.144)</td><td>0.345 (−.224)</td><td class="best">0.428 (−.125)</td></tr>
 </tbody></table></div>
-<p class="lead"><sup>6</sup> ctx100 / all100 for the 5-task macro not run; the full-despace endpoint was
-measured on <b>HS + ARC-Easy only</b> — see 4d. ctx = context only; all = context + choices.
-Δ = condition − clean; rg has the smallest drop in every "all" condition, AU-Net degrades most under heavy
-context-despace (ctx70 −.104).</p>
+<p class="lead"><b>ctx</b> = despace context only, <b>ans</b> = answer/choices only, <b>all</b> = both; each intra-line space
+dropped independently w/ prob p (5-task macro: HS/ARC-E/ARC-C/PIQA/WinoGrande, n=500). Clean baselines 0.558 / 0.569 /
+0.553. Three reads: (1) <b>answer-side despacing hurts far more than context-side</b> at every p (e.g. Llama ctx20 −.017
+vs ans20 −.088) — it corrupts the very option tokens being scored; (2) <b>AU-Net collapses under context despace</b>
+(ctx100 0.418, −.152) since whitespace defines its pooling boundaries, whereas Llama/BPEByte barely move on ctx-only;
+(3) <b>BPEByte-rg is the most robust</b> — smallest drop in almost every cell, tying Llama on ctx and leading ans/all.</p>
 <div class="read"><b>Read:</b> byte models are <b>boundary-robust</b> where Llama is not — PBP-mc ΔAcc −8.5 (Llama,
 driven by ARC-Easy −21.5) vs ≈0 for both byte models; cut-point ΔBPB +0.71 vs 0.00. rg leads noise/typo (HS-Noise
 42.3, ARC-C-Typo 33.5) and heavy-despace (all70 0.438). AU-Net degrades most under heavy context-despace.</div>
@@ -575,23 +584,9 @@ Byte-level <b>next-byte</b> top-1 accuracy is intrinsically higher than subword 
 are highly predictable; 256 vs 128K vocab). The metric is only fair <b>within</b> a model (title &gt; abstract &gt; intro
 for all). A tokenizer-fair version would use <b>BPB on the target section</b>, not per-token top-1.</div>
 
-<h3>8e · Despace full grid — clean + ctx/ans/all × p% (macro-avg acc, 5 MC tasks; supersedes §4c)</h3>
-<div class="tablewrap"><table>
-<thead><tr><th>Model · region</th><th>clean</th><th>p10</th><th>p20</th><th>p40</th><th>p70</th><th>p100</th></tr></thead>
-<tbody>
-<tr><td>Llama · ctx</td><td>0.558</td><td>0.547</td><td>0.542</td><td>0.526</td><td>0.522</td><td>0.501</td></tr>
-<tr><td>Llama · ans</td><td></td><td>0.487</td><td>0.470</td><td>0.466</td><td>0.460</td><td>0.447</td></tr>
-<tr><td>Llama · all</td><td></td><td>0.500</td><td>0.480</td><td>0.455</td><td>0.432</td><td>0.414</td></tr>
-<tr class="sub"><td>AU-Net · ctx</td><td>0.569</td><td>0.549</td><td>0.538</td><td>0.500</td><td>0.462</td><td>0.418</td></tr>
-<tr class="sub"><td>AU-Net · ans</td><td></td><td>0.494</td><td>0.463</td><td>0.446</td><td>0.431</td><td>0.390</td></tr>
-<tr class="sub"><td>AU-Net · all</td><td></td><td>0.492</td><td>0.463</td><td>0.430</td><td>0.383</td><td>0.345</td></tr>
-<tr><td>BPEByte · ctx</td><td>0.553</td><td>0.543</td><td>0.538</td><td class="best">0.530</td><td class="best">0.508</td><td class="best">0.497</td></tr>
-<tr><td>BPEByte · ans</td><td></td><td>0.490</td><td class="best">0.480</td><td class="best">0.465</td><td class="best">0.456</td><td class="best">0.451</td></tr>
-<tr><td>BPEByte · all</td><td></td><td class="best">0.503</td><td class="best">0.481</td><td class="best">0.460</td><td class="best">0.436</td><td class="best">0.428</td></tr>
-</tbody></table></div>
-<div class="read"><b>Read:</b> <b>answer-side despacing hurts more than context-side</b> at every p (corrupting the scored
-option tokens matters most). <b>AU-Net collapses under context despace</b> (ctx100 0.418, whitespace = its pooling
-boundary). <b>BPEByte is most robust everywhere</b> — tying Llama on ctx and leading ans/all at high p.</div>
+<h3>8e · Despace full grid</h3>
+<p class="lead">The full despace grid (clean + ctx/ans/all × {10,20,40,70,100}% with Δ vs clean) is now written in
+<b>§4c</b> above.</p>
 
 <div class="foot">
 All numbers single-run (no seeds) unless a CI is shown; treat sub-1-pt downstream gaps as noise.
