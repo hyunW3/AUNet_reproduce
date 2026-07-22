@@ -17,9 +17,12 @@ from pathlib import Path
 
 from common import build_generator, ckpt_for, fmt_pair, score, CKPT, L
 
-# 4 ASCII bracket pairs; for Dyck-k with k>4 we extend with letter pairs
-# (A..H open, a..h close), a standard way to get >4 matched-delimiter types.
+# Default alphabet: 4 ASCII bracket pairs extended with letter pairs for k>4.
+# With --letters we instead use letter pairs (A..H open / a..h close) for ALL k,
+# so the delimiter tokenization is identical across k -- a fair k-comparison
+# (mixing real brackets for k<=4 and letters for k>4 disadvantages byte parsing).
 OPEN, CLOSE = "([{<ABCD", ")]}>abcd"
+LETTERS_OPEN, LETTERS_CLOSE = "ABCDEFGH", "abcdefgh"
 
 
 def gen_dyck(length, k, maxdepth, rng):
@@ -87,7 +90,11 @@ def fewshot_unbal(shots, length, k, maxdepth, seed):
     return "\n\n".join(demos) + "\n\n"
 
 
-def run_model(tag, n, length, k, maxdepth, shots, seed, batch, unbalanced=False):
+def run_model(tag, n, length, k, maxdepth, shots, seed, batch, unbalanced=False,
+              letters=False):
+    global OPEN, CLOSE
+    if letters:
+        OPEN, CLOSE = LETTERS_OPEN, LETTERS_CLOSE
     fam, ckpt = ckpt_for(tag)
     gen, tok = build_generator(fam, ckpt, None, 8192)
     rng = random.Random(seed)
@@ -140,17 +147,21 @@ def main():
     ap.add_argument("--unbalanced", action="store_true",
                     help="BIG-bench style: predict the whole closing suffix of an "
                          "unbalanced prefix (whole-completion exact-match)")
+    ap.add_argument("--letters", action="store_true",
+                    help="use letter pairs (A..H/a..h) for ALL k (fair k-comparison)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--batch_size", type=int, default=16)
     ap.add_argument("--out", default=f"{L}/reports/statetrack/dyck_results.jsonl")
     args = ap.parse_args()
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     open(args.out, "w").close()
-    print(f"Dyck-{args.k} [{'unbalanced' if args.unbalanced else 'balanced'}] | "
-          f"length={args.length} maxdepth={args.maxdepth} shots={args.shots} n={args.n}")
+    print(f"Dyck-{args.k} [{'unbalanced' if args.unbalanced else 'balanced'}"
+          f"{', letters' if args.letters else ''}] | length={args.length} "
+          f"maxdepth={args.maxdepth} shots={args.shots} n={args.n}")
     for tag in args.models:
         r = run_model(tag, args.n, args.length, args.k, args.maxdepth,
-                      args.shots, args.seed, args.batch_size, args.unbalanced)
+                      args.shots, args.seed, args.batch_size, args.unbalanced,
+                      args.letters)
         print(f"  {tag:16s} acc={r['acc']:.3f}  n={r.get('n_reads', r.get('n'))}", flush=True)
         with open(args.out, "a") as f:
             f.write(json.dumps(r) + "\n")
