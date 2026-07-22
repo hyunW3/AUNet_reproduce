@@ -68,6 +68,7 @@ avg3 = HS·ARC-E·PIQA, avgall = mean of the listed set. <span class="best">Gree
 <a href="#s5">5 · State tracking & recall, 1.3B</a>
 <a href="#s6">6 · Examples — what each eval / benchmark looks like</a>
 <a href="#s7">7 · Tokenization on numerical values, 1.3B</a>
+<a href="#s8">8 · External / standard benchmarks (Dyck, FFLM, MQRAR, AcademicEval, despace grid)</a>
 </div>
 
 <!-- ===================== 1 ===================== -->
@@ -515,6 +516,82 @@ access preserves place value that subword tokenization scrambles. On <b>exact co
 models are <b>perfect (1.00) even at 20 digits</b> vs Llama 0.74 (its number tokenization fragments around separators).
 <b>Arithmetic is a wash (~0.61 all)</b> — 1.3B <em>reasoning</em> capacity, not tokenization, is the bottleneck there;
 reverse-digits fails for everyone (~0, models copy rather than reverse). Cloze/distractor examples in §6.</div>
+
+<!-- ===================== 8 ===================== -->
+<h2 id="s8"><span class="n">8.</span> External / standard benchmarks <span class="tag">1.3B · published datasets, teacher-forced</span></h2>
+<p class="lead">Swapping home-grown probes for <b>published</b> benchmarks where they exist (per reviewer-credibility).
+All teacher-forced (cloze / top-1 / binary-rank), no generation. Green = best per row.</p>
+
+<h3>8a · Dyck — our probe vs official BIG-bench, plus Dyck-4 &amp; unbalanced-prefix</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Variant</th><th>metric</th><th>Llama</th><th>AU-Net</th><th>BPEByte</th></tr></thead>
+<tbody>
+<tr><td>our Dyck-3 balanced</td><td>per-close</td><td>0.520</td><td>0.540</td><td class="best">0.673</td></tr>
+<tr><td>Dyck-4 balanced</td><td>per-close (chance .25)</td><td>0.286</td><td>0.356</td><td class="best">0.576</td></tr>
+<tr><td>Dyck-3 <b>unbalanced</b></td><td>per-closer tok</td><td>0.205</td><td>0.544</td><td class="best">0.548</td></tr>
+<tr><td>Dyck-4 <b>unbalanced</b></td><td>per-closer tok</td><td>0.124</td><td class="best">0.458</td><td>0.450</td></tr>
+<tr><td>official BIG-bench Dyck</td><td>84-way MC</td><td>0.150</td><td class="best">0.226</td><td>0.115</td></tr>
+</tbody></table></div>
+<p class="lead"><b>Unbalanced-prefix</b> (predict the whole closing suffix, BIG-bench style) <b>strongly separates byte ≫
+subword</b> (Llama 0.12–0.21 vs byte 0.45–0.55); whole-completion exact-match floors at 0 for all (model gets 2/5–3/7
+closers, never all → we report per-closer accuracy). The <b>official BIG-bench MC</b> is much harder (near chance) and
+<b>ranks AU-Net first</b> — inverting our home-grown Dyck-3 (BPEByte first). Standard benchmark ⇒ different, harder story.</p>
+
+<h3>8b · Official FFLM (<code>synthseq/flipflop</code>, Liu et&nbsp;al. 2023) — binary-rank</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Split</th><th>Llama</th><th>AU-Net</th><th>BPEByte</th></tr></thead>
+<tbody>
+<tr><td>Dense</td><td>0.718</td><td>0.794</td><td class="best">0.814</td></tr>
+<tr><td>In-Dist (FFL 0.8)</td><td>0.671</td><td class="best">0.718</td><td>0.674</td></tr>
+<tr><td>Sparse</td><td>0.602</td><td class="best">0.677</td><td>0.660</td></tr>
+</tbody></table></div>
+<p class="lead">Official dense format ("<code>w0i1r1</code>", no spaces) vs our spaced generator. Byte models lead
+Dense/Sparse; <b>Llama's greedy craters on Sparse (0.274</b> vs binary 0.602) — the no-space format breaks subword
+argmax while binary-rank still recovers it.</p>
+
+<h3>8c · MQRAR — multi-query repeated associative recall (official <code>sundai-research/mqrar-bench</code>)</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>N (key-value pairs)</th><th>Llama</th><th>AU-Net</th><th>BPEByte</th></tr></thead>
+<tbody>
+<tr><td>4</td><td>0.205</td><td class="best">0.369</td><td>0.344</td></tr>
+<tr><td>8</td><td>0.146</td><td class="best">0.272</td><td>0.256</td></tr>
+<tr><td>16</td><td>0.132</td><td class="best">0.173</td><td>0.165</td></tr>
+<tr><td>32</td><td>0.098</td><td>0.099</td><td>0.099</td></tr>
+</tbody></table></div>
+<p class="lead">Top-1 of the recalled current value (updates in-stream). Official Zoology-MQAR generator used unchanged,
+rendered to text for in-context eval. top-1 falls with N (more registers); byte models lead at low N, <b>all converge
+to floor (~0.099) at N=32</b>. CUTE character-level results are in §5e.</p>
+
+<h3>8d · AcademicEval (<code>ulab-ai/AcademicEval</code>) — long-context, top-1 token acc <span class="tag">~8k-byte ctx</span></h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Task (write the …)</th><th>Llama</th><th>AU-Net</th><th>BPEByte</th></tr></thead>
+<tbody>
+<tr><td>Title</td><td>0.610</td><td>0.889</td><td class="best">0.891</td></tr>
+<tr><td>Abstract</td><td>0.523</td><td>0.863</td><td class="best">0.864</td></tr>
+<tr><td>Introduction</td><td>0.484</td><td>0.828</td><td class="best">0.830</td></tr>
+</tbody></table></div>
+<div class="read"><b>⚠ Caveat:</b> the huge byte lead here is <b>largely a tokenization-granularity artifact</b>, NOT fair.
+Byte-level <b>next-byte</b> top-1 accuracy is intrinsically higher than subword <b>next-token</b> (within-word bytes
+are highly predictable; 256 vs 128K vocab). The metric is only fair <b>within</b> a model (title &gt; abstract &gt; intro
+for all). A tokenizer-fair version would use <b>BPB on the target section</b>, not per-token top-1.</div>
+
+<h3>8e · Despace full grid — clean + ctx/ans/all × p% (macro-avg acc, 5 MC tasks; supersedes §4c)</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Model · region</th><th>clean</th><th>p10</th><th>p20</th><th>p40</th><th>p70</th><th>p100</th></tr></thead>
+<tbody>
+<tr><td>Llama · ctx</td><td>0.558</td><td>0.547</td><td>0.542</td><td>0.526</td><td>0.522</td><td>0.501</td></tr>
+<tr><td>Llama · ans</td><td></td><td>0.487</td><td>0.470</td><td>0.466</td><td>0.460</td><td>0.447</td></tr>
+<tr><td>Llama · all</td><td></td><td>0.500</td><td>0.480</td><td>0.455</td><td>0.432</td><td>0.414</td></tr>
+<tr class="sub"><td>AU-Net · ctx</td><td>0.569</td><td>0.549</td><td>0.538</td><td>0.500</td><td>0.462</td><td>0.418</td></tr>
+<tr class="sub"><td>AU-Net · ans</td><td></td><td>0.494</td><td>0.463</td><td>0.446</td><td>0.431</td><td>0.390</td></tr>
+<tr class="sub"><td>AU-Net · all</td><td></td><td>0.492</td><td>0.463</td><td>0.430</td><td>0.383</td><td>0.345</td></tr>
+<tr><td>BPEByte · ctx</td><td>0.553</td><td>0.543</td><td>0.538</td><td class="best">0.530</td><td class="best">0.508</td><td class="best">0.497</td></tr>
+<tr><td>BPEByte · ans</td><td></td><td>0.490</td><td class="best">0.480</td><td class="best">0.465</td><td class="best">0.456</td><td class="best">0.451</td></tr>
+<tr><td>BPEByte · all</td><td></td><td class="best">0.503</td><td class="best">0.481</td><td class="best">0.460</td><td class="best">0.436</td><td class="best">0.428</td></tr>
+</tbody></table></div>
+<div class="read"><b>Read:</b> <b>answer-side despacing hurts more than context-side</b> at every p (corrupting the scored
+option tokens matters most). <b>AU-Net collapses under context despace</b> (ctx100 0.418, whitespace = its pooling
+boundary). <b>BPEByte is most robust everywhere</b> — tying Llama on ctx and leading ans/all at high p.</div>
 
 <div class="foot">
 All numbers single-run (no seeds) unless a CI is shown; treat sub-1-pt downstream gaps as noise.
