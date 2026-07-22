@@ -1,0 +1,9 @@
+{"tag": "subword_llama", "depth": 1, "n": 300, "shots": 2, "exact_acc": 0.15, "rank5_acc": 0.13666666666666666}
+{"tag": "subword_llama", "depth": 2, "n": 300, "shots": 2, "exact_acc": 0.16333333333333333, "rank5_acc": 0.17}
+{"tag": "subword_llama", "depth": 3, "n": 300, "shots": 2, "exact_acc": 0.18333333333333332, "rank5_acc": 0.18}
+{"tag": "aunet_static", "depth": 1, "n": 300, "shots": 2, "exact_acc": 0.21, "rank5_acc": 0.21}
+{"tag": "aunet_static", "depth": 2, "n": 300, "shots": 2, "exact_acc": 0.17, "rank5_acc": 0.16333333333333333}
+{"tag": "aunet_static", "depth": 3, "n": 300, "shots": 2, "exact_acc": 0.19666666666666666, "rank5_acc": 0.19666666666666666}
+{"tag": "byte_greedyroot", "depth": 1, "n": 300, "shots": 2, "exact_acc": 0.20333333333333334, "rank5_acc": 0.20333333333333334}
+{"tag": "byte_greedyroot", "depth": 2, "n": 300, "shots": 2, "exact_acc": 0.24, "rank5_acc": 0.25666666666666665}
+{"tag": "byte_greedyroot", "depth": 3, "n": 300, "shots": 2, "exact_acc": 0.19333333333333333, "rank5_acc": 0.20333333333333334}
