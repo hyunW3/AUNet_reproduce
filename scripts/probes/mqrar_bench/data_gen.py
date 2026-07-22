@@ -261,7 +261,7 @@ def _mqar(
     return inputs, labels
 
 # ========================
-    
+
 
 # generate data
 data = multiquery_ar(

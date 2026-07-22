@@ -1,0 +1,4 @@
+{"tag": "subword_llama", "n_kv": 4, "vocab": 256, "seq_len": 192, "n_queries": 122, "top1_acc": 0.20491803278688525, "tok_frac": 0.6024590163934426}
+{"tag": "subword_llama", "n_kv": 8, "vocab": 256, "seq_len": 192, "n_queries": 246, "top1_acc": 0.14634146341463414, "tok_frac": 0.573170731707317}
+{"tag": "subword_llama", "n_kv": 16, "vocab": 256, "seq_len": 192, "n_queries": 509, "top1_acc": 0.13163064833005894, "tok_frac": 0.5658153241650294}
+{"tag": "subword_llama", "n_kv": 32, "vocab": 256, "seq_len": 192, "n_queries": 1076, "top1_acc": 0.09758364312267657, "tok_frac": 0.5487918215613383}

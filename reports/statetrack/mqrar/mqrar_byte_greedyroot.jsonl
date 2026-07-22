@@ -1,0 +1,4 @@
+{"tag": "byte_greedyroot", "n_kv": 4, "vocab": 256, "seq_len": 192, "n_queries": 122, "top1_acc": 0.3442622950819672, "tok_frac": 0.6612021857923498}
+{"tag": "byte_greedyroot", "n_kv": 8, "vocab": 256, "seq_len": 192, "n_queries": 246, "top1_acc": 0.25609756097560976, "tok_frac": 0.592140921409214}
+{"tag": "byte_greedyroot", "n_kv": 16, "vocab": 256, "seq_len": 192, "n_queries": 509, "top1_acc": 0.1650294695481336, "tok_frac": 0.5003274394237066}
+{"tag": "byte_greedyroot", "n_kv": 32, "vocab": 256, "seq_len": 192, "n_queries": 1076, "top1_acc": 0.09944237918215613, "tok_frac": 0.4473358116480793}

@@ -1,0 +1,4 @@
+{"tag": "aunet_static", "n_kv": 4, "vocab": 256, "seq_len": 192, "n_queries": 122, "top1_acc": 0.36885245901639346, "tok_frac": 0.6502732240437158}
+{"tag": "aunet_static", "n_kv": 8, "vocab": 256, "seq_len": 192, "n_queries": 246, "top1_acc": 0.27235772357723576, "tok_frac": 0.5799457994579945}
+{"tag": "aunet_static", "n_kv": 16, "vocab": 256, "seq_len": 192, "n_queries": 509, "top1_acc": 0.17288801571709234, "tok_frac": 0.5036018336607727}
+{"tag": "aunet_static", "n_kv": 32, "vocab": 256, "seq_len": 192, "n_queries": 1076, "top1_acc": 0.09851301115241635, "tok_frac": 0.4327757125154894}
