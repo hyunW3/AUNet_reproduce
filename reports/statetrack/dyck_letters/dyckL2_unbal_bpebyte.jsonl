@@ -1,0 +1,1 @@
+{"tag": "byte_greedyroot", "n": 150, "k": 2, "variant": "unbalanced", "acc": 0.0, "tok_frac": 0.6113888888888889, "tok_frac_by_nclose": {"2": 0.5, "4": 0.5975, "6": 0.6643518518518516}, "by_nclose_n": {"2": 28, "4": 50, "6": 72}}
