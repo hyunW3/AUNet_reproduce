@@ -1,0 +1,67 @@
+name: full_5bench_eval
+dump_dir: /mnt/ssd2/hyun2/AUNet/reports/statetrack/despace_grid/bpebyte
+metric_log_dir: null
+ckpt_dir: /mnt/ssd2/hyun2/AUNet/main/main/1.3B/bpebyte_br_greedy_root_1.3B/checkpoints/0000180000
+generator:
+  temperature: 0.0
+  top_p: null
+  top_k: null
+  max_gen_len: 512
+  max_tokens: 16384
+  max_prompt_len: null
+  until: []
+  compile_prefilling: false
+  reduce_generation_overhead: false
+  show_progress: false
+  dtype: bf16
+  device: cuda
+harness:
+  tasks:
+  - despace_mc
+  num_fewshot: null
+  device: null
+  use_cache: null
+  cache_requests: false
+  rewrite_requests_cache: false
+  delete_requests_cache: false
+  limit: 500
+  bootstrap_iters: 100000
+  check_integrity: false
+  write_out: false
+  log_samples: false
+  system_instruction: null
+  apply_chat_template: false
+  fewshot_as_multiturn: false
+  gen_kwargs: null
+  verbosity: INFO
+  predict_only: false
+  random_seed: 0
+  numpy_random_seed: 1234
+  torch_random_seed: 1234
+  fewshot_random_seed: 1234
+  confirm_run_unsafe_code: false
+  include_path: /mnt/ssd2/hyun2/AUNet/lingua/eval_tasks
+validation: null
+wandb: null
+global_step: null
+regex_bpe_tokenizer_path: null
+regex_bpe_tokenizer_kind: null
+regex_strategy_override: null
+regex_bpe_augment_tokenizer_path: null
+regex_bpe_augment_unicode_range: null
+force_bpe_online_mode: null
+force_bpe_distill_path: null
+force_bpe_prefix_free_vocab_path: null
+atomic_answer_loglikelihood: false
+force_online_mode_inplace: null
+answer_greedy_loglikelihood: false
+offline_question_loglikelihood: false
+greedy_question_loglikelihood: false
+offline_root_question_loglikelihood: false
+committed_answer_loglikelihood: false
+bt_committed_answer_loglikelihood: false
+root_stats_answer_loglikelihood: false
+root_stats_path: null
+root_stats_threshold: 0.5
+committed_view_loglikelihood: false
+pbp_items_path: null
