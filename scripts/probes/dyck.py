@@ -17,7 +17,9 @@ from pathlib import Path
 
 from common import build_generator, ckpt_for, fmt_pair, score, CKPT, L
 
-OPEN, CLOSE = "([{<", ")]}>"
+# 4 ASCII bracket pairs; for Dyck-k with k>4 we extend with letter pairs
+# (A..H open, a..h close), a standard way to get >4 matched-delimiter types.
+OPEN, CLOSE = "([{<ABCD", ")]}>abcd"
 
 
 def gen_dyck(length, k, maxdepth, rng):
