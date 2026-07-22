@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 
 from common import build_generator, ckpt_for, score, CKPT, L
@@ -45,9 +46,16 @@ def run_model(tag, cfgs, n, ctx_bytes, gold_bytes, batch, max_tokens):
         res = score(gen, tok, pairs, batch)               # raw (ctx, gold): score handles the cut
         tf = sum(r[1] / r[2] if r[2] else 0.0 for r in res) / len(res)
         ex_acc = sum(r[0] for r in res) / len(res)
+        # TOKENIZER-FAIR BPB on the gold section: -sum(log P(gold)) / (ln2 * gold_bytes).
+        # ll_sum (r[3], natural log) covers the same text for every tokenizer, and we
+        # normalize by BYTES, so byte and subword models are directly comparable.
+        ln2 = math.log(2)
+        bpbs = [-r[3] / (ln2 * max(1, len(g.encode("utf-8"))))
+                for (c, g), r in zip(pairs, res) if r[2]]
+        bpb = sum(bpbs) / len(bpbs)
         rows.append({"tag": tag, "config": cfg, "n": len(res), "ctx_bytes": ctx_bytes,
-                     "top1_tok_acc": tf, "exact": ex_acc})
-        print(f"  {tag:16s} {cfg:10s} top1_tok={tf:.3f} exact={ex_acc:.3f} n={len(res)}",
+                     "top1_tok_acc": tf, "exact": ex_acc, "bpb": bpb})
+        print(f"  {tag:16s} {cfg:10s} BPB={bpb:.3f} (fair) | top1_tok={tf:.3f} n={len(res)}",
               flush=True)
     del gen
     return rows

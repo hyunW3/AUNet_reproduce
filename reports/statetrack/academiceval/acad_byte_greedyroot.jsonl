@@ -1,3 +1,6 @@
-{"tag": "byte_greedyroot", "config": "title_10K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.8914473269738987, "exact": 0.0}
-{"tag": "byte_greedyroot", "config": "abs_9K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.8635416666666667, "exact": 0.0}
-{"tag": "byte_greedyroot", "config": "intro_8K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.830349392361111, "exact": 0.0}
+{"tag": "byte_greedyroot", "config": "title_10K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.8914473269738987, "exact": 0.0, "bpb": 0.535466444058039}
+{"tag": "byte_greedyroot", "config": "abs_9K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.8635416666666667, "exact": 0.0, "bpb": 0.6452209364184073}
+{"tag": "byte_greedyroot", "config": "intro_8K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.830349392361111, "exact": 0.0, "bpb": 0.8501036696557634}
+{"tag": "byte_greedyroot", "config": "title_10K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.8914473269738987, "exact": 0.0, "bpb": 0.535466444058039}
+{"tag": "byte_greedyroot", "config": "abs_9K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.8635416666666667, "exact": 0.0, "bpb": 0.6452209364184073}
+{"tag": "byte_greedyroot", "config": "intro_8K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.830349392361111, "exact": 0.0, "bpb": 0.8501036696557634}

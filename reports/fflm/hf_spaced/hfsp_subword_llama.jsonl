@@ -1,0 +1,3 @@
+{"tag": "subword_llama", "split": "val", "n_seq": 200, "n_reads": 1600, "greedy_acc": 0.745625, "binary_acc": 0.72625}
+{"tag": "subword_llama", "split": "val_dense", "n_seq": 200, "n_reads": 1600, "greedy_acc": 0.77625, "binary_acc": 0.76375}
+{"tag": "subword_llama", "split": "val_sparse", "n_seq": 200, "n_reads": 679, "greedy_acc": 0.7422680412371134, "binary_acc": 0.7304860088365243}

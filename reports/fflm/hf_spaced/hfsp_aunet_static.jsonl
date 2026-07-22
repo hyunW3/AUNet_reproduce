@@ -1,0 +1,3 @@
+{"tag": "aunet_static", "split": "val", "n_seq": 200, "n_reads": 1600, "greedy_acc": 0.686875, "binary_acc": 0.6925}
+{"tag": "aunet_static", "split": "val_dense", "n_seq": 200, "n_reads": 1600, "greedy_acc": 0.753125, "binary_acc": 0.808125}
+{"tag": "aunet_static", "split": "val_sparse", "n_seq": 200, "n_reads": 679, "greedy_acc": 0.6480117820324006, "binary_acc": 0.6421207658321061}

@@ -1,0 +1,3 @@
+{"tag": "byte_greedyroot", "split": "val", "n_seq": 200, "n_reads": 1600, "greedy_acc": 0.715, "binary_acc": 0.725625}
+{"tag": "byte_greedyroot", "split": "val_dense", "n_seq": 200, "n_reads": 1600, "greedy_acc": 0.783125, "binary_acc": 0.831875}
+{"tag": "byte_greedyroot", "split": "val_sparse", "n_seq": 200, "n_reads": 679, "greedy_acc": 0.7319587628865979, "binary_acc": 0.7643593519882179}

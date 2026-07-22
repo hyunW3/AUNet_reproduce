@@ -1,3 +1,6 @@
-{"tag": "aunet_static", "config": "title_10K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.8886523113550838, "exact": 0.0}
-{"tag": "aunet_static", "config": "abs_9K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.8625, "exact": 0.0}
-{"tag": "aunet_static", "config": "intro_8K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.8279730902777778, "exact": 0.0}
+{"tag": "aunet_static", "config": "title_10K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.8886523113550838, "exact": 0.0, "bpb": 0.55335633635313}
+{"tag": "aunet_static", "config": "abs_9K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.8625, "exact": 0.0, "bpb": 0.6681387482658621}
+{"tag": "aunet_static", "config": "intro_8K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.8279730902777778, "exact": 0.0, "bpb": 0.8888635754852021}
+{"tag": "aunet_static", "config": "title_10K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.8886523113550838, "exact": 0.0, "bpb": 0.55335633635313}
+{"tag": "aunet_static", "config": "abs_9K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.8625, "exact": 0.0, "bpb": 0.6681387482658621}
+{"tag": "aunet_static", "config": "intro_8K", "n": 60, "ctx_bytes": 6500, "top1_tok_acc": 0.8279730902777778, "exact": 0.0, "bpb": 0.8888635754852021}
