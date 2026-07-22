@@ -358,6 +358,34 @@ subword Llama wins (K=8 0.65 vs BPEByte 0.42, AU-Net 0.25) — see §5c. AU-Net 
 needle count. Byte-level character addressing is the lever for single-key copy fidelity, not multi-key disambiguation. Under <b>despace</b> the exact-match story is
 harsher for everyone (Llama →0) and the winner is task-dependent (AU-Net on S1, rg on S2/S3).</div>
 
+<h3>5e · CUTE — character-level token understanding <span class="tag">Edman et&nbsp;al. 2024, EMNLP · external benchmark</span></h3>
+<div class="tablewrap"><table>
+<thead><tr><th>CUTE task (exact-match)</th><th>Llama</th><th>AU-Net</th><th>BPEByte-rg</th></tr></thead>
+<tbody>
+<tr><td>Spelling (read a word out char-by-char)</td><td>18.6</td><td class="best">88.4</td><td>79.3</td></tr>
+<tr><td>Spelling Inverse</td><td>11.2</td><td class="best">48.5</td><td>45.6</td></tr>
+<tr><td>Contains Char</td><td class="best">53.4</td><td>50.8</td><td>49.4</td></tr>
+<tr><td>Contains Word</td><td>47.0</td><td>49.6</td><td class="best">50.3</td></tr>
+<tr><td>Orthographic sim.</td><td class="best">47.3</td><td>37.0</td><td>38.8</td></tr>
+<tr><td>Semantic sim.</td><td class="best">46.9</td><td>45.0</td><td>42.2</td></tr>
+<tr class="sub"><td>Ins Char / Ins Word</td><td>8.1 / 14.5</td><td>1.7 / 6.4</td><td>2.3 / 7.0</td></tr>
+<tr class="sub"><td>Del Char / Del Word</td><td>1.1 / 1.2</td><td>0.0 / 1.5</td><td>0.2 / 1.4</td></tr>
+<tr class="sub"><td>Sub Char / Sub Word</td><td>0.3 / 6.3</td><td>0.8 / 3.6</td><td>0.4 / 3.6</td></tr>
+<tr class="sub"><td>Swap Char / Swap Word</td><td>0.4 / 0.8</td><td>0.0 / 1.4</td><td>0.1 / 1.9</td></tr>
+<tr class="avg"><td>CUTE average (14 tasks)</td><td>18.4</td><td class="best">23.9</td><td>23.0</td></tr>
+</tbody></table></div>
+<p class="lead">External benchmark (Edman et&nbsp;al. 2024), tests access to the characters inside a token. Native protocol:
+exact-match on <b>generated</b> output, 2000 items/subtask (the one generation-scored eval here — everything else is
+teacher-forced). Paper checkpoints: <code>llama_1.8B_paper</code> / <code>aunet2_1.3B</code> /
+<code>bpebyte_br_greedy_root_1.3B</code> (<code>evals_cute/results.json</code>).</p>
+<div class="read"><b>Read:</b> byte models beat subword on the <b>CUTE average</b> (AU-Net 23.9, rg 23.0 vs Llama 18.4),
+and the gap is <b>entirely</b> the two spelling tasks — <b>Spelling 88.4 / 79.3 vs Llama 18.6</b>, Spelling-Inverse
+48.5 / 45.6 vs 11.2 — i.e. reading a token out as characters, which subword tokenization hides. Where character
+read-out is <b>not</b> needed (contains, orthographic/semantic similarity) the three are comparable, Llama even
+edging ahead. The <b>edit-manipulation</b> tasks (ins/del/sub/swap) are near-floor for all three at 1.3B (≤8%,
+Llama marginally higher) — byte access buys character <b>read-out</b>, not yet reliable character <b>editing</b>.
+AU-Net slightly leads rg on spelling; both crush Llama.</div>
+
 <!-- ===================== 6 ===================== -->
 <h2 id="s6"><span class="n">6.</span> Examples — what each eval / benchmark looks like</h2>
 <p class="lead">One worked item per eval so the tables above are legible. <b>Synthetic probes (§4c–d, §5) are real
