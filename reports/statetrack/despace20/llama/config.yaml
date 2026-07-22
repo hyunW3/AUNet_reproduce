@@ -1,0 +1,47 @@
+name: llama_1B_dm10_b200_eval
+dump_dir: /mnt/ssd2/hyun2/AUNet/reports/statetrack/despace20/llama
+metric_log_dir: null
+ckpt_dir: /mnt/ssd2/hyun2/AUNet/main/main/1.3B/llama_1.8B_paper/checkpoints/0000060000
+generator:
+  temperature: 0.0
+  top_p: null
+  top_k: null
+  max_gen_len: 512
+  max_tokens: 16384
+  max_prompt_len: null
+  until: []
+  compile_prefilling: false
+  reduce_generation_overhead: false
+  show_progress: false
+  dtype: bf16
+  device: cuda
+harness:
+  tasks:
+  - despace_mc
+  num_fewshot: null
+  device: null
+  use_cache: null
+  cache_requests: false
+  rewrite_requests_cache: false
+  delete_requests_cache: false
+  limit: 500
+  bootstrap_iters: 100000
+  check_integrity: false
+  write_out: false
+  log_samples: true
+  system_instruction: null
+  apply_chat_template: false
+  fewshot_as_multiturn: false
+  gen_kwargs: null
+  verbosity: INFO
+  predict_only: false
+  random_seed: 0
+  numpy_random_seed: 1234
+  torch_random_seed: 1234
+  fewshot_random_seed: 1234
+  confirm_run_unsafe_code: false
+  include_path: /mnt/ssd2/hyun2/AUNet/lingua/eval_tasks
+validation: null
+wandb: null
+global_step: null
+pbp_items_path: null
