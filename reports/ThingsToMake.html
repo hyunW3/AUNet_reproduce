@@ -220,10 +220,18 @@ global-top-k is weakest on both BPB and downstream.</div>
 <div class="tablewrap"><table>
 <thead><tr><th>Model</th><th>PBP-mc ΔAcc</th><th>HellaSwag Δ</th><th>ARC-Easy Δ</th><th>ARC-Chal. Δ</th><th>cut-pt ΔBPB</th></tr></thead>
 <tbody>
-<tr><td>Llama</td><td>−8.92</td><td>−0.93</td><td>−21.46</td><td>−3.16</td><td>+0.710</td></tr>
-<tr><td>AU-Net</td><td class="best">−0.03</td><td>0.00</td><td>+0.04</td><td>0.00</td><td>0.000</td></tr>
-<tr><td>BPEByte-rg</td><td>−0.16</td><td>+0.12</td><td>0.00</td><td>−0.26</td><td>0.000</td></tr>
+<tr><td>Llama</td><td>−8.52</td><td>−0.93</td><td>−21.46</td><td>−3.16</td><td>+0.710</td></tr>
+<tr><td>AU-Net</td><td class="best">+0.01</td><td>0.00</td><td>+0.04</td><td>0.00</td><td>0.000</td></tr>
+<tr><td>BPEByte-rg</td><td>−0.05</td><td>+0.12</td><td>0.00</td><td>−0.26</td><td>0.000</td></tr>
 </tbody></table></div>
+<p class="lead">This is the <b>partial-token problem</b> measured as a benchmark (Athiwaratkun et&nbsp;al. 2024,
+<i>Token Alignment via Character Matching</i>; Xu et&nbsp;al. 2026, <i>A Practical Study of the Partial Token
+Problem</i>, arXiv:2601.23223). Committing the boundary space into the prompt makes it end mid-token for the
+subword vocabulary — off-distribution — so the scored continuation is distorted. ΔAcc = space − canonical over the
+<b>full test sets</b> (ARC-E 2376, HS 10042, ARC-C 1172; avg = macro-mean). Byte models see identical bytes either
+way, so every option shifts by the same constant and Δ≡0 by construction. ARC-Easy shows the largest effect (short
+answers → the boundary token dominates the choice's total logprob); HellaSwag the smallest (long continuations
+dilute it). No fix (token healing / alignment) is applied — this is the benchmark measurement only.</p>
 
 <h3>4b · Noisy / typo (acc_norm) — degraded value (Δ vs clean), bold = smallest drop</h3>
 <div class="tablewrap"><table>
@@ -255,7 +263,7 @@ split exists — a 15-variant HellaSwag-Noise suite and an 8-op typo suite (appl
 measured on <b>HS + ARC-Easy only</b> — see 4d. ctx = context only; all = context + choices.
 Δ = condition − clean; rg has the smallest drop in every "all" condition, AU-Net degrades most under heavy
 context-despace (ctx70 −.104).</p>
-<div class="read"><b>Read:</b> byte models are <b>boundary-robust</b> where Llama is not — PBP-mc ΔAcc −8.9 (Llama,
+<div class="read"><b>Read:</b> byte models are <b>boundary-robust</b> where Llama is not — PBP-mc ΔAcc −8.5 (Llama,
 driven by ARC-Easy −21.5) vs ≈0 for both byte models; cut-point ΔBPB +0.71 vs 0.00. rg leads noise/typo (HS-Noise
 42.3, ARC-C-Typo 33.5) and heavy-despace (all70 0.438). AU-Net degrades most under heavy context-despace.</div>
 
