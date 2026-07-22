@@ -4,7 +4,7 @@
 A "magic number" needle is hidden in a haystack of repeated noise sentences; the
 model must retrieve the number for a given key. This is the simplest RULER NIAH:
   - haystack  : repeated noise sentence (not an essay)
-  - needle    : "One of the special magic numbers for {key} is: {value}."
+  - needle    : "One of the special magic numbers for {key} is {value}."
   - value     : a random N-digit number (default 7, as in RULER)
 
 We vary total length (iso-byte across models) and needle depth (position).
@@ -126,7 +126,7 @@ def make_sample(target_bytes: int, depth: float, value_digits: int,
         value = _magic_word(rng, avoid=body + " " + INSTRUCTION + " " + " ".join(KEYS))
     else:
         value = "".join(rng.choice("0123456789") for _ in range(value_digits))
-    needle = f"One of the special magic {noun}s for {key} is: {value}. "
+    needle = f"One of the special magic {noun}s for {key} is {value}. "
 
     cut = int(len(body) * depth)
     while 0 < cut < len(body) and body[cut] != " ":   # snap to a word boundary

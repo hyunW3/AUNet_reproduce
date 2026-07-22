@@ -1,0 +1,15 @@
+{"tag": "aunet_static", "family": "aunet", "task": "mv", "K": 4, "target_bytes": 1024, "avg_prompt_bytes": 1518, "n": 50, "exact_match": 0.0, "recall": 0.595}
+{"tag": "aunet_static", "family": "aunet", "task": "mv", "K": 4, "target_bytes": 2048, "avg_prompt_bytes": 2548, "n": 50, "exact_match": 0.0, "recall": 0.545}
+{"tag": "aunet_static", "family": "aunet", "task": "mv", "K": 4, "target_bytes": 4096, "avg_prompt_bytes": 4607, "n": 50, "exact_match": 0.0, "recall": 0.475}
+{"tag": "aunet_static", "family": "aunet", "task": "mq", "K": 4, "target_bytes": 1024, "avg_prompt_bytes": 1541, "n": 50, "exact_match": 0.0, "recall": 0.33}
+{"tag": "aunet_static", "family": "aunet", "task": "mq", "K": 4, "target_bytes": 2048, "avg_prompt_bytes": 2571, "n": 50, "exact_match": 0.0, "recall": 0.3}
+{"tag": "aunet_static", "family": "aunet", "task": "mq", "K": 4, "target_bytes": 4096, "avg_prompt_bytes": 4629, "n": 50, "exact_match": 0.0, "recall": 0.255}
+{"tag": "aunet_static", "family": "aunet", "task": "seq", "K": 4, "target_bytes": 1024, "avg_prompt_bytes": 1468, "n": 50, "exact_match": 0.0, "recall": 0.405}
+{"tag": "aunet_static", "family": "aunet", "task": "seq", "K": 4, "target_bytes": 2048, "avg_prompt_bytes": 2499, "n": 50, "exact_match": 0.0, "recall": 0.36}
+{"tag": "aunet_static", "family": "aunet", "task": "seq", "K": 4, "target_bytes": 4096, "avg_prompt_bytes": 4559, "n": 50, "exact_match": 0.0, "recall": 0.3}
+{"tag": "aunet_static", "family": "aunet", "task": "nolima", "mode": "literal", "target_bytes": 1024, "avg_prompt_bytes": 1501, "n": 50, "n_distract": 3, "acc": 0.76}
+{"tag": "aunet_static", "family": "aunet", "task": "nolima", "mode": "paraphrase", "target_bytes": 1024, "avg_prompt_bytes": 1494, "n": 50, "n_distract": 3, "acc": 0.48}
+{"tag": "aunet_static", "family": "aunet", "task": "nolima", "mode": "literal", "target_bytes": 2048, "avg_prompt_bytes": 2531, "n": 50, "n_distract": 3, "acc": 0.74}
+{"tag": "aunet_static", "family": "aunet", "task": "nolima", "mode": "paraphrase", "target_bytes": 2048, "avg_prompt_bytes": 2524, "n": 50, "n_distract": 3, "acc": 0.46}
+{"tag": "aunet_static", "family": "aunet", "task": "nolima", "mode": "literal", "target_bytes": 4096, "avg_prompt_bytes": 4589, "n": 50, "n_distract": 3, "acc": 0.54}
+{"tag": "aunet_static", "family": "aunet", "task": "nolima", "mode": "paraphrase", "target_bytes": 4096, "avg_prompt_bytes": 4583, "n": 50, "n_distract": 3, "acc": 0.32}

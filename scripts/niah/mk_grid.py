@@ -31,7 +31,7 @@ MODELS = [("subword_llama", "subword (Llama)"), ("aunet_static", "AUNet"),
 def make_grid_sample(target_bytes, target_depth, K, rng):
     keys = rng.sample(KEYS, K)
     vals = ["".join(rng.choice("0123456789") for _ in range(7)) for _ in keys]
-    needles = [f"One of the special magic numbers for {k} is: {v}. "
+    needles = [f"One of the special magic numbers for {k} is {v}. "
                for k, v in zip(keys, vals)]
     pool = _essay_pool()
     start = rng.randint(0, max(0, len(pool) - target_bytes - 1))

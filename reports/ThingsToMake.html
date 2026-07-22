@@ -324,14 +324,20 @@ near-perfectly (AU-Net 0.97, BPEByte 0.99); <b>Llama floors at 0.27</b> — it c
 tokenization of an unseen word. <b>AU-Net recovers on words (0.97) vs UUIDs (0.52)</b>: a word is one whitespace pool
 unit, whereas a UUID's hyphens/hex break its word-pooling; BPEByte (content-derived boundaries) is robust to both.</p>
 
-<h3>5c · MK-NIAH multi-key grid (len 2048, exact-match acc)</h3>
+<h3>5c · MK-NIAH multi-key pressure test (len 2048, <b>no-colon needle</b>, exact-match by #needles K)</h3>
 <div class="tablewrap"><table>
 <thead><tr><th>Model</th><th>K=1</th><th>K=2</th><th>K=4</th><th>K=8</th><th>Mean</th></tr></thead>
 <tbody>
-<tr><td>Llama</td><td>0.450</td><td>0.275</td><td>0.325</td><td>0.175</td><td>0.306</td></tr>
-<tr><td>AU-Net</td><td>0.975</td><td>0.725</td><td>0.425</td><td>0.300</td><td>0.631</td></tr>
-<tr><td>BPEByte-rg</td><td class="best">1.000</td><td class="best">0.900</td><td class="best">0.725</td><td class="best">0.550</td><td class="best">0.794</td></tr>
+<tr><td>Llama</td><td>0.950</td><td>0.875</td><td class="best">0.875</td><td class="best">0.650</td><td class="best">0.838</td></tr>
+<tr><td>AU-Net</td><td>0.950</td><td>0.750</td><td>0.425</td><td>0.250</td><td>0.594</td></tr>
+<tr><td>BPEByte-rg</td><td class="best">1.000</td><td class="best">0.900</td><td>0.825</td><td>0.425</td><td>0.787</td></tr>
 </tbody></table></div>
+<p class="lead">Colon removed from the needle at source ("...is <b>{value}</b>", boundary-consistent with the query
+"...is"), n=40/K. The old colon-confounded grid crushed Llama (K=8 0.175); with the confound gone the disambiguation
+picture <b>inverts</b>: Llama is now best at K=4/K=8/Mean (0.875 / 0.650 / 0.838), <b>AU-Net collapses</b> under
+needle count (K=8 0.250, worst), and BPEByte leads only at low K (K=1/2). Finding the RIGHT needle among many is a
+disambiguation/attention load that favours subword's compact keys and punishes AU-Net's word-pooling; it is NOT the
+byte-level copy-fidelity axis that single-key S-NIAH-3 (UUID) measures.</p>
 <h3>5d · S-NIAH despace robustness — exact-match acc, degraded value (Δ vs clean)</h3>
 <div class="tablewrap"><table>
 <thead><tr><th>Task</th><th>Llama</th><th>AU-Net</th><th>BPEByte-rg</th></tr></thead>
@@ -346,9 +352,10 @@ haystack); a softer "contains-target" metric (<code>*_tf</code>) stays high for 
 — despace breaks exact formatting more than retrieval. The clean-vs-despace winner flips: rg is perfect clean but
 AU-Net wins the despaced S1.</p>
 <div class="read"><b>Read:</b> BPEByte-rg is strongest on every <b>clean</b> probe — perfect S-NIAH-3 UUID copy (1.00
-vs Llama 0.16, AU-Net 0.52), best sparse FFLM (0.869 vs AU-Net 0.666), best Dyck-3 (0.673), best MK-NIAH at every K
-(K=8: 0.55 vs Llama 0.175). AU-Net (static word-pooling) sits between; Llama floors on exact-copy of unseen
-character strings — byte-level character addressing is the lever. Under <b>despace</b> the exact-match story is
+vs AU-Net 0.52), best sparse FFLM (0.869 vs AU-Net 0.666), best Dyck-3 (0.673), and best <b>single-key</b> exact
+copy. But MK-NIAH is a different axis: with the colon confound removed BPEByte leads only at low K, while at K≥4
+subword Llama wins (K=8 0.65 vs BPEByte 0.42, AU-Net 0.25) — see §5c. AU-Net (static word-pooling) collapses under
+needle count. Byte-level character addressing is the lever for single-key copy fidelity, not multi-key disambiguation. Under <b>despace</b> the exact-match story is
 harsher for everyone (Llama →0) and the winner is task-dependent (AU-Net on S1, rg on S2/S3).</div>
 
 <!-- ===================== 6 ===================== -->

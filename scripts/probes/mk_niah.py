@@ -21,7 +21,7 @@ from niah_data import _essay_pool, KEYS, INSTRUCTION  # noqa: E402
 def make_mk(target_bytes, num_needles, rng):
     keys = rng.sample(KEYS, num_needles)
     vals = ["".join(rng.choice("0123456789") for _ in range(7)) for _ in keys]
-    needles = [f"One of the special magic numbers for {k} is: {v}. "
+    needles = [f"One of the special magic numbers for {k} is {v}. "
                for k, v in zip(keys, vals)]
     pool = _essay_pool()
     start = rng.randint(0, max(0, len(pool) - target_bytes - 1))

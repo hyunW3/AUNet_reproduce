@@ -1,0 +1,15 @@
+{"tag": "subword_llama", "family": "subword", "task": "mv", "K": 4, "target_bytes": 1024, "avg_prompt_bytes": 1518, "n": 50, "exact_match": 0.0, "recall": 0.595}
+{"tag": "subword_llama", "family": "subword", "task": "mv", "K": 4, "target_bytes": 2048, "avg_prompt_bytes": 2548, "n": 50, "exact_match": 0.0, "recall": 0.605}
+{"tag": "subword_llama", "family": "subword", "task": "mv", "K": 4, "target_bytes": 4096, "avg_prompt_bytes": 4607, "n": 50, "exact_match": 0.0, "recall": 0.565}
+{"tag": "subword_llama", "family": "subword", "task": "mq", "K": 4, "target_bytes": 1024, "avg_prompt_bytes": 1541, "n": 50, "exact_match": 0.0, "recall": 0.34}
+{"tag": "subword_llama", "family": "subword", "task": "mq", "K": 4, "target_bytes": 2048, "avg_prompt_bytes": 2571, "n": 50, "exact_match": 0.0, "recall": 0.325}
+{"tag": "subword_llama", "family": "subword", "task": "mq", "K": 4, "target_bytes": 4096, "avg_prompt_bytes": 4629, "n": 50, "exact_match": 0.0, "recall": 0.255}
+{"tag": "subword_llama", "family": "subword", "task": "seq", "K": 4, "target_bytes": 1024, "avg_prompt_bytes": 1468, "n": 50, "exact_match": 0.0, "recall": 0.33}
+{"tag": "subword_llama", "family": "subword", "task": "seq", "K": 4, "target_bytes": 2048, "avg_prompt_bytes": 2499, "n": 50, "exact_match": 0.0, "recall": 0.33}
+{"tag": "subword_llama", "family": "subword", "task": "seq", "K": 4, "target_bytes": 4096, "avg_prompt_bytes": 4559, "n": 50, "exact_match": 0.0, "recall": 0.27}
+{"tag": "subword_llama", "family": "subword", "task": "nolima", "mode": "literal", "target_bytes": 1024, "avg_prompt_bytes": 1501, "n": 50, "n_distract": 3, "acc": 0.94}
+{"tag": "subword_llama", "family": "subword", "task": "nolima", "mode": "paraphrase", "target_bytes": 1024, "avg_prompt_bytes": 1494, "n": 50, "n_distract": 3, "acc": 0.66}
+{"tag": "subword_llama", "family": "subword", "task": "nolima", "mode": "literal", "target_bytes": 2048, "avg_prompt_bytes": 2531, "n": 50, "n_distract": 3, "acc": 0.9}
+{"tag": "subword_llama", "family": "subword", "task": "nolima", "mode": "paraphrase", "target_bytes": 2048, "avg_prompt_bytes": 2524, "n": 50, "n_distract": 3, "acc": 0.58}
+{"tag": "subword_llama", "family": "subword", "task": "nolima", "mode": "literal", "target_bytes": 4096, "avg_prompt_bytes": 4589, "n": 50, "n_distract": 3, "acc": 0.58}
+{"tag": "subword_llama", "family": "subword", "task": "nolima", "mode": "paraphrase", "target_bytes": 4096, "avg_prompt_bytes": 4583, "n": 50, "n_distract": 3, "acc": 0.28}
