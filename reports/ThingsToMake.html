@@ -812,6 +812,84 @@ parameter-match</b> — BPEByte's 1.32B is bracketed by 1-stage (1.27B) and 2-st
 1-stage ≈ trio, 2-stage &gt; trio. On robustness both are mid-pack with strong Formatted-string. All numbers via
 <code>HNetHarnessLM</code> on byte-identical prompts; source <code>spacebyte.worktrees/h-net/eval_out/{hnet,h1}_*.json</code>.</div>
 
+<h3>10d · Retrieval (NoLiMa) &amp; character understanding (CUTE) — identical prompts to §9b/§9c</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Model</th><th>NoLiMa literal</th><th>NoLiMa paraphrase</th><th>CUTE avg (14)</th></tr></thead>
+<tbody>
+<tr><td>Llama</td><td>0.807</td><td>0.507</td><td>18.4</td></tr>
+<tr><td>AU-Net</td><td>0.680</td><td>0.420</td><td>23.9</td></tr>
+<tr><td>BPEByte-rg</td><td class="best">0.953</td><td>0.573</td><td>20.6</td></tr>
+<tr><td>BLT-1B</td><td>0.760</td><td>0.493</td><td class="best">34.5</td></tr>
+<tr><td>H-Net 1-stage XL</td><td>0.733</td><td>0.453</td><td>16.0</td></tr>
+<tr><td>H-Net 2-stage XL</td><td>0.800</td><td><b>0.627</b></td><td>22.2</td></tr>
+</tbody></table></div>
+<p class="lead">NoLiMa (mean over 1/2/4k, 3 distractors) and CUTE (14 subtasks) on the same dumped pairs as the trio.
+<b>H-Net 2-stage's paraphrase 0.627 tops the table</b> (learned semantic chunking helps non-lexical matching); on literal
+retrieval it's mid-pack. On CUTE both H-Net variants are mid-pack (1s 16.0 / 2s 22.2, below BLT's 34.5) with a distinctive
+profile — strong on character/word <em>containment</em> (2-stage contains-char/word 65/54) and orthography, near-zero on
+generative deletion/swap. CUTE for H-Net uses n=500 (vs 2000 for trio/BLT): its no-KV-cache generation makes the full set
+costly. Source <code>spacebyte.worktrees/h-net/eval_out/{hnet,h1}_{nolima,cute}.*</code>.</p>
+
+<h2 id="s11"><span class="n">11.</span> 1B forward latency — A100 byte-matched campaign <span class="tag">ece-agpu18 · A100-80GB · one idle dedicated GPU per model · bf16 · SDPA · 30 timed iters</span></h2>
+
+<h3>11a · Byte-matched, training-native sequences (~72–75 KB of text per forward) — the headline setting</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Model</th><th>Setting</th><th>Text/fwd</th><th>fwd (ms)</th><th>ms/KB</th><th>bps (fwd)</th></tr></thead>
+<tbody>
+<tr><td>Llama</td><td>4×4096 tok</td><td>74.5 KB</td><td class="best">406.5</td><td class="best">5.6</td><td class="best">183.3k</td></tr>
+<tr><td>AU-Net</td><td>9×8192 B</td><td>72.0 KB</td><td>649.9</td><td>9.0</td><td>113.4k</td></tr>
+<tr><td>BPEByte-rg</td><td>9×8192 B</td><td>72.0 KB</td><td>655.0</td><td>9.1</td><td>112.6k</td></tr>
+<tr><td>H-Net 2-stage XL</td><td>9×8192 B</td><td>72.0 KB</td><td>662.1</td><td>9.2</td><td>111.4k</td></tr>
+<tr><td>H-Net 1-stage XL</td><td>9×8192 B</td><td>72.0 KB</td><td>1206.8</td><td>16.8</td><td>61.1k</td></tr>
+<tr><td>BLT-1B</td><td>18×4096 B</td><td>72.0 KB</td><td>2205.2</td><td>30.6</td><td>33.4k</td></tr>
+</tbody></table></div>
+<div class="read"><b>Read:</b> three clean tiers — subword (5.6 ms/KB) → efficient byte-hierarchical (AU-Net ·
+BPEByte · H-Net-2stage, all within 2% at ~9.1 ms/KB) → expensive designs (H-Net-1stage 1.8×, BLT 3.4× the middle tier;
+BLT includes its fp16 entropy patcher, 287 of 2205 ms). H-Net 2-stage matches the trio's per-byte cost despite the learned
+router (its 2nd compression stage buys back the router cost); ms/KB is stable to ≤5% across every A100 config tried
+(32 KB, 64 KB, 128 KB, 147 KB per forward). Llama fwd+bwd at this exact shape: 1167.9 ms (~78 GiB peak, its batch ceiling);
+byte-model bwd ceiling is 8×8192 (fwd+bwd ≈ 1673/1683 ms). Raw records: <code>ece-agpu18:~/throughput_agpu18_match/</code>,
+<code>~/throughput_agpu18_hnet/</code>, <code>~/throughput_agpu18_bwd/</code>.</div>
+
+<h3>11b · Byte-matched, short sequences (~9 KB per forward: 9×1024 B; Llama 1×2048 tok) — small-input comparison</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Model</th><th>fwd (ms) — run 1</th><th>fwd (ms) — run 2</th><th>ms/KB</th><th>vs native ms/KB</th></tr></thead>
+<tbody>
+<tr><td>Llama</td><td class="best">58.0</td><td class="best">58.0</td><td class="best">6.4</td><td>+14%</td></tr>
+<tr><td>AU-Net</td><td>187.6</td><td>188.1</td><td>20.8</td><td>+131%</td></tr>
+<tr><td>BPEByte-rg</td><td>189.7</td><td>189.3</td><td>21.1</td><td>+132%</td></tr>
+<tr><td>H-Net 1-stage XL</td><td>124.3</td><td>124.3</td><td>13.8</td><td>−18%</td></tr>
+<tr><td>H-Net 2-stage XL</td><td>82.0</td><td>96.8</td><td>9.1–10.8†</td><td>~flat</td></tr>
+<tr><td>BLT-1B</td><td>295.3</td><td>295.1</td><td>32.8</td><td>+7%</td></tr>
+</tbody></table></div>
+<p class="lead">†Two independent runs (a day apart, same GPU class, fresh random inputs each run). Five of six models
+replicate to ≤0.3%; <b>H-Net 2-stage moves 18%</b> because its <em>learned dynamic chunker</em> makes compute
+input-dependent — chunk boundaries (and hence stage-2 sequence length) shift with the byte content, a genuine ±8%
+variance at small text volumes that averages out at the 72 KB setting (where its duplicate cells agreed to 0.6%).</p>
+
+<h3>11c · Both settings, raw forward latency (ms) — serving-latency view</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Model</th><th>Native 72–75 KB/fwd</th><th>Small ~9 KB/fwd</th></tr></thead>
+<tbody>
+<tr><td>Llama</td><td class="best">406.5 (4×4096 t)</td><td class="best">58.0 (1×2048 t)</td></tr>
+<tr><td>AU-Net</td><td>649.9 (9×8192 B)</td><td>187.6 (9×1024 B)</td></tr>
+<tr><td>BPEByte-rg</td><td>655.0 (9×8192 B)</td><td>189.7 (9×1024 B)</td></tr>
+<tr><td>H-Net 2-stage XL</td><td>662.1 (9×8192 B)</td><td>82.0–96.8† (9×1024 B)</td></tr>
+<tr><td>H-Net 1-stage XL</td><td>1206.8 (9×8192 B)</td><td>124.3 (9×1024 B)</td></tr>
+<tr><td>BLT-1B</td><td>2205.2 (18×4096 B)</td><td>295.3 (9×1024 B)</td></tr>
+</tbody></table></div>
+<div class="read"><b>Read:</b> raw ms compresses the visible gap at the small setting (8× less text per forward), so
+the per-byte doubling of AU-Net/BPEByte only shows in ms/KB — but raw ms is the serving-latency view: for a ~9 KB
+prompt, Llama answers in 58 ms, H-Net 2-stage in ~90, the matched byte models in ~190, BLT in ~295.
+Records: <code>ece-agpu18:~/throughput_agpu18_small/</code> (two records per jsonl = the two runs).</div>
+<div class="read"><b>Read:</b> the AU-Net-family pooling machinery pays a <b>2.3× per-byte penalty at 1024-B sequences</b>
+(per-sequence mask/gather-scatter overheads amortize only over long sequences — same finding as the A5000 2 KB–128 KB sweep),
+while <b>H-Net 2-stage is flat</b> and 1-stage even improves; at short inputs the ordering inverts and both H-Nets beat the
+matched byte models. Llama and BLT are near-flat (already compute-bound). Corollary from the MFU analysis: AU-Net/BPEByte
+forwards run at ~17% MFU vs Llama's ~40% under identical eager kernels — byte-resolution stages are bandwidth/overhead-bound,
+not compute-bound, so this is implementation headroom (compile/fused kernels), not a FLOPs wall.
+Records: <code>ece-agpu18:~/throughput_agpu18_small/</code>.</div>
+
 <div class="foot">
 All numbers single-run (no seeds) unless a CI is shown; treat sub-1-pt downstream gaps as noise.
 §1/§2 BPB use different measurement windows (leaderboard vs tail-mean CSV) — same ranking.
