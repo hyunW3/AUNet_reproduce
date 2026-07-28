@@ -69,7 +69,7 @@ avg3 = HS·ARC-E·PIQA, avgall = mean of the listed set. <span class="best">Gree
 <a href="#s6">6 · Examples — what each eval / benchmark looks like</a>
 <a href="#s7">7 · Tokenization on numerical values, 1.3B</a>
 <a href="#s8">8 · External / standard benchmarks (Dyck, FFLM, MQRAR, AcademicEval, despace grid, TKEval, BrittleBench)</a>
-<a href="#s9">9 · BLT-1B — external byte-model comparison (downstream · retrieval · CUTE)</a>
+<a href="#s9">9 · BLT-1B — external byte-model comparison (downstream · retrieval · CUTE · 5-shot fit)</a>
 <a href="#s10">10 · H-Net XL — external byte-model comparison (1-stage + 2-stage · downstream · robustness · params)</a>
 </div>
 
@@ -757,6 +757,27 @@ best char-awareness) yet only <b>mid-pack on multi-key/semantic retrieval</b>. A
 model+patcher via the corrected wrapper, validated against a sane HellaSwag baseline (acc_norm 0.60 @ n=40).
 Source <code>/mnt/ssd2/hyun2/lzspacebyte/blt/eval_out/blt1b_*.json</code>; identical-prompt trio results
 <code>reports/niah/probe_compare/</code>.</div>
+
+<h3>9d · 5-shot context truncation — does BLT's 4096-byte limit clip the few-shot prompts?</h3>
+<p class="lead">BLT's context is <b>4096 bytes</b>. To check whether its weak 5-shot numbers are a truncation artifact, we measured the
+byte length of every 5-shot prompt (context + longest answer choice; n=300/task) against that limit.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Task (5-shot)</th><th>median B</th><th>p90 B</th><th>max B</th><th>% &gt; 4096 (truncated)</th></tr></thead>
+<tbody>
+<tr><td>HellaSwag</td><td>2003</td><td>2419</td><td>2774</td><td class="best">0%</td></tr>
+<tr><td>ARC-Easy</td><td>917</td><td>1144</td><td>1774</td><td class="best">0%</td></tr>
+<tr><td>ARC-Challenge</td><td>1043</td><td>1345</td><td>1913</td><td class="best">0%</td></tr>
+<tr><td>PIQA</td><td>882</td><td>1244</td><td>2441</td><td class="best">0%</td></tr>
+<tr><td>WinoGrande</td><td>1294</td><td>1451</td><td>1588</td><td class="best">0%</td></tr>
+<tr class="avg"><td>→ 5-task set (main table)</td><td>—</td><td>—</td><td>≤2774</td><td class="best">0% — none truncated</td></tr>
+<tr><td>BoolQ</td><td>3974</td><td>5104</td><td>7539</td><td>44%</td></tr>
+<tr><td>MMLU-text</td><td>—</td><td>—</td><td>—</td><td>~44%</td></tr>
+</tbody></table></div>
+<div class="read"><b>Read:</b> <b>none</b> of the five main-table tasks truncate at 5-shot — the longest prompt (HellaSwag) is 2774 B,
+well under 4096. So BLT's reported <b>5-shot 5-task average (57.2)</b> is on fully-intact prompts: its few-shot weakness is
+<b>real, not a truncation artifact</b>. Only <b>BoolQ (44%)</b> and <b>MMLU-text (~44%)</b> exceed 4096 B, which is exactly why
+they are marked "—" for BLT's 5-shot (at 3-shot BoolQ drops to ~3% truncated, so it <em>is</em> included there). Source
+<code>lzspacebyte/blt/measure_5shot_len.py</code>.</div>
 
 <h2 id="s10"><span class="n">10.</span> H-Net XL — external byte-model comparison <span class="tag">cartesia-ai/hnet_{1,2}stage_XL · learned dynamic chunking · both variants</span></h2>
 <p class="lead"><b>H-Net</b> (Cartesia; <code>hnet_1stage_XL</code>, <code>hnet_2stage_XL</code>) is a byte-level hierarchical model whose
