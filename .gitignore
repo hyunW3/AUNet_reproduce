@@ -27,3 +27,13 @@ viz/*.mp4
 # python bytecode caches
 __pycache__/
 *.pyc
+
+# project page has its own git repo (BPEByte_project_page)
+project_page/
+
+# paper sources live in Overleaf; this tree is a working copy, not the origin
+paper_overleaf/
+
+# anonymised submission bundle — generated from the repo, not a source of truth
+code_appendix/
+code_appendix.zip
