@@ -103,10 +103,15 @@ INSTRUCTION = ("Some special magic numbers are hidden within the following text.
 
 def make_sample(target_bytes: int, depth: float, value_digits: int,
                 rng: random.Random, haystack_type: str = "noise",
-                value_type: str = "number", control: bool = False) -> dict:
+                value_type: str = "number", control: bool = False,
+                needle_sep: str = "") -> dict:
     """control=True: build the SAME prompt but DO NOT insert the needle, so the
     (teacher-forced) value is absent from the context. A model that genuinely
-    retrieves must score ~0 here; if it still scores high the metric is leaking."""
+    retrieves must score ~0 here; if it still scores high the metric is leaking.
+
+    needle_sep: separator between "is" and the value INSIDE the needle only
+    (e.g. ":" restores the original RULER template "...is: {value}"). The query
+    is untouched, so this isolates the effect of the colon in the context."""
     key = rng.choice(KEYS)
     noun = {"uuid": "UUID", "word": "word"}.get(value_type, "number")
 
@@ -126,7 +131,7 @@ def make_sample(target_bytes: int, depth: float, value_digits: int,
         value = _magic_word(rng, avoid=body + " " + INSTRUCTION + " " + " ".join(KEYS))
     else:
         value = "".join(rng.choice("0123456789") for _ in range(value_digits))
-    needle = f"One of the special magic {noun}s for {key} is {value}. "
+    needle = f"One of the special magic {noun}s for {key} is{needle_sep} {value}. "
 
     cut = int(len(body) * depth)
     while 0 < cut < len(body) and body[cut] != " ":   # snap to a word boundary
@@ -142,13 +147,15 @@ def make_sample(target_bytes: int, depth: float, value_digits: int,
 
 
 def make_dataset(target_bytes, depths, n_per_cell, value_digits, seed,
-                 haystack_type="noise", value_type="number", control=False):
+                 haystack_type="noise", value_type="number", control=False,
+                 needle_sep=""):
     rng = random.Random(seed)
     out = []
     for d in depths:
         for _ in range(n_per_cell):
             out.append(make_sample(target_bytes, d, value_digits, rng,
-                                   haystack_type, value_type, control))
+                                   haystack_type, value_type, control,
+                                   needle_sep))
     return out
 
 

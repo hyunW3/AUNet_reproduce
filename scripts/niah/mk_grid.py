@@ -28,29 +28,42 @@ MODELS = [("subword_llama", "subword (Llama)"), ("aunet_static", "AUNet"),
           ("byte_greedyroot", "BPEByte rg")]
 
 
-def make_grid_sample(target_bytes, target_depth, K, rng):
+def make_grid_sample(target_bytes, target_depth, K, rng, fit=None):
     keys = rng.sample(KEYS, K)
     vals = ["".join(rng.choice("0123456789") for _ in range(7)) for _ in keys]
     needles = [f"One of the special magic numbers for {k} is {v}. "
                for k, v in zip(keys, vals)]
     pool = _essay_pool()
     start = rng.randint(0, max(0, len(pool) - target_bytes - 1))
-    body = pool[start:start + target_bytes]
     # target (index 0) at target_depth; distractors at random depths
     offs = [target_depth] + [rng.random() for _ in range(K - 1)]
     order = sorted(range(K), key=lambda i: offs[i])
-    parts, prev = [], 0
-    for i in order:
-        c = min(len(body), max(prev, int(offs[i] * len(body))))
-        while 0 < c < len(body) and body[c] != " ":
-            c += 1
-        parts.append(body[prev:c]); parts.append(needles[i]); prev = c
-    parts.append(body[prev:])
-    haystack = "".join(parts)
     qk, ans = keys[0], vals[0]
     query = (f"What is the special magic number for {qk} mentioned in the "
              f"provided text? The special magic number for {qk} is")
-    return f"{INSTRUCTION}\n\n{haystack}\n\n{query}", ans
+
+    def build(nbytes):
+        body = pool[start:start + nbytes]
+        parts, prev = [], 0
+        for i in order:
+            c = min(len(body), max(prev, int(offs[i] * len(body))))
+            while 0 < c < len(body) and body[c] != " ":
+                c += 1
+            parts.append(body[prev:c]); parts.append(needles[i]); prev = c
+        parts.append(body[prev:])
+        return f"{INSTRUCTION}\n\n{''.join(parts)}\n\n{query}"
+
+    prompt, eff = build(target_bytes), target_bytes
+    # shrink the filler (never the needles/query, and keeping the relative
+    # needle depth) until the whole prompt fits the model's context window,
+    # so a boundary cell is measured at its largest testable length instead
+    # of being dropped as N/A. `fit` = (tokenizer, max_units).
+    if fit is not None:
+        tok, win = fit
+        while eff > 256 and len(tok.encode(prompt, add_bos=False, add_eos=False)) > win:
+            eff = int(eff * 0.9)
+            prompt = build(eff)
+    return prompt, ans, eff
 
 
 def run():
@@ -73,10 +86,12 @@ def run():
           f"n/cell={args.n_per_cell}")
 
     import math
-    # hard context window per family (len(encode(prompt)) units): bytes for byte
-    # models, tokens for subword. A prompt over this gets truncated -> cell is N/A,
-    # not a (vacuous) score.
+    # per-family context window (len(encode) units): 8192 bytes for byte models,
+    # 2048 tokens for Llama. Each sample is shrunk to fit this window (filler
+    # trimmed, needles/query/relative-depth preserved) so every cell is scored;
+    # MARGIN leaves room for the teacher-forced answer continuation.
     WINDOW = {"aunet": 8192, "subword": 2048}   # byte: 8192 bytes; Llama: 2048 tokens
+    MARGIN = 32
     grids = {}
     for tag in args.models:
         fam, ckpt = ckpt_for(tag)
@@ -85,29 +100,23 @@ def run():
         grid = [[float("nan")] * len(args.contexts) for _ in range(len(depths))]
         for di, dp in enumerate(depths):
             for ci, cb in enumerate(args.contexts):
-                pairs = []
+                pairs, effs = [], []
                 for _ in range(args.n_per_cell):
-                    p, a = make_grid_sample(cb, dp, args.K, rng)
-                    pairs.append(fmt_pair(p, a, fam))
-                # a cell is scored only if EVERY sample fits the window (else the
-                # cell would mix real scores with silently-truncated ones)
-                plen = max(len(tok.encode(c, add_bos=False, add_eos=False))
-                           for c, _ in pairs)
-                if plen > WINDOW[fam]:            # any sample exceeds the model window
-                    with open(args.out, "a") as f:
-                        f.write(json.dumps({"tag": tag, "depth": dp, "context": cb,
-                                            "exact_match": None, "n": 0,
-                                            "over_window": plen}) + "\n")
-                    continue
+                    p, a, eff = make_grid_sample(cb, dp, args.K, rng,
+                                                 fit=(tok, WINDOW[fam] - MARGIN))
+                    pairs.append(fmt_pair(p, a, fam)); effs.append(eff)
                 res = score(gen, tok, pairs, args.batch_size)
                 em = sum(r[0] for r in res) / len(res)
                 grid[di][ci] = em
+                capped = sum(e < cb for e in effs)   # samples whose filler was trimmed
                 with open(args.out, "a") as f:
                     f.write(json.dumps({"tag": tag, "depth": dp, "context": cb,
-                                        "exact_match": em, "n": len(res)}) + "\n")
+                                        "exact_match": em, "n": len(res),
+                                        "eff_bytes": round(sum(effs) / len(effs)),
+                                        "capped": capped}) + "\n")
         grids[tag] = grid
         vals = [v for row in grid for v in row if not math.isnan(v)]
-        print(f"  {tag}: mean={sum(vals)/len(vals):.3f} over {len(vals)} in-window cells")
+        print(f"  {tag}: mean={sum(vals)/len(vals):.3f} over {len(vals)} cells")
         del gen
 
     # heatmap grid, one panel per model
