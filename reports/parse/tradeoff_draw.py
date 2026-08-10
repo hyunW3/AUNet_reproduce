@@ -17,32 +17,38 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
 COL = {"Transformer": "#0072B2", "AU-Net": "#E69F00", "BPEByte": "#009E73", "BLT-1B": "#CC79A7",
-       "H-Net-1s": "#56B4E9", "H-Net-2s": "#D55E00"}
+       "H-Net": "#56B4E9", "H-Net (2 stage)": "#D55E00"}
 MARK = {"Transformer": "o", "AU-Net": "s", "BPEByte": "^", "BLT-1B": "D",
-        "H-Net-1s": "v", "H-Net-2s": "P"}
+        "H-Net": "v", "H-Net (2 stage)": "P"}
 
 # --- component numbers (1.3B; Delta-acc in points, negative = worse) ----------
 # BLT-1B and H-Net (1-/2-stage XL): external byte-level references, scored on identical perturbations.
 PBP = {"Transformer": -8.52, "AU-Net": +0.01, "BPEByte": -0.05, "BLT-1B": 0.00,
-       "H-Net-1s": 0.00, "H-Net-2s": 0.00}
+       "H-Net": 0.00, "H-Net (2 stage)": 0.00}
 NOISE = {"Transformer": (-18.2, -27.6), "AU-Net": (-16.3, -22.3), "BPEByte": (-14.5, -21.9),
-         "BLT-1B": (-16.0, -16.1), "H-Net-1s": (-16.7, -21.8), "H-Net-2s": (-16.9, -23.7)}  # HS, ARC-E
+         "BLT-1B": (-16.0, -16.1), "H-Net": (-16.7, -21.8), "H-Net (2 stage)": (-16.9, -23.7)}  # HS, ARC-E
 TYPO = {"Transformer": (-6.1, -4.4), "AU-Net": (-5.7, -4.2), "BPEByte": (-4.9, -3.8),
-        "BLT-1B": (-5.2, -5.2), "H-Net-1s": (-7.7, -7.7), "H-Net-2s": (-6.1, -6.1)}  # HS, ARC-C  (byte refs: HS-typo only)
+        "BLT-1B": (-5.2, -5.2), "H-Net": (-7.7, -7.7), "H-Net (2 stage)": (-6.1, -6.1)}  # HS, ARC-C  (byte refs: HS-typo only)
 DESPACE = {"Transformer": -14.4, "AU-Net": -22.4, "BPEByte": -12.5, "BLT-1B": -6.8,
-           "H-Net-1s": -14.6, "H-Net-2s": -14.3}   # all100 - clean
+           "H-Net": -14.6, "H-Net (2 stage)": -14.3}   # all100 - clean
 SNIAH3 = {"Transformer": 0.94, "AU-Net": 0.57, "BPEByte": 0.95, "BLT-1B": 0.11,
-          "H-Net-1s": 0.84, "H-Net-2s": 0.81}       # UUID recall
+          "H-Net": 0.84, "H-Net (2 stage)": 0.81}       # UUID recall
 # 0-shot / 5-shot downstream averages (5-benchmark set of tab:main_13b: HS/ARC-E/ARC-C/PIQA/WG)
 DOWN0 = {"Transformer": 60.0, "AU-Net": 60.1, "BPEByte": 60.4, "BLT-1B": 59.1,
-         "H-Net-1s": 59.2, "H-Net-2s": 61.7}
-DOWN5 = {"Transformer": 62.0, "AU-Net": 62.7, "BPEByte": 62.8, "BLT-1B": 57.2,
-         "H-Net-1s": 62.6, "H-Net-2s": 64.1}
+         "H-Net": 59.2, "H-Net (2 stage)": 61.7}
+DOWN5 = {"Transformer": 61.9, "AU-Net": 63.0, "BPEByte": 62.8, "BLT-1B": 57.2,
+         "H-Net": 62.6, "H-Net (2 stage)": 64.1}
+
+
+# excluded from the MAIN-paper figure (still reported in the appendix)
+EXCLUDE = {"H-Net (2 stage)"}
 
 
 def axes():
     P = {}
     for m in COL:
+        if m in EXCLUDE:
+            continue
         X = st.mean([PBP[m], st.mean(NOISE[m]), st.mean(TYPO[m])])       # tokenization
         Y = st.mean([DESPACE[m], 100 * (SNIAH3[m] - 1.00)])             # irregular-input
         P[m] = (X, Y)
@@ -75,8 +81,8 @@ def draw(path):
            "AU-Net": (0.0, -2.0, "center", "top"),
            "BPEByte": (0, 2.0, "center", "bottom"),
            "BLT-1B": (0.0, -2.2, "center", "top"),
-           "H-Net-1s": (0.35, 2.1, "left", "bottom"),
-           "H-Net-2s": (0.35, -2.3, "left", "top")}
+           "H-Net": (0, 2.1, "center", "bottom"),
+           "H-Net (2 stage)": (0, -2.3, "center", "top")}
     for m in P:
         x, y = P[m]
         ax.scatter([x], [y], s=230, marker=MARK[m], color=COL[m],
