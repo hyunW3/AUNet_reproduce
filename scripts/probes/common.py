@@ -22,6 +22,9 @@ CKPT = {
     "aunet_static":    ("aunet",   os.environ.get("CKPT_AUNET_STATIC",    "runs/main/1.3B/aunet2_1.3B/checkpoints/0000180000/consolidated")),
     "byte_bt":         ("aunet",   os.environ.get("CKPT_BYTE_BT",         "runs/main/1.3B/bpebyte_br_bt_1.3B/checkpoints/0000180000/consolidated")),
     "byte_greedyroot": ("aunet",   os.environ.get("CKPT_BYTE_GREEDYROOT", "runs/main/1.3B/bpebyte_br_greedy_root_1.3B/checkpoints/0000180000/consolidated")),
+    # BLT-style entropy patching. 100M ONLY (no 1.3B run exists) — not scale-matched to the
+    # tags above; compare with the 100M ablation caveat.
+    "blt_entropy":     ("aunet",   os.environ.get("CKPT_BLT_ENTROPY",     "runs/small/aunet_100M_entropy_low/checkpoints/0000001672/consolidated")),
 }
 L = os.environ.get("AUNET_ROOT", "/NHNHOME/WORKSPACE/0226010285_F/MINDlab/hyunw3/AUNet")
 
