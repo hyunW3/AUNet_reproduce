@@ -1,0 +1,565 @@
+{
+ "B": 2000,
+ "seed": 0,
+ "tasks": [
+  "hellaswag",
+  "arc_easy",
+  "arc_challenge",
+  "piqa",
+  "boolq"
+ ],
+ "rows": [
+  {
+   "limit": 500,
+   "axis": "noise",
+   "n_items": {
+    "hellaswag": 500,
+    "arc_easy": 500,
+    "arc_challenge": 500,
+    "piqa": 500,
+    "boolq": 500
+   },
+   "llama": {
+    "abs_delta": 13.707,
+    "ci95": [
+     12.128,
+     15.248
+    ]
+   },
+   "aunet": {
+    "abs_delta": 10.504,
+    "ci95": [
+     9.192,
+     11.813
+    ]
+   },
+   "bpebyte": {
+    "abs_delta": 11.216,
+    "ci95": [
+     9.978,
+     12.549
+    ]
+   },
+   "bpebyte_minus_llama": {
+    "point": -2.491,
+    "ci95": [
+     -4.083,
+     -0.928
+    ]
+   },
+   "bpebyte_minus_aunet": {
+    "point": 0.712,
+    "ci95": [
+     -0.733,
+     2.077
+    ]
+   }
+  },
+  {
+   "limit": 500,
+   "axis": "typo",
+   "n_items": {
+    "hellaswag": 500,
+    "arc_easy": 500,
+    "arc_challenge": 500,
+    "piqa": 500,
+    "boolq": 500
+   },
+   "llama": {
+    "abs_delta": 5.545,
+    "ci95": [
+     4.575,
+     6.55
+    ]
+   },
+   "aunet": {
+    "abs_delta": 3.66,
+    "ci95": [
+     2.755,
+     4.58
+    ]
+   },
+   "bpebyte": {
+    "abs_delta": 4.115,
+    "ci95": [
+     3.205,
+     5.0
+    ]
+   },
+   "bpebyte_minus_llama": {
+    "point": -1.43,
+    "ci95": [
+     -2.695,
+     -0.27
+    ]
+   },
+   "bpebyte_minus_aunet": {
+    "point": 0.455,
+    "ci95": [
+     -0.565,
+     1.52
+    ]
+   }
+  },
+  {
+   "limit": 500,
+   "axis": "despace",
+   "n_items": {
+    "hellaswag": 500,
+    "arc_easy": 500,
+    "arc_challenge": 500,
+    "piqa": 500,
+    "boolq": 500
+   },
+   "llama": {
+    "abs_delta": 13.0,
+    "ci95": [
+     10.919,
+     15.12
+    ]
+   },
+   "aunet": {
+    "abs_delta": 22.68,
+    "ci95": [
+     20.559,
+     25.04
+    ]
+   },
+   "bpebyte": {
+    "abs_delta": 11.84,
+    "ci95": [
+     9.76,
+     13.88
+    ]
+   },
+   "bpebyte_minus_llama": {
+    "point": -1.16,
+    "ci95": [
+     -3.72,
+     1.161
+    ]
+   },
+   "bpebyte_minus_aunet": {
+    "point": -10.84,
+    "ci95": [
+     -13.28,
+     -8.36
+    ]
+   }
+  },
+  {
+   "limit": 1000,
+   "axis": "noise",
+   "n_items": {
+    "hellaswag": 1000,
+    "arc_easy": 1000,
+    "arc_challenge": 1000,
+    "piqa": 1000,
+    "boolq": 1000
+   },
+   "llama": {
+    "abs_delta": 14.005,
+    "ci95": [
+     12.954,
+     15.067
+    ]
+   },
+   "aunet": {
+    "abs_delta": 11.025,
+    "ci95": [
+     10.113,
+     11.977
+    ]
+   },
+   "bpebyte": {
+    "abs_delta": 11.413,
+    "ci95": [
+     10.534,
+     12.368
+    ]
+   },
+   "bpebyte_minus_llama": {
+    "point": -2.592,
+    "ci95": [
+     -3.677,
+     -1.441
+    ]
+   },
+   "bpebyte_minus_aunet": {
+    "point": 0.388,
+    "ci95": [
+     -0.563,
+     1.357
+    ]
+   }
+  },
+  {
+   "limit": 1000,
+   "axis": "typo",
+   "n_items": {
+    "hellaswag": 1000,
+    "arc_easy": 1000,
+    "arc_challenge": 1000,
+    "piqa": 1000,
+    "boolq": 1000
+   },
+   "llama": {
+    "abs_delta": 5.79,
+    "ci95": [
+     5.05,
+     6.483
+    ]
+   },
+   "aunet": {
+    "abs_delta": 3.948,
+    "ci95": [
+     3.285,
+     4.59
+    ]
+   },
+   "bpebyte": {
+    "abs_delta": 3.88,
+    "ci95": [
+     3.235,
+     4.525
+    ]
+   },
+   "bpebyte_minus_llama": {
+    "point": -1.91,
+    "ci95": [
+     -2.79,
+     -0.997
+    ]
+   },
+   "bpebyte_minus_aunet": {
+    "point": -0.068,
+    "ci95": [
+     -0.845,
+     0.725
+    ]
+   }
+  },
+  {
+   "limit": 1000,
+   "axis": "despace",
+   "n_items": {
+    "hellaswag": 1000,
+    "arc_easy": 1000,
+    "arc_challenge": 1000,
+    "piqa": 1000,
+    "boolq": 1000
+   },
+   "llama": {
+    "abs_delta": 12.08,
+    "ci95": [
+     10.68,
+     13.561
+    ]
+   },
+   "aunet": {
+    "abs_delta": 21.74,
+    "ci95": [
+     20.16,
+     23.36
+    ]
+   },
+   "bpebyte": {
+    "abs_delta": 13.12,
+    "ci95": [
+     11.72,
+     14.54
+    ]
+   },
+   "bpebyte_minus_llama": {
+    "point": 1.04,
+    "ci95": [
+     -0.7,
+     2.76
+    ]
+   },
+   "bpebyte_minus_aunet": {
+    "point": -8.62,
+    "ci95": [
+     -10.32,
+     -6.68
+    ]
+   }
+  },
+  {
+   "limit": 1500,
+   "axis": "noise",
+   "n_items": {
+    "hellaswag": 1500,
+    "arc_easy": 1500,
+    "arc_challenge": 1172,
+    "piqa": 1500,
+    "boolq": 1500
+   },
+   "llama": {
+    "abs_delta": 14.074,
+    "ci95": [
+     13.205,
+     14.958
+    ]
+   },
+   "aunet": {
+    "abs_delta": 11.058,
+    "ci95": [
+     10.291,
+     11.841
+    ]
+   },
+   "bpebyte": {
+    "abs_delta": 11.674,
+    "ci95": [
+     10.912,
+     12.448
+    ]
+   },
+   "bpebyte_minus_llama": {
+    "point": -2.401,
+    "ci95": [
+     -3.382,
+     -1.507
+    ]
+   },
+   "bpebyte_minus_aunet": {
+    "point": 0.616,
+    "ci95": [
+     -0.212,
+     1.396
+    ]
+   }
+  },
+  {
+   "limit": 1500,
+   "axis": "typo",
+   "n_items": {
+    "hellaswag": 1500,
+    "arc_easy": 1500,
+    "arc_challenge": 1172,
+    "piqa": 1500,
+    "boolq": 1500
+   },
+   "llama": {
+    "abs_delta": 5.749,
+    "ci95": [
+     5.134,
+     6.367
+    ]
+   },
+   "aunet": {
+    "abs_delta": 3.781,
+    "ci95": [
+     3.26,
+     4.327
+    ]
+   },
+   "bpebyte": {
+    "abs_delta": 3.869,
+    "ci95": [
+     3.36,
+     4.379
+    ]
+   },
+   "bpebyte_minus_llama": {
+    "point": -1.88,
+    "ci95": [
+     -2.609,
+     -1.147
+    ]
+   },
+   "bpebyte_minus_aunet": {
+    "point": 0.088,
+    "ci95": [
+     -0.567,
+     0.754
+    ]
+   }
+  },
+  {
+   "limit": 1500,
+   "axis": "despace",
+   "n_items": {
+    "hellaswag": 1500,
+    "arc_easy": 1500,
+    "arc_challenge": 1172,
+    "piqa": 1500,
+    "boolq": 1500
+   },
+   "llama": {
+    "abs_delta": 12.041,
+    "ci95": [
+     10.785,
+     13.264
+    ]
+   },
+   "aunet": {
+    "abs_delta": 22.12,
+    "ci95": [
+     20.841,
+     23.467
+    ]
+   },
+   "bpebyte": {
+    "abs_delta": 13.792,
+    "ci95": [
+     12.617,
+     14.965
+    ]
+   },
+   "bpebyte_minus_llama": {
+    "point": 1.751,
+    "ci95": [
+     0.381,
+     3.181
+    ]
+   },
+   "bpebyte_minus_aunet": {
+    "point": -8.328,
+    "ci95": [
+     -9.706,
+     -6.953
+    ]
+   }
+  },
+  {
+   "limit": 2000,
+   "axis": "noise",
+   "n_items": {
+    "hellaswag": 2000,
+    "arc_easy": 2000,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "boolq": 2000
+   },
+   "llama": {
+    "abs_delta": 14.258,
+    "ci95": [
+     13.455,
+     15.069
+    ]
+   },
+   "aunet": {
+    "abs_delta": 11.212,
+    "ci95": [
+     10.481,
+     11.944
+    ]
+   },
+   "bpebyte": {
+    "abs_delta": 11.692,
+    "ci95": [
+     11.014,
+     12.393
+    ]
+   },
+   "bpebyte_minus_llama": {
+    "point": -2.566,
+    "ci95": [
+     -3.383,
+     -1.764
+    ]
+   },
+   "bpebyte_minus_aunet": {
+    "point": 0.48,
+    "ci95": [
+     -0.27,
+     1.238
+    ]
+   }
+  },
+  {
+   "limit": 2000,
+   "axis": "typo",
+   "n_items": {
+    "hellaswag": 2000,
+    "arc_easy": 2000,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "boolq": 2000
+   },
+   "llama": {
+    "abs_delta": 5.696,
+    "ci95": [
+     5.149,
+     6.243
+    ]
+   },
+   "aunet": {
+    "abs_delta": 3.976,
+    "ci95": [
+     3.511,
+     4.459
+    ]
+   },
+   "bpebyte": {
+    "abs_delta": 3.861,
+    "ci95": [
+     3.348,
+     4.355
+    ]
+   },
+   "bpebyte_minus_llama": {
+    "point": -1.835,
+    "ci95": [
+     -2.515,
+     -1.147
+    ]
+   },
+   "bpebyte_minus_aunet": {
+    "point": -0.115,
+    "ci95": [
+     -0.732,
+     0.489
+    ]
+   }
+  },
+  {
+   "limit": 2000,
+   "axis": "despace",
+   "n_items": {
+    "hellaswag": 2000,
+    "arc_easy": 2000,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "boolq": 2000
+   },
+   "llama": {
+    "abs_delta": 12.156,
+    "ci95": [
+     11.062,
+     13.295
+    ]
+   },
+   "aunet": {
+    "abs_delta": 21.826,
+    "ci95": [
+     20.554,
+     23.065
+    ]
+   },
+   "bpebyte": {
+    "abs_delta": 13.183,
+    "ci95": [
+     12.1,
+     14.278
+    ]
+   },
+   "bpebyte_minus_llama": {
+    "point": 1.027,
+    "ci95": [
+     -0.303,
+     2.333
+    ]
+   },
+   "bpebyte_minus_aunet": {
+    "point": -8.643,
+    "ci95": [
+     -9.921,
+     -7.255
+    ]
+   }
+  }
+ ]
+}
