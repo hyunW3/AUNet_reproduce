@@ -1,0 +1,300 @@
+{
+ "B": 2000,
+ "seed": 0,
+ "results": {
+  "downstream_0shot": {
+   "n_items": {
+    "hellaswag": 10042,
+    "arc_easy": 2376,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "winogrande": 1267
+   },
+   "llama": {
+    "value": 59.885,
+    "ci95": [
+     58.925,
+     60.866
+    ],
+    "half_width": 0.971
+   },
+   "aunet": {
+    "value": 60.109,
+    "ci95": [
+     59.141,
+     61.081
+    ],
+    "half_width": 0.97
+   },
+   "bpebyte": {
+    "value": 60.251,
+    "ci95": [
+     59.301,
+     61.221
+    ],
+    "half_width": 0.96
+   },
+   "blt": {
+    "value": 62.753,
+    "ci95": [
+     61.791,
+     63.694
+    ],
+    "half_width": 0.952
+   },
+   "hnet": {
+    "value": 59.133,
+    "ci95": [
+     58.176,
+     60.13
+    ],
+    "half_width": 0.977
+   }
+  },
+  "downstream_3shot": {
+   "n_items": {
+    "hellaswag": 10042,
+    "arc_easy": 2376,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "winogrande": 1267
+   },
+   "llama": {
+    "value": 61.932,
+    "ci95": [
+     61.0,
+     62.838
+    ],
+    "half_width": 0.919
+   },
+   "aunet": {
+    "value": 62.369,
+    "ci95": [
+     61.375,
+     63.306
+    ],
+    "half_width": 0.966
+   },
+   "bpebyte": {
+    "value": 62.531,
+    "ci95": [
+     61.568,
+     63.495
+    ],
+    "half_width": 0.963
+   },
+   "blt": {
+    "value": 65.309,
+    "ci95": [
+     64.36,
+     66.194
+    ],
+    "half_width": 0.917
+   },
+   "hnet": {
+    "value": 62.074,
+    "ci95": [
+     61.076,
+     63.022
+    ],
+    "half_width": 0.973
+   }
+  },
+  "downstream_5shot": {
+   "n_items": {
+    "hellaswag": 10042,
+    "arc_easy": 2376,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "winogrande": 1267
+   },
+   "llama": {
+    "value": 61.837,
+    "ci95": [
+     60.879,
+     62.792
+    ],
+    "half_width": 0.957
+   },
+   "aunet": {
+    "value": 63.003,
+    "ci95": [
+     62.042,
+     63.939
+    ],
+    "half_width": 0.948
+   },
+   "bpebyte": {
+    "value": 62.747,
+    "ci95": [
+     61.844,
+     63.744
+    ],
+    "half_width": 0.95
+   },
+   "blt": {
+    "value": 65.992,
+    "ci95": [
+     65.06,
+     66.959
+    ],
+    "half_width": 0.95
+   },
+   "hnet": {
+    "value": 62.5,
+    "ci95": [
+     61.564,
+     63.435
+    ],
+    "half_width": 0.935
+   }
+  },
+  "noise": {
+   "n_items": {
+    "hellaswag": 2000,
+    "arc_easy": 2000,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "boolq": 2000
+   },
+   "llama": {
+    "value": 14.258,
+    "ci95": [
+     13.452,
+     15.017
+    ],
+    "half_width": 0.783
+   },
+   "aunet": {
+    "value": 11.212,
+    "ci95": [
+     10.527,
+     11.978
+    ],
+    "half_width": 0.725
+   },
+   "bpebyte": {
+    "value": 11.692,
+    "ci95": [
+     11.001,
+     12.366
+    ],
+    "half_width": 0.682
+   },
+   "blt": {
+    "value": 12.355,
+    "ci95": [
+     11.638,
+     13.077
+    ],
+    "half_width": 0.719
+   },
+   "hnet": {
+    "value": 12.085,
+    "ci95": [
+     11.361,
+     12.805
+    ],
+    "half_width": 0.722
+   }
+  },
+  "typo": {
+   "n_items": {
+    "hellaswag": 2000,
+    "arc_easy": 2000,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "boolq": 2000
+   },
+   "llama": {
+    "value": 5.696,
+    "ci95": [
+     5.158,
+     6.224
+    ],
+    "half_width": 0.533
+   },
+   "aunet": {
+    "value": 3.976,
+    "ci95": [
+     3.47,
+     4.451
+    ],
+    "half_width": 0.49
+   },
+   "bpebyte": {
+    "value": 3.861,
+    "ci95": [
+     3.379,
+     4.35
+    ],
+    "half_width": 0.486
+   },
+   "blt": {
+    "value": 3.581,
+    "ci95": [
+     3.04,
+     4.142
+    ],
+    "half_width": 0.551
+   },
+   "hnet": {
+    "value": 4.885,
+    "ci95": [
+     4.332,
+     5.41
+    ],
+    "half_width": 0.539
+   }
+  },
+  "despace": {
+   "n_items": {
+    "hellaswag": 2000,
+    "arc_easy": 2000,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "boolq": 2000
+   },
+   "llama": {
+    "value": 12.156,
+    "ci95": [
+     11.029,
+     13.296
+    ],
+    "half_width": 1.133
+   },
+   "aunet": {
+    "value": 21.826,
+    "ci95": [
+     20.661,
+     23.049
+    ],
+    "half_width": 1.194
+   },
+   "bpebyte": {
+    "value": 13.183,
+    "ci95": [
+     12.118,
+     14.237
+    ],
+    "half_width": 1.06
+   },
+   "blt": {
+    "value": 5.493,
+    "ci95": [
+     4.521,
+     6.431
+    ],
+    "half_width": 0.955
+   },
+   "hnet": {
+    "value": 12.365,
+    "ci95": [
+     11.272,
+     13.472
+    ],
+    "half_width": 1.1
+   }
+  }
+ }
+}

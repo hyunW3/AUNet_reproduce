@@ -1,0 +1,5 @@
+[gate] bpebyte: DCLM bytes/patch 4.5819 vs paper-time 4.5800 (+0.04%) -> PASS
+  20000/78649  3s
+  40000/78649  7s
+  60000/78649  9s
+wrote /mnt/ssd2/hyun2/AUNet/reports/patch_stats/hist_bpebyte.json

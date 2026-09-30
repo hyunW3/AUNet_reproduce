@@ -15,19 +15,26 @@
 소스:
   matched  : runs/robustness_paper1p3b{,_ext}/<arm>/results.json (noise/typo/pbp)
              runs/robustness_despace_bits/<arm>/results.json     (despace, per-item bits 재실행)
-  BLT/H-Net: reports/robustness_ext/{blt,hnet}_<axis>_{hs_arce,ext}.json 의 raw
+  BLT/H-Net: reports/ext_ci/{blt,hnet}/<axis>.json (per-item 재실행, seed 1234, BLT 512 window) 우선,
+             없으면 reports/robustness_ext/{blt,hnet}_<axis>_{hs_arce,ext}.json 의 raw
              BLT despace HS/ARC-E 는 reports/blt_threshold_ab/rob_despace_thr1.3354.json (threshold 1.335)
              BLT PBP 는 HS/ARC-E 미측정.
 
   python paper_robustness_tables.py [--overleaf /mnt/ssd2/hyun2/AUNet/paper_overleaf]
 """
-import argparse, json, os, statistics as st
+import argparse, glob, json, os, statistics as st
 
 L = "/mnt/ssd2/hyun2/AUNet"
 TASKS = ("hellaswag", "arc_easy", "arc_challenge", "piqa", "boolq")
 TNAME = {"hellaswag": "HellaSwag", "arc_easy": "ARC-Easy", "arc_challenge": "ARC-Challenge",
          "piqa": "PIQA", "boolq": "BoolQ"}
 MODELS = ("llama", "aunet", "bpebyte", "blt", "hnet")
+# Axes still measured WITHOUT BLT's 512-byte local attention window get NOWIN_MARK. Empty since the
+# official-bytelatent rerun (reports/ext_ci/blt_official: entropy + local windows native, batch 1);
+# PBP was re-run with the window in reports/robustness_ext/blt_pbp_{hs_arce,ext}.json.
+NOWIN = {}
+NOWIN_MARK = r"$^{\circ}$"
+NOWIN_NOTE = ""
 MATCHED = ("llama", "aunet", "bpebyte")
 NOISE = ("antspeak", "drop", "randomcase", "repeat", "uppercase")
 NOISE_POS = ("prompt", "completion", "both")
@@ -72,6 +79,17 @@ def load_results():
     for m in ("blt", "hnet"):
         R[m] = {}
         for ax in AXES:
+            # Per-item reruns (scripts/probes/ext_ci/run_ext.py: perturbation seed 1234 = the trio's,
+            # BLT with its 512-byte entropy window) supersede the Aug-29 runs (seed 0) when present.
+            # BLT: official bytelatent (xformers windows, batch 1); noise/typo are per-task shards.
+            d = f"{L}/reports/ext_ci/{'blt_official' if m == 'blt' else m}"
+            files = [f"{d}/{ax}.json"] if os.path.exists(f"{d}/{ax}.json") else sorted(
+                glob.glob(f"{d}/{ax}_*.json"))
+            if ax != "pbp" and files:
+                R[m][ax] = {}
+                for f in files:
+                    R[m][ax].update(json.load(open(f))["results"])
+                continue
             res = {}
             for part in ("hs_arce", "ext"):
                 f = f"{E}/{m}_{ax}_{part}.json"
@@ -167,14 +185,16 @@ def detail_tex(R):
                     row.append("--"); continue
                 nd = 2 if ax == "pbp" else 1
                 s = f"{c[1]:.1f} ({_signed(c[1] - c[0], nd)})"
-                row.append(r"\textbf{" + s + "}" if i in b else s)
+                s = r"\textbf{" + s + "}" if i in b else s
+                row.append(s + NOWIN_MARK if ax in NOWIN.get(MODELS[i], ()) else s)
             out.append(r"\quad " + TNAME[t] + " & " + " & ".join(row) + r" \\")
         ds = [axis_delta(R[m], ax) for m in MODELS]
         b = _bold_set(ds, abs, 2 if ax == "pbp" else 1)
         row = []
         for i, d in enumerate(ds):
             s = "--" if d is None else _signed(d, 2 if ax == "pbp" else 1)
-            row.append(r"\textbf{" + s + "}" if i in b and d is not None else s)
+            s = r"\textbf{" + s + "}" if i in b and d is not None else s
+            row.append(s + NOWIN_MARK if d is not None and ax in NOWIN.get(MODELS[i], ()) else s)
         out.append(r"\quad \emph{Average $\Delta$} & " + " & ".join(row) + r" \\")
     out += [r"\bottomrule", r"\end{tabular}", "}",
             r"\caption{Per-task robustness at 1B under the unified five-task protocol (up to $2{,}000$ items per task, "
@@ -184,7 +204,7 @@ def detail_tex(R):
             r"prompt/completion/both; BoolQ: $5$ prompt-only variants, since its fixed yes/no options cannot be perturbed "
             r"without changing the label); \textit{Typo} averages $8$ variants ($4$ edits $\times$ character/word). "
             r"Bold marks the smallest degradation among the three matched models; $^{\dagger}$BLT and $^{\ddagger}$H-Net "
-            r"are external references (``--'': not measured).}",
+            r"are external references (``--'': not measured). " + NOWIN_NOTE + "}",
             r"\label{tab:robustness_detail}", r"\end{table*}", ""]
     return "\n".join(out)
 
@@ -217,7 +237,7 @@ def category_tex(R):
             r"drop, random case, character repetition, and uppercasing, each averaged over prompt/completion/both "
             r"targets. \textit{Typo}: character- and word-level deletion, swap, keyboard substitution, and insertion. "
             r"\textit{Despace}: all spaces removed from the context only, the answer options only, or both. "
-            r"\textbf{Bold} marks the best matched model; $^{\dagger}$BLT and $^{\ddagger}$H-Net are external references.}",
+            r"\textbf{Bold} marks the best matched model; $^{\dagger}$BLT and $^{\ddagger}$H-Net are external references. " + NOWIN_NOTE + "}",
             r"\label{tab:robustness_category}", r"\end{table*}", ""]
     return "\n".join(out), vals, cols
 

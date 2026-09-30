@@ -1,0 +1,116 @@
+{
+ "0_llama": {
+  "hellaswag": 62.1,
+  "arc_easy": 65.7,
+  "arc_challenge": 35.2,
+  "piqa": 74.9,
+  "winogrande": 61.5
+ },
+ "0_aunet": {
+  "hellaswag": 62.6,
+  "arc_easy": 65.8,
+  "arc_challenge": 36.0,
+  "piqa": 74.3,
+  "winogrande": 61.8
+ },
+ "0_bpebyte": {
+  "hellaswag": 62.5,
+  "arc_easy": 66.7,
+  "arc_challenge": 37.0,
+  "piqa": 74.3,
+  "winogrande": 60.8
+ },
+ "0_blt": {
+  "hellaswag": 70.3,
+  "arc_easy": 64.4,
+  "arc_challenge": 39.0,
+  "piqa": 78.0,
+  "winogrande": 65.0,
+  "boolq": 70.4,
+  "mmlu_text": 35.6
+ },
+ "0_hnet": {
+  "hellaswag": 59.4,
+  "arc_easy": 65.4,
+  "arc_challenge": 38.6,
+  "piqa": 73.0,
+  "winogrande": 59.3,
+  "boolq": 58.3,
+  "mmlu_text": 33.4
+ },
+ "3_llama": {
+  "hellaswag": 62.8,
+  "arc_easy": 70.0,
+  "arc_challenge": 39.3,
+  "piqa": 75.1,
+  "winogrande": 62.4
+ },
+ "3_aunet": {
+  "hellaswag": 63.1,
+  "arc_easy": 72.6,
+  "arc_challenge": 40.9,
+  "piqa": 74.4,
+  "winogrande": 60.9
+ },
+ "3_bpebyte": {
+  "hellaswag": 63.6,
+  "arc_easy": 71.5,
+  "arc_challenge": 41.5,
+  "piqa": 74.2,
+  "winogrande": 62.0
+ },
+ "3_blt": {
+  "hellaswag": 70.2,
+  "arc_easy": 73.7,
+  "arc_challenge": 42.9,
+  "piqa": 77.5,
+  "winogrande": 66.8,
+  "boolq": 71.3
+ },
+ "3_hnet": {
+  "hellaswag": 59.6,
+  "arc_easy": 75.3,
+  "arc_challenge": 43.2,
+  "piqa": 73.1,
+  "winogrande": 59.1,
+  "boolq": 63.7,
+  "mmlu_text": 35.2
+ },
+ "5_llama": {
+  "hellaswag": 62.9,
+  "arc_easy": 70.3,
+  "arc_challenge": 38.6,
+  "piqa": 75.5,
+  "winogrande": 61.9
+ },
+ "5_aunet": {
+  "hellaswag": 63.7,
+  "arc_easy": 72.5,
+  "arc_challenge": 40.5,
+  "piqa": 74.2,
+  "winogrande": 64.1
+ },
+ "5_bpebyte": {
+  "hellaswag": 63.7,
+  "arc_easy": 71.6,
+  "arc_challenge": 41.9,
+  "piqa": 74.3,
+  "winogrande": 62.3
+ },
+ "5_blt": {
+  "hellaswag": 70.5,
+  "arc_easy": 73.8,
+  "arc_challenge": 43.9,
+  "piqa": 77.5,
+  "winogrande": 67.3
+ },
+ "5_hnet": {
+  "hellaswag": 59.8,
+  "arc_easy": 75.7,
+  "arc_challenge": 44.1,
+  "piqa": 73.6,
+  "winogrande": 59.3,
+  "boolq": 63.2,
+  "mmlu_text": 35.4
+ }
+}

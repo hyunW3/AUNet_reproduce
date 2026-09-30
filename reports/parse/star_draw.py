@@ -30,43 +30,45 @@ STYLE = {"Llama": "-", "AU-Net": "-", "BPEByte (ours)": "-", "BLT": "--",
 # ordered clockwise from the top so the three families are contiguous.
 AXES = [
     # -- Quality (right sector) --
+    # downstream: per-item reruns of all five models (reports/ci_main_table/ci.json); BLT = official
+    # bytelatent with its sliding windows, batch 1.
     ("0-shot", True,
-     {"Llama": 60.0, "AU-Net": 60.1, "BPEByte (ours)": 60.4, "BLT": 59.1,
-      "H-Net": 59.2}),
+     {"Llama": 59.9, "AU-Net": 60.1, "BPEByte (ours)": 60.3, "BLT": 63.3,
+      "H-Net": 59.1}),
     ("3-shot", True,
-     {"Llama": 61.8, "AU-Net": 62.7, "BPEByte (ours)": 62.4, "BLT": 59.4,
-      "H-Net": 61.9}),
+     {"Llama": 61.9, "AU-Net": 62.4, "BPEByte (ours)": 62.5, "BLT": 66.2,
+      "H-Net": 62.1}),
     ("5-shot", True,
-     {"Llama": 61.9, "AU-Net": 63.0, "BPEByte (ours)": 62.8, "BLT": 57.2,
-      "H-Net": 62.6}),
+     {"Llama": 61.8, "AU-Net": 63.0, "BPEByte (ours)": 62.7, "BLT": 66.6,
+      "H-Net": 62.5}),
     ("    Latency", False,   # tab:main_13b byte-matched forward (ms)
-     {"Llama": 406.3, "AU-Net": 652.0, "BPEByte (ours)": 650.3, "BLT": 1315.3,
+     {"Llama": 406.3, "AU-Net": 652.0, "BPEByte (ours)": 650.3, "BLT": None,   # BLT: not re-measured with its windows -> no vertex
       "H-Net": 578.7}),
     # -- Retrieval (bottom sector) --
-    ("  S-NIAH-3", True,   # tab:sniah_full <=4k means, n=250/cell
-     {"Llama": 0.943, "AU-Net": 0.551, "BPEByte (ours)": 0.952, "BLT": 0.147,
+    ("  S-NIAH-3", True,   # tab:sniah_full <=4k means, n=250/cell (BLT: 512-byte window restored, 2026-09-29)
+     {"Llama": 0.943, "AU-Net": 0.551, "BPEByte (ours)": 0.952, "BLT": 0.975,
       "H-Net": 0.853}),
     ("S-NIAH-1", True,   # <=4k means; externals scored on identical dumped pairs
-     {"Llama": 1.000, "AU-Net": 0.996, "BPEByte (ours)": 1.000, "BLT": 0.428,
+     {"Llama": 1.000, "AU-Net": 0.996, "BPEByte (ours)": 1.000, "BLT": 0.929,
       "H-Net": 0.999}),
     ("S-NIAH-2", True,
-     {"Llama": 0.998, "AU-Net": 0.991, "BPEByte (ours)": 0.999, "BLT": 0.781,
+     {"Llama": 0.998, "AU-Net": 0.991, "BPEByte (ours)": 0.999, "BLT": 0.982,
       "H-Net": 0.961}),
     # -- Robustness (upper-left sector) --
     # unified 5-task protocol (HS/ARC-E/ARC-C/PIQA/BoolQ, limit 2000):
     # scripts/probes/paper_robustness_tables.py (axis means printed there).
     ("Despace", False,
-     {"Llama": 12.16, "AU-Net": 21.83, "BPEByte (ours)": 13.18, "BLT": 5.82,
-      "H-Net": 12.37}),
-    ("PBP", False,   # BLT: table shows "--" (HS/ARC-E unmeasured); mean of the 3 measured tasks
-     {"Llama": 10.65, "AU-Net": 0.05, "BPEByte (ours)": 0.14, "BLT": 0.03,
+     {"Llama": 12.16, "AU-Net": 21.83, "BPEByte (ours)": 13.18, "BLT": 5.94,
+      "H-Net": 12.36}),
+    ("PBP", False,   # BLT: all 5 tasks with its local windows restored (reports/robustness_ext/blt_pbp_*.json)
+     {"Llama": 10.65, "AU-Net": 0.05, "BPEByte (ours)": 0.14, "BLT": 0.0,
       "H-Net": 0.00}),
     ("Noise", False,
-     {"Llama": 14.26, "AU-Net": 11.21, "BPEByte (ours)": 11.69, "BLT": 14.01,
-      "H-Net": 12.07}),
+     {"Llama": 14.26, "AU-Net": 11.21, "BPEByte (ours)": 11.69, "BLT": 12.96,
+      "H-Net": 12.09}),
     ("Typo", False,
-     {"Llama": 5.70, "AU-Net": 3.98, "BPEByte (ours)": 3.86, "BLT": 4.64,
-      "H-Net": 5.00}),
+     {"Llama": 5.70, "AU-Net": 3.98, "BPEByte (ours)": 3.86, "BLT": 4.22,
+      "H-Net": 4.89}),
 ]
 LO = 0.15   # worst model sits on this ring, not at the center pole
 
@@ -74,8 +76,8 @@ LO = 0.15   # worst model sits on this ring, not at the center pole
 # stretching the ~1-pp spread over the full radius overstates them. These axes
 # instead use a fixed absolute scale: LO ring = 55.0, rim = 63.0 (values
 # outside are clamped), so equal radial distances mean equal accuracy gaps.
-PERF_RANGE = {"0-shot": (55.0, 63.0), "3-shot": (55.0, 63.0),
-              "5-shot": (55.0, 63.0)}
+PERF_RANGE = {"0-shot": (55.0, 67.0), "3-shot": (55.0, 67.0),
+              "5-shot": (55.0, 67.0)}
 
 # (name, first axis idx, last axis idx, arc color, label color)
 GROUPS = [
@@ -87,6 +89,7 @@ ARC_R, LAB_R = 1.45, 1.56   # radius of the arc band / of the family label
 
 
 def norm(raw, hib, vrange=None):
+    raw = {m: v for m, v in raw.items() if v is not None}      # missing value -> no vertex
     vals = list(raw.values())
     best, worst = (max(vals), min(vals)) if hib else (min(vals), max(vals))
     if vrange is not None:
@@ -136,7 +139,7 @@ def draw(path, paper=False):
     for label, hib, raw in AXES:
         n = norm(raw, hib, vrange=PERF_RANGE.get(label.strip()))
         for m in COL:
-            scores[m].append(n[m])
+            scores[m].append(n.get(m))
     K = len(AXES)
     ang = [2 * pi * i / K for i in range(K)]
     ang_c = ang + ang[:1]
@@ -146,9 +149,11 @@ def draw(path, paper=False):
     ax.set_theta_offset(pi / 2)
     ax.set_theta_direction(-1)
     for m in COL:
-        v = scores[m] + scores[m][:1]
-        ax.plot(ang_c, v, STYLE[m], color=COL[m], lw=2, zorder=3, label=m)
-        ax.fill(ang_c, v, color=COL[m], alpha=0.06, zorder=2)
+        pts = [(a, v) for a, v in zip(ang, scores[m]) if v is not None]   # skip axes without a value
+        a_m = [a for a, _ in pts] + [pts[0][0]]
+        v = [v for _, v in pts] + [pts[0][1]]
+        ax.plot(a_m, v, STYLE[m], color=COL[m], lw=2, zorder=3, label=m)
+        ax.fill(a_m, v, color=COL[m], alpha=0.06, zorder=2)
     ax.set_xticks(ang)
     ax.set_xticklabels([a[0] for a in AXES], fontsize=12)
     ax.set_yticks([LO, 0.5, 1.0])

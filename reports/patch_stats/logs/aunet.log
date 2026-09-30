@@ -1,0 +1,5 @@
+[gate] aunet: DCLM bytes/patch 4.8850 vs paper-time 4.8900 (-0.10%) -> PASS
+  20000/78649  4s
+  40000/78649  10s
+  60000/78649  13s
+wrote /mnt/ssd2/hyun2/AUNet/reports/patch_stats/hist_aunet.json
