@@ -177,3 +177,12 @@ Llama 100M을 32K vocab으로 1 run. embedding 파라미터가 바뀌므로(128K
   - 실제 배치는 사용자 확인 후 결정 (메모리의 노드 정책 준수)
 - 순서: (1) stride 코드 + 단위테스트 + 절단 vocab 파일 → (2) 전 arm smoke 200 step → (3) P0 7 arms → (4) A 판정 확인 후 P1.
   **A-s4/A-s5를 가장 먼저** 돌림 (논문 주장에 대한 가장 큰 리스크).
+
+---
+
+## 8. 진행 (2026-09-30)
+
+P0 중 사용자 지정 4개 arm을 ece-agpu18 GPU 5,6에서 순차 학습 중. 당시 ece-agpu11은 8장 모두 타 사용자가 점유해 사용하지 않음.
+arm: `stride4p57` (BPEByte 4.566 B/patch에 맞춘 고정 stride), `rg_llama3_V32k`, `rg_gpt2`, `rg_qwen2`.
+설계 대비 변경: stride를 4/5 두 개 대신 **4.57 하나**로 줄임 (5/4 교대로 BPEByte와 iso-compression). seed 반복(N-rg-s778)은 이번 범위에서 제외.
+재현 스크립트, 사전 검증, 상태 확인 명령: `scripts/ablation_svt/README.md`.
