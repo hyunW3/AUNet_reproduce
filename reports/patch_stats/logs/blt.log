@@ -1,0 +1,20 @@
+/mnt/ssd2/hyun2/AUNet/lingua/.venv/lib/python3.12/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[blt] threshold 1.335442, patcher dtype float32, window 512
+[blt] DCLM bytes/patch with window 512: 4.0857 (paper-time, no window: 1.1508)
+  5648/78329  69s
+  10047/78329  77s
+  15172/78329  88s
+  20267/78329  101s
+  25325/78329  114s
+  30302/78329  129s
+  35191/78329  146s
+  40348/78329  165s
+  45006/78329  184s
+  50064/78329  208s
+  55222/78329  235s
+  60175/78329  267s
+  65127/78329  308s
+  70004/78329  385s
+  75040/78329  525s
+wrote /mnt/ssd2/hyun2/AUNet/reports/patch_stats/hist_blt.json
