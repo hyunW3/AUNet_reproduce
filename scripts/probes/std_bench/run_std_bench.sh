@@ -9,6 +9,18 @@
 #   MAX_TOKENS=16384 ...                                # lingua generator max_tokens (default: registry,
 #                                                       # or 4096 lingua_main / 16384 lingua_aunet for CKPT)
 #   python3 models.py list                              # registered models
+#
+# Reproduction examples (exact recipes with checkpoint origins: repro_recipes.sh):
+#   # 100M r10lr table, row "Llama · Transformer WSD 1.5e-3" (HS/ARC-E/PIQA, limit 2000)
+#   CKPT=$AUNET_ROOT/runs/std_bench_ckpt/llama_wsd15/consolidated FAMILY=lingua_main MAX_TOKENS=16384 \
+#     TASKS="hellaswag arc_easy piqa" LIMIT=2000 bash run_std_bench.sh r10lr_llama_wsd15
+#   # 100M r10lr table, row "BPEByte root_greedy WSD 2.0e-3"
+#   CKPT=$AUNET_ROOT/runs/std_bench_ckpt/rg_wsd20/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
+#     TASKS="hellaswag arc_easy piqa" LIMIT=2000 bash run_std_bench.sh r10lr_rg_wsd20
+#   # γ10 scale ladder, 760M BPEByte-rg (6 tasks, full test sets)
+#   CKPT=$AUNET_ROOT/main/main/760M/rg_760M/checkpoints/0000060600/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
+#     TASKS="hellaswag arc_easy arc_challenge piqa boolq winogrande" bash run_std_bench.sh s760M_rg
+#   bash repro_recipes.sh r10lr | bash repro_recipes.sh scale <100M|300M|760M|1.3B|all>
 set -euo pipefail
 MODEL=${1:?usage: run_std_bench.sh MODEL}
 D=$(cd "$(dirname "$0")" && pwd)

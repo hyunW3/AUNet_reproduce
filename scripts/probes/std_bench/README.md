@@ -48,3 +48,16 @@ python3 $D/std_bench_bootstrap.py reports/std_bench/*/ds0_seed1234.json \
 - **BLT:** 요청을 하나씩 처리해서 과제 목록이 달라도 문항 결과가 같다. `reports/blt_batch_invariance`의 배치 1 결과와 문항 단위로 일치한다.
 - **lingua 모델 주의:** harness가 여러 요청을 한 시퀀스로 packing하므로, 함께 묶이는 요청이 바뀌면 bf16 수치가 바뀌어 일부 문항이 뒤집힌다. 과제 목록, limit, GPU 수를 바꾸면 문항 단위 결과가 조금 달라질 수 있다. 논문 robustness 실행(3-GPU, noise/typo 과제와 함께 실행)과 비교하면 같은 2000문항 중 0.5–0.8%가 다르고 점수 차는 0.2pt 이하다(llama/AU-Net, HellaSwag·ARC-E).
 - **manifest:** 결과 JSON에 코드 커밋과 dirty 여부(diff 해시), 패키지 버전, GPU, 가중치 SHA256, 명령줄이 남는다. lingua 작업 사본이 dirty이면 `repos.lingua.dirty=true`다.
+
+## 재현 레시피 (`repro_recipes.sh`)
+
+원 평가와 같은 체크포인트, 과제, limit, `max_tokens 16384`로 `run_std_bench.sh`를 부른다. 체크포인트의 로컬 경로와 원본 위치(ece, NAS, info10x)는 스크립트 머리말에 있다.
+
+```bash
+bash scripts/probes/std_bench/repro_recipes.sh r10lr              # 100M r10lr 표의 llama/wsd15, rg/wsd20 행
+bash scripts/probes/std_bench/repro_recipes.sh scale 760M         # γ10 스케일 표, 한 스케일 (100M|300M|760M|1.3B|all)
+DRY=1 bash scripts/probes/std_bench/repro_recipes.sh scale all    # 명령만 출력
+```
+
+- r10lr 두 행: 2026-10-01 재현에서 원본과 점수·문항이 모두 같았다(원 평가도 GPU 1장).
+- γ10 스케일: 원 평가는 ece 클러스터 GPU 4장이라 문항 단위로는 조금 다를 수 있다. 점수가 오차 범위 안인지로 판단한다.
