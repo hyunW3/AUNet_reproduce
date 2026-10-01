@@ -68,7 +68,17 @@ def manifest(spec, weight_files, lm):
             "eval_suite": os.environ.get("EVAL_SUITE"), "tasks_dir": run_ext.TASKS_DIR,
             "spec": spec, "harness": type(lm).__module__ + "." + type(lm).__name__,
             "harness_batch_size": getattr(lm, "batch_size", None),
+            "boundary": boundary_info(lm),
             "weights_sha256": {p: sha256(p) for p in weight_files}}
+
+
+def boundary_info(lm):
+    """Patch-boundary settings actually in effect (lingua_aunet only), cf. the training config."""
+    pool = getattr(getattr(lm, "generator", None), "regex_pool", None)
+    if pool is None:
+        return None
+    keys = ("bpe_online", "bpe_online_mode", "bpe_online_placement", "bpe_tokenizer_path", "strategy")
+    return {k: getattr(pool, k, None) for k in keys} | {"type": type(pool).__name__}
 
 
 def task_bits(samples, task):
