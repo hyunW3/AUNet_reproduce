@@ -43,58 +43,58 @@ r10lr_rg_wsd20)
 # ===================================================== γ10 scale ladder, 100M (originals: <run>/eval_scaling, evals_fill)
 # HS/ARC-E/ARC-C/PIQA on full test sets, BoolQ/WinoGrande on the first 1000 items -> two commands.
 # Llama 100M. Original: HS 31.31  ARC-E 42.09  ARC-C 23.72  PIQA 64.25 | BoolQ 61.70  WG 50.60 (L1000)
-# ckpt  runs/std_bench_ckpt/g10_llama_100M/consolidated  (step 4400)
+# ckpt  main/main/100M/llama_100M_g10/checkpoints/0000004400/consolidated  (step 4400)
 # origin ece-agpu11:/home/hwbae/AUNet/runs/cmp_g10/llama_100M/checkpoints/0000004400
 s100M_llama)
-  x CKPT=$A/runs/std_bench_ckpt/g10_llama_100M/consolidated FAMILY=lingua_main MAX_TOKENS=16384 \
+  x CKPT=$A/main/main/100M/llama_100M_g10/checkpoints/0000004400/consolidated FAMILY=lingua_main MAX_TOKENS=16384 \
     TASKS="hellaswag arc_easy arc_challenge piqa" s100M_llama
-  x CKPT=$A/runs/std_bench_ckpt/g10_llama_100M/consolidated FAMILY=lingua_main MAX_TOKENS=16384 \
+  x CKPT=$A/main/main/100M/llama_100M_g10/checkpoints/0000004400/consolidated FAMILY=lingua_main MAX_TOKENS=16384 \
     TASKS="boolq winogrande" LIMIT=1000 s100M_llama ;;
 
 # AU-Net 100M. Original: HS 28.46  ARC-E 33.67  ARC-C 23.29  PIQA 58.32 | BoolQ 56.70  WG 49.70 (L1000)
-# ckpt  runs/std_bench_ckpt/g10_aunet_100M/consolidated  (step 3344)
+# ckpt  main/main/100M/aunet_100M_g10/checkpoints/0000003344/consolidated  (step 3344)
 # origin nas:/var/services/homes/hwbae0326/hyun/runs_backup/100M_adhoc/aunet_100M/checkpoints/0000003344
 s100M_aunet)
-  x CKPT=$A/runs/std_bench_ckpt/g10_aunet_100M/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
+  x CKPT=$A/main/main/100M/aunet_100M_g10/checkpoints/0000003344/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
     TASKS="hellaswag arc_easy arc_challenge piqa" s100M_aunet
-  x CKPT=$A/runs/std_bench_ckpt/g10_aunet_100M/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
+  x CKPT=$A/main/main/100M/aunet_100M_g10/checkpoints/0000003344/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
     TASKS="boolq winogrande" LIMIT=1000 s100M_aunet ;;
 
 # BPEByte-rg 100M. Original: HS 28.58  ARC-E 32.58  ARC-C 22.61  PIQA 58.11 | BoolQ 55.70  WG 50.00 (L1000)
-# ckpt  runs/main/100M_adhoc/rg_100M/checkpoints/0000003344/consolidated
+# ckpt  main/main/100M/rg_100M_g10/checkpoints/0000003344/consolidated
 # copy  ece-agpu18:/home/hwbae/AUNet/runs/cmp_g10/rg_100M/checkpoints/0000003344  (copied there 2026-10-01)
 s100M_rg)
-  x CKPT=$A/runs/main/100M_adhoc/rg_100M/checkpoints/0000003344/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
+  x CKPT=$A/main/main/100M/rg_100M_g10/checkpoints/0000003344/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
     TASKS="hellaswag arc_easy arc_challenge piqa" s100M_rg
-  x CKPT=$A/runs/main/100M_adhoc/rg_100M/checkpoints/0000003344/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
+  x CKPT=$A/main/main/100M/rg_100M_g10/checkpoints/0000003344/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
     TASKS="boolq winogrande" LIMIT=1000 s100M_rg ;;
 
 # ===================================================== γ10 scale ladder, 300M (originals: <run>/eval_scaling, evals_fill)
 # Llama 300M. Original: HS 42.37  ARC-E 48.82  ARC-C 26.02  PIQA 68.28 | BoolQ 55.80  WG 50.20 (L1000)
-# ckpt  runs/std_bench_ckpt/g10_llama_300M/consolidated  (step 13000)
+# ckpt  main/main/300M/llama_300M_g10/checkpoints/0000013000/consolidated  (step 13000)
 # origin ece-agpu11:/home/hwbae/AUNet/runs/cmp_g10/llama_300M/checkpoints/0000013000
 s300M_llama)
-  x CKPT=$A/runs/std_bench_ckpt/g10_llama_300M/consolidated FAMILY=lingua_main MAX_TOKENS=16384 \
+  x CKPT=$A/main/main/300M/llama_300M_g10/checkpoints/0000013000/consolidated FAMILY=lingua_main MAX_TOKENS=16384 \
     TASKS="hellaswag arc_easy arc_challenge piqa" s300M_llama
-  x CKPT=$A/runs/std_bench_ckpt/g10_llama_300M/consolidated FAMILY=lingua_main MAX_TOKENS=16384 \
+  x CKPT=$A/main/main/300M/llama_300M_g10/checkpoints/0000013000/consolidated FAMILY=lingua_main MAX_TOKENS=16384 \
     TASKS="boolq winogrande" LIMIT=1000 s300M_llama ;;
 
 # AU-Net 300M. Original: HS 37.16  ARC-E 43.86  ARC-C 25.60  PIQA 64.91 | BoolQ 50.70  WG 50.30 (L1000)
-# ckpt  runs/std_bench_ckpt/g10_aunet_300M/consolidated  (step 9900)
+# ckpt  main/main/300M/aunet_300M_g10/checkpoints/0000009900/consolidated  (step 9900)
 # origin nas:/var/services/homes/hwbae0326/hyun/runs_backup/300M/aunet_300M_adhoc/checkpoints/0000009900
 s300M_aunet)
-  x CKPT=$A/runs/std_bench_ckpt/g10_aunet_300M/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
+  x CKPT=$A/main/main/300M/aunet_300M_g10/checkpoints/0000009900/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
     TASKS="hellaswag arc_easy arc_challenge piqa" s300M_aunet
-  x CKPT=$A/runs/std_bench_ckpt/g10_aunet_300M/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
+  x CKPT=$A/main/main/300M/aunet_300M_g10/checkpoints/0000009900/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
     TASKS="boolq winogrande" LIMIT=1000 s300M_aunet ;;
 
 # BPEByte-rg 300M. Original: HS 37.03  ARC-E 41.75  ARC-C 24.83  PIQA 64.31 | BoolQ 47.30  WG 54.80 (L1000)
-# ckpt  runs/main/300M/rg_300M_adhoc/checkpoints/0000009900/consolidated
+# ckpt  main/main/300M/rg_300M_g10/checkpoints/0000009900/consolidated
 # origin ece-agpu11:/home/hwbae/AUNet/runs/cmp_g10/rg_300M/checkpoints/0000009900
 s300M_rg)
-  x CKPT=$A/runs/main/300M/rg_300M_adhoc/checkpoints/0000009900/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
+  x CKPT=$A/main/main/300M/rg_300M_g10/checkpoints/0000009900/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
     TASKS="hellaswag arc_easy arc_challenge piqa" s300M_rg
-  x CKPT=$A/runs/main/300M/rg_300M_adhoc/checkpoints/0000009900/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
+  x CKPT=$A/main/main/300M/rg_300M_g10/checkpoints/0000009900/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
     TASKS="boolq winogrande" LIMIT=1000 s300M_rg ;;
 
 # ===================================================== γ10 scale ladder, 760M (originals: <run>/evals_g10, all full test sets)
