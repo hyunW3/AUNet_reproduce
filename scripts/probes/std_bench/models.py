@@ -81,6 +81,19 @@ def build(spec, max_len=4096):
 
     init_single_process_group()
     if fam == "lingua_main":
+        import apps.main.generate as gen_mod
+        _build_tok = gen_mod.build_tokenizer
+
+        def build_tokenizer(name, path):
+            # Checkpoints carry the training host's tokenizer path; fall back like the hierarchical
+            # loader does: $TOKENIZER_PATH, then <AUNET_ROOT>/tokenizer/<parent>/<file>.
+            if path and not os.path.exists(path):
+                alt = os.environ.get("TOKENIZER_PATH") or os.path.join(
+                    AUNET, "tokenizer", os.path.basename(os.path.dirname(path)), os.path.basename(path))
+                print(f"[std_bench] tokenizer {path} not found -> {alt}", flush=True)
+                path = alt
+            return _build_tok(name, path)
+        gen_mod.build_tokenizer = build_tokenizer
         from apps.main.eval import EvalHarnessLM
         from apps.main.generate import (PackedCausalTransformerGenerator as Gen,
                                         PackedCausalTransformerGeneratorArgs as GenArgs,
