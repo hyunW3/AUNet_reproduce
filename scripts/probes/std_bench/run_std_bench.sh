@@ -20,7 +20,7 @@
 #   # γ10 scale ladder, 760M BPEByte-rg (6 tasks, full test sets)
 #   CKPT=$AUNET_ROOT/main/main/760M/rg_760M/checkpoints/0000060600/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
 #     TASKS="hellaswag arc_easy arc_challenge piqa boolq winogrande" bash run_std_bench.sh s760M_rg
-#   bash repro_recipes.sh r10lr | bash repro_recipes.sh scale <100M|300M|760M|1.3B|all>
+#   bash repro_recipes.sh list | bash repro_recipes.sh <checkpoint name>   # one block per checkpoint, with original scores
 set -euo pipefail
 MODEL=${1:?usage: run_std_bench.sh MODEL}
 D=$(cd "$(dirname "$0")" && pwd)
