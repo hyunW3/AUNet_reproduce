@@ -61,7 +61,8 @@ s100M_aunet)
     TASKS="boolq winogrande" LIMIT=1000 s100M_aunet ;;
 
 # BPEByte-rg 100M. Original: HS 28.58  ARC-E 32.58  ARC-C 22.61  PIQA 58.11 | BoolQ 55.70  WG 50.00 (L1000)
-# ckpt  runs/main/100M_adhoc/rg_100M/checkpoints/0000003344/consolidated  (local only)
+# ckpt  runs/main/100M_adhoc/rg_100M/checkpoints/0000003344/consolidated
+# copy  ece-agpu18:/home/hwbae/AUNet/runs/cmp_g10/rg_100M/checkpoints/0000003344  (copied there 2026-10-01)
 s100M_rg)
   x CKPT=$A/runs/main/100M_adhoc/rg_100M/checkpoints/0000003344/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
     TASKS="hellaswag arc_easy arc_challenge piqa" s100M_rg
@@ -88,7 +89,8 @@ s300M_aunet)
     TASKS="boolq winogrande" LIMIT=1000 s300M_aunet ;;
 
 # BPEByte-rg 300M. Original: HS 37.03  ARC-E 41.75  ARC-C 24.83  PIQA 64.31 | BoolQ 47.30  WG 54.80 (L1000)
-# ckpt  runs/main/300M/rg_300M_adhoc/checkpoints/0000009900/consolidated  (local only)
+# ckpt  runs/main/300M/rg_300M_adhoc/checkpoints/0000009900/consolidated
+# origin ece-agpu11:/home/hwbae/AUNet/runs/cmp_g10/rg_300M/checkpoints/0000009900
 s300M_rg)
   x CKPT=$A/runs/main/300M/rg_300M_adhoc/checkpoints/0000009900/consolidated FAMILY=lingua_aunet MAX_TOKENS=16384 \
     TASKS="hellaswag arc_easy arc_challenge piqa" s300M_rg
