@@ -51,12 +51,21 @@ python3 $D/std_bench_bootstrap.py reports/std_bench/*/ds0_seed1234.json \
 
 ## 재현 레시피 (`repro_recipes.sh`)
 
-원 평가와 같은 체크포인트, 과제, limit, `max_tokens 16384`로 `run_std_bench.sh`를 부른다. 체크포인트의 로컬 경로와 원본 위치(ece, NAS, info10x)는 스크립트 머리말에 있다.
+체크포인트 하나에 블록 하나씩 들어 있다. 블록마다 원래 점수, 체크포인트의 로컬 경로와 원본 위치(ece, NAS, info10x), 그 체크포인트만 돌리는 명령이 있다. 원 평가와 같은 과제, limit, `max_tokens 16384`를 쓴다.
 
 ```bash
-bash scripts/probes/std_bench/repro_recipes.sh r10lr              # 100M r10lr 표의 llama/wsd15, rg/wsd20 행
-bash scripts/probes/std_bench/repro_recipes.sh scale 760M         # γ10 스케일 표, 한 스케일 (100M|300M|760M|1.3B|all)
-DRY=1 bash scripts/probes/std_bench/repro_recipes.sh scale all    # 명령만 출력
+bash scripts/probes/std_bench/repro_recipes.sh list               # 체크포인트 이름 14개
+bash scripts/probes/std_bench/repro_recipes.sh s760M_rg           # 760M BPEByte-rg 하나만 (GPU 2)
+GPU=3 bash scripts/probes/std_bench/repro_recipes.sh r10lr_rg_wsd20
+DRY=1 bash scripts/probes/std_bench/repro_recipes.sh s100M_llama  # 명령만 출력
+```
+
+블록 안의 명령은 그대로 복사해서 따로 실행해도 된다. 예: 760M BPEByte-rg (원래 점수 HS 52.19, ARC-E 55.39, ARC-C 31.48, PIQA 71.44, BoolQ 53.15, WG 54.85)
+
+```bash
+CKPT=/mnt/ssd2/hyun2/AUNet/main/main/760M/rg_760M/checkpoints/0000060600/consolidated \
+FAMILY=lingua_aunet MAX_TOKENS=16384 TASKS="hellaswag arc_easy arc_challenge piqa boolq winogrande" \
+  bash scripts/probes/std_bench/run_std_bench.sh s760M_rg
 ```
 
 - r10lr 두 행: 2026-10-01 재현에서 원본과 점수·문항이 모두 같았다(원 평가도 GPU 1장).
