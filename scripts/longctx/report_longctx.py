@@ -90,10 +90,12 @@ def line_panel(ax, rows, models, xs, xkey, logx=False, **kw):
         ax.set_xticklabels([str(x) for x in xs])
 
 
-def llama_tok_counter():
+def llama_tok_counter(lingua_dir, tok_path):
     try:
+        import sys
+        sys.path.insert(0, lingua_dir)
         from lingua.tokenizer import build_tokenizer
-        tok = build_tokenizer("tiktoken", os.environ["AUNET_TOK"])
+        tok = build_tokenizer("tiktoken", tok_path)
         return lambda s: len(tok.encode(s, add_bos=False, add_eos=False))
     except Exception:
         return None
@@ -104,6 +106,8 @@ def main():
     ap.add_argument("--results", default="reports/longctx/results")
     ap.add_argument("--data", default="data/longctx")
     ap.add_argument("--out", default="reports/longctx")
+    ap.add_argument("--lingua", default="lingua", help="lingua checkout (for the Llama-3 token counts)")
+    ap.add_argument("--tok", default="tokenizer/llama3/tokenizer.model")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -121,7 +125,7 @@ def main():
 
     # --- 1. needle types ---------------------------------------------------
     vts = ["num7", "num20", "uuid", "hex32", "alnum12", "ident", "nonce", "word", "han4", "hangul4"]
-    count = llama_tok_counter()
+    count = llama_tok_counter(a.lingua, a.tok)
     vt_tok = {}
     if count and os.path.exists(f"{a.data}/needle_types.jsonl"):
         acc = collections.defaultdict(list)
