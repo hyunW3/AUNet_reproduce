@@ -121,17 +121,14 @@ python run_ext.py --family blt_official --blt_weights <weights dir> \
 # 섭동은 --limit 2000, 과제별로 나눠 돌리면 병렬화가 쉽다 (--tasks piqa 등)
 ```
 
-**표준 벤치마크만 재현할 때:** `scripts/probes/ext_ci/run_blt_bench.sh` (snu55 환경)를 쓴다.
-
-- `blt_bench.py`가 단일 seed로 측정한다. 배치 1, 기본 7개 과제(HellaSwag, ARC-E/C, PIQA, WinoGrande, BoolQ, MMLU-text)이고 결과 JSON에 문항별 정답 여부와 manifest(코드 커밋, 패키지 버전, GPU, 가중치 SHA256)를 남긴다.
-- `blt_bench_bootstrap.py`가 그 JSON에서 문항 bootstrap 95% CI(과제별, 평균)를 낸다. GPU가 필요 없고 `--seed`가 같으면 결과도 같다. `--ref`를 주면 두 실행의 대응 차이 CI와 p값을 낸다.
-- 0-shot에서는 seed가 점수를 바꾸지 않는다. few-shot에서는 seed가 예시를 고른다(MMLU-text는 항상 dev 앞 n개).
+**표준 벤치마크만 재현할 때:** 모델 공통 통합 스크립트 `scripts/probes/std_bench/`를 쓴다 (사용법과 재현성 조건은 그 폴더의 `README.md`).
+BLT는 `blt_1b`로 등록돼 있고 배치 1로 고정된다.
 
 ```bash
-bash scripts/probes/ext_ci/run_blt_bench.sh                  # 0-shot, seed 1234, 전체 test set
-SHOT=5 SEED=1234 bash scripts/probes/ext_ci/run_blt_bench.sh # few-shot
-LIMIT=500 GPU=3 bash scripts/probes/ext_ci/run_blt_bench.sh  # 과제당 앞 500문항
-# 결과: reports/blt_bench/ds<shot>_seed<seed>[_limit<N>].json, *_ci.md
+bash scripts/probes/std_bench/run_std_bench.sh blt_1b             # 0-shot, seed 1234, 전체 test set
+SHOT=5 SEED=1234 bash scripts/probes/std_bench/run_std_bench.sh blt_1b
+LIMIT=500 GPU=3 bash scripts/probes/std_bench/run_std_bench.sh blt_1b
+# 결과: reports/std_bench/blt_1b/ds<shot>_seed<seed>[_limit<N>].json, *_ci.md
 ```
 
 2026-10-01에 6개 과제 × 500문항으로 돌려 `reports/blt_batch_invariance`의 배치 1 결과와 문항 단위로 같음을 확인했다.
