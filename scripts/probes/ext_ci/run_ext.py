@@ -144,7 +144,12 @@ def build_blt_official(weights, max_len, threshold=1.335442066192627):
     With attn_impl=xformers (the released configs) every sliding window is applied natively: the
     entropy model's local_block_causal window 512 and the local encoder/decoder windows. Batch size 1
     because the harness pads each batch to a common 128-byte / 64-patch shape, which makes scores
-    depend on batch composition (reports/verify_blt_1335: ARC-Easy acc 0.687 at bs16 vs 0.650 at bs8).
+    depend on batch composition (reports/blt_batch_invariance, 6 tasks x 500 items, 0-shot): the bf16
+    entropy model flips patch boundaries near the threshold when the batch shape changes, so 1-3% of
+    items flip per task and the mean moves -0.27..-0.40pt at bs4/8/16 (paired sign test p=0.10-0.27).
+    The pre-Aug-29 harness, whose calculate_entropies flattened the batch into one stream, lost
+    1.3-2.0pt. bs>1 also hits an intermittent CUDA illegal memory access in the compiled
+    create_block_mask (dynamic shapes). bs=1 is bit-for-bit deterministic across runs.
     Run in the bytelatent venv with PYTHONPATH=<blt repo> and BLT_SUPPRESS_ATTN_ERROR unset or 1
     (only the sdpa path reads it; the xformers path used here never does)."""
     from bytelatent.model.blt import ByteLatentTransformer

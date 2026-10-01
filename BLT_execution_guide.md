@@ -57,13 +57,26 @@
 ### 2.5 배치 — 배치 크기 1
 
 `eval_suite/blt_eval/harness.py::BLTHarness`는 배치를 128바이트 / 64 patch의 배수로 padding한다.
-그래서 배치 크기가 1보다 크면 **같은 배치의 다른 문항에 따라 점수가 달라진다.** 다음과 같은 예가 있다.
+그래서 배치 크기가 1보다 크면 **같은 배치의 다른 문항에 따라 점수가 달라진다.**
 
-- HellaSwag 첫 300문항: 배치 16에서 63.3, 배치 1에서 62.3
-- ARC-Easy acc: 배치 16에서 0.687, 배치 8에서 0.650 (`reports/verify_blt_1335`)
-- S-NIAH 셀당 50개: 배치 8에서 0.91, 배치 1에서 0.96
+2026-10-01 측정 (`reports/blt_batch_invariance`): 0-shot, 6개 과제(HellaSwag/ARC-E/ARC-C/PIQA acc_norm, WinoGrande/BoolQ acc) × 500문항.
+순변화는 3,000문항 전체에서 배치 1 대비 정답 수 증감, p는 대응 부호 검정.
 
-배치를 쓰려면 padding을 행마다 독립적으로 처리하도록 harness를 먼저 고쳐야 한다.
+| harness | 배치 1 | 배치 4 | 배치 8 | 배치 16 | 배치 1 대비 순변화 |
+|---|---|---|---|---|---|
+| 현재 (행별 엔트로피, 8/29 수정) | 63.03 | 62.67 | 62.77 | 62.63 | −0.27~−0.40pt (p=0.10–0.27, 유의하지 않음). 과제당 문항 1–3%가 정답↔오답으로 뒤집힘 |
+| 수정 전 (`code_appendix` 판) | 62.93 | 60.97 | 61.47 | 61.67 | −1.27~−1.97pt (배치 4 p=0.005, 배치 8 p=0.032). 과제당 문항 6–25%가 뒤집힘 |
+
+원인은 두 가지다.
+
+- **수정 전 harness:** BLT의 `calculate_entropies`가 배치를 한 줄로 이어 붙여 8,192바이트 단위로 다시 자른다. 앞 문항이 다음 문항의 엔트로피 문맥(512 창 안)에 섞여 요청당 logprob이 평균 약 1 nat 바뀐다. 현재 harness는 `_row_entropies`로 행마다 따로 계산한다.
+- **현재 harness에도 남는 것:** bf16 엔트로피 모델이 배치 shape에 따라 조금씩 다른 값을 내서 threshold 근처에서 patch 경계가 뒤집힌다 (요청 128개 중 24–33개). 엔트로피 모델을 fp32로 돌리면 경계 변경은 0건이 되고 순변화도 −0.13~−0.17pt로 줄지만, 본 모델의 bf16 수치 차이(평균 0.06 nat)는 남는다. 배치 1은 반복해도 결과가 비트 단위로 같다.
+
+배치 크기 > 1에서는 torch.compile된 flex-attention `create_block_mask`(동적 shape)가 가끔 `CUDA illegal memory access`로 죽는다.
+`torch._dynamo.config.automatic_dynamic_shapes=False`로 피할 수 있지만 2–3배 느려진다.
+
+이전 판의 예시 중 ARC-Easy acc 배치 16 0.687 / 배치 8 0.650 (`reports/verify_blt_1335`)은 8/5에 수정 전 harness로 잰 값이다.
+HellaSwag 첫 300문항(배치 16 63.3 / 배치 1 62.3)과 S-NIAH(배치 8 0.91 / 배치 1 0.96)는 측정 harness를 확인할 수 없어 근거로 쓰지 않는다.
 
 ---
 
@@ -75,7 +88,8 @@
 | HF transformers 구현(`itazap/blt-1b-hf`)을 **수정 없이** 사용 | local encoder/decoder와 엔트로피 모델에 창이 없다. 512바이트 이하 입력에서는 공식과 같지만, 그보다 길면 결과가 다르다 (S-NIAH: 창 없음 0.47, 엔트로피 창만 적용 0.12, 공식 0.96). 쓰려면 세 부분 모두에 창 마스크를 넣어야 한다 (`reports/next_byte_entropy/blt_rerun.md`, §7) |
 | **엔트로피 창만 복원** | 아무것도 안 한 것보다 나쁘다. S-NIAH 0.12 < 창 없음 0.47. 부분 수정은 금지 |
 | threshold 2.85 | 공개 값이 아니다 (DCLM 4.5 B/patch에 맞춘 값). 짧은 프롬프트에서 patch가 13–22바이트로 과도하게 길어져 정확도가 9–25pt 떨어진다 (`reports/blt_threshold_ab`) |
-| 배치 크기 > 1 (현재 harness) | 배치 구성에 따라 점수가 바뀐다 (2.5절) |
+| 배치 크기 > 1 (현재 harness) | 배치 구성에 따라 문항이 1–3% 뒤집히고 평균이 약 0.3pt 흔들린다. 가끔 CUDA 크래시도 난다 (2.5절) |
+| 배치 크기 > 1 (수정 전 harness) | 평균이 1.3–2.0pt 떨어진다 (2.5절) |
 | `BLT_ALLOW_MISSING_FLEX_ATTENTION=1` | cross-attention의 flex attention까지 꺼져서 forward가 실패한다 |
 
 ---
@@ -106,6 +120,21 @@ python run_ext.py --family blt_official --blt_weights <weights dir> \
   --axis bpb --windows data/flores_bpb/de.jsonl --out out/blt_official/bpb_de.json
 # 섭동은 --limit 2000, 과제별로 나눠 돌리면 병렬화가 쉽다 (--tasks piqa 등)
 ```
+
+**표준 벤치마크만 재현할 때:** `scripts/probes/ext_ci/run_blt_bench.sh` (snu55 환경)를 쓴다.
+
+- `blt_bench.py`가 단일 seed로 측정한다. 배치 1, 기본 7개 과제(HellaSwag, ARC-E/C, PIQA, WinoGrande, BoolQ, MMLU-text)이고 결과 JSON에 문항별 정답 여부와 manifest(코드 커밋, 패키지 버전, GPU, 가중치 SHA256)를 남긴다.
+- `blt_bench_bootstrap.py`가 그 JSON에서 문항 bootstrap 95% CI(과제별, 평균)를 낸다. GPU가 필요 없고 `--seed`가 같으면 결과도 같다. `--ref`를 주면 두 실행의 대응 차이 CI와 p값을 낸다.
+- 0-shot에서는 seed가 점수를 바꾸지 않는다. few-shot에서는 seed가 예시를 고른다(MMLU-text는 항상 dev 앞 n개).
+
+```bash
+bash scripts/probes/ext_ci/run_blt_bench.sh                  # 0-shot, seed 1234, 전체 test set
+SHOT=5 SEED=1234 bash scripts/probes/ext_ci/run_blt_bench.sh # few-shot
+LIMIT=500 GPU=3 bash scripts/probes/ext_ci/run_blt_bench.sh  # 과제당 앞 500문항
+# 결과: reports/blt_bench/ds<shot>_seed<seed>[_limit<N>].json, *_ci.md
+```
+
+2026-10-01에 6개 과제 × 500문항으로 돌려 `reports/blt_batch_invariance`의 배치 1 결과와 문항 단위로 같음을 확인했다.
 
 ### 4.2 환경별 준비
 
