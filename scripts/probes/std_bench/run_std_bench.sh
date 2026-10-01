@@ -6,6 +6,8 @@
 #   SHOT=5 SEED=1234 GPU=3 bash run_std_bench.sh blt_1b # few-shot (seed picks the examples)
 #   LIMIT=500 TASKS="hellaswag piqa" bash run_std_bench.sh llama_1.3b
 #   CKPT=<consolidated dir> FAMILY=lingua_aunet bash run_std_bench.sh my_run   # any lingua checkpoint
+#   MAX_TOKENS=16384 ...                                # lingua generator max_tokens (default: registry,
+#                                                       # or 4096 lingua_main / 16384 lingua_aunet for CKPT)
 #   python3 models.py list                              # registered models
 set -euo pipefail
 MODEL=${1:?usage: run_std_bench.sh MODEL}
@@ -39,7 +41,7 @@ case $FAM in
   *) echo "unknown family $FAM"; exit 1 ;;
 esac
 
-"$PY" "$D/std_bench.py" --model "$MODEL" ${CKPT:+--ckpt "$CKPT" --family "$FAM"} \
+"$PY" "$D/std_bench.py" --model "$MODEL" ${CKPT:+--ckpt "$CKPT" --family "$FAM"} ${MAX_TOKENS:+--max_tokens "$MAX_TOKENS"} \
   --num_fewshot "$SHOT" --seed "$SEED" --tasks $TASKS ${LIMIT:+--limit "$LIMIT"} \
   --out "$OUT/$TAG.json" 2>&1 | tee "$OUT/$TAG.log"
 
