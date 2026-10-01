@@ -34,9 +34,14 @@ def ci(xs, n_boot=2000, seed=0):
 
 
 def load(res_dir):
-    rows = []
-    for f in glob.glob(f"{res_dir}/*.jsonl"):
-        rows += [json.loads(l) for l in open(f) if l.strip()]
+    rows, seen = [], set()
+    for f in sorted(glob.glob(f"{res_dir}/*.jsonl")):
+        for l in open(f):
+            if l.strip():
+                r = json.loads(l)
+                if (r["tag"], r["id"]) not in seen:   # a shard re-run on another node
+                    seen.add((r["tag"], r["id"]))
+                    rows.append(r)
     return rows
 
 
@@ -99,6 +104,30 @@ def llama_tok_counter(lingua_dir, tok_path):
         return lambda s: len(tok.encode(s, add_bos=False, add_eos=False))
     except Exception:
         return None
+
+
+def copy_baseline(data_dir, task, length, k):
+    """Recall a trivial copier gets by emitting the first k distinct words of the scored
+    list (CWE/FWE). If the models do not beat it, the task is not measuring aggregation."""
+    rec = []
+    for line in open(f"{data_dir}/ruler_agg.jsonl"):
+        r = json.loads(line)
+        if r["task"] != task or r["length"] != length:
+            continue
+        body = r["prompt"].split("\n\n")[-1].split("\nQuestion:")[0]
+        if task == "cwe":
+            words = [w.split(". ", 1)[1] for w in
+                     __import__("re").findall(r"\d+\. [a-z]+", body)]
+        else:
+            words = [w for w in body.split("coded words. ", 1)[1].split() if w != "...."]
+        first = []
+        for w in words:
+            if w not in first:
+                first.append(w)
+            if len(first) == k:
+                break
+        rec.append(sum(a in first for a in r["answers"]) / len(r["answers"]))
+    return 100 * sum(rec) / len(rec) if rec else float("nan")
 
 
 def main():
@@ -176,12 +205,22 @@ def main():
               ("cwe", "cwe", lens[1:], "CWE top-10 common words"), ("fwe", "fwe", lens[1:], "FWE top-3 frequent coded words")]
     fig, axes = plt.subplots(1, 4, figsize=(15, 3.6), sharey=True)
     for ax, (task, cond, L, title) in zip(axes, panels):
-        md += [f"**{title}**", "", table(rows, task, "length", L, models, cond=cond), ""]
+        if task in ("cwe", "fwe") and os.path.exists(f"{a.data}/ruler_agg.jsonl"):
+            k = 10 if task == "cwe" else 3
+            base = {x: copy_baseline(a.data, task, x, k) for x in L}
+            md += [f"**{title}**", "", table(rows, task, "length", L, models, cond=cond,
+                                             extra=(f"copy-first-{k} baseline", lambda x, b=base: f"{b[x]:.1f}")), ""]
+            ax.plot(L, [base[x] for x in L], color="#8a8a85", lw=1.5, ls="--", label=f"copy-first-{k}")
+        else:
+            md += [f"**{title}**", "", table(rows, task, "length", L, models, cond=cond), ""]
         line_panel(ax, rows, models, L, "length", task=task, cond=cond)
         style(ax, title, "prompt bytes")
         ax.set_xticks(L)
         ax.set_xticklabels([f"{x // 1024}K" for x in L])
     axes[0].legend(fontsize=8, frameon=False, loc="lower left")
+    for ax in axes[2:]:
+        h = [l for l in ax.get_lines() if l.get_label().startswith("copy-first")]
+        ax.legend(handles=h, fontsize=8, frameon=False, loc="upper right")
     fig.tight_layout()
     fig.savefig(out / "ruler_agg.png", dpi=150)
     plt.close(fig)
