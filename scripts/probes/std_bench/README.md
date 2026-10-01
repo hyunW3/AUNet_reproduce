@@ -20,7 +20,7 @@
 | `bpebyte_1.3b` | lingua_aunet | `apps.aunet.eval.EvalHarnessLM` | br_greedy_root, step 180000, max_tokens 16384 |
 
 lingua 모델 설정은 논문 matched 평가(`runs/robustness_paper1p3b/<arm>/config.yaml`)와 같다. bf16, temperature 0이고 나머지 EvalArgs 옵션은 기본값이다.
-등록되지 않은 lingua 체크포인트는 `CKPT=<consolidated dir> FAMILY=lingua_main|lingua_aunet`으로 돌린다.
+등록되지 않은 lingua 체크포인트는 `CKPT=<consolidated dir> FAMILY=lingua_main|lingua_aunet`으로 돌린다. generator `max_tokens`는 기본이 4096(lingua_main) / 16384(lingua_aunet)이고, 원 평가와 다르면 `MAX_TOKENS=`로 맞춘다(packing이 바뀌어 문항 결과가 달라질 수 있다).
 새 모델을 고정해 두려면 `models.py`의 `MODELS`에 한 줄 추가한다.
 
 ## 실행
