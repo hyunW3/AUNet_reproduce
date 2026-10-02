@@ -16,10 +16,13 @@ case $MODEL in
   bpebyte) FAM=aunet   TAG=byte_greedyroot CKPT=$R/ckpt/bpebyte ;;
   # official bytelatent + xformers, bs 1, <= 4096 B (byte RoPE table); see ext_models.build_blt
   blt)     FAM=blt     TAG=blt_1b          CKPT=$E/blt_weights PY=$E/venv_blt/bin/python BS=1 MAXB=4096 ;;
+  # cartesia H-Net 1-stage XL via ext_models.build_hnet (its own venv; HNET_REPO = official repo)
+  hnet)    FAM=hnet    TAG=hnet_1stage_XL  CKPT=hnet_1stage_XL PY=$E/venv/bin/python BS=8 ;;
 esac
 export AUNET_ROOT=$R AUNET_TOK=$R/tokenizer/llama3/tokenizer.model PYTHONPATH=$R/lingua
 export EVAL_SUITE=$E/eval_suite BLT_REPO=$E/blt_official HF_HUB_OFFLINE=1
-[ "$FAM" = blt ] && export PYTHONPATH=          # lingua's `apps` would shadow BLT's own
+export HNET_REPO=${HNET_REPO:-$HOME/AUNet_fmt/hnet_repo}
+case $FAM in blt|hnet) export PYTHONPATH= ;; esac   # lingua's `apps` would shadow the ext repos' own
 export LD_LIBRARY_PATH="$(dirname "$(dirname "$PY")")/lib/python3.12/site-packages/nvidia/cusparselt/lib:${LD_LIBRARY_PATH:-}"
 mkdir -p "$B/results"
 cd "$R/lingua"
