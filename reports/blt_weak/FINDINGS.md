@@ -186,7 +186,8 @@ HF port 결과라 512 B 이후 local window가 빠져 신뢰할 수 없어서 �
    - D 위치 편향: 정답을 목록 처음에 두면 BLT +0.243(BPEByte +0.122), 끝에 두면 **−0.406**(BPEByte −0.191,
      DiD −0.216). 두 개만 나열하면 다른 모델은 오르는데(+0.05–0.07) BLT만 −0.032다.
 3. **H-Net은 그 중간이다.** echo_all Δ −0.146, list_gold_last −0.307로 trio보다 취약하지만 BLT보다는 덜하다. 모든 B / C / D
-   조건에서 BLT − H-Net DiD도 유의하게 음수다(−0.02 ~ −0.10).
+   B 전부, C의 pre75 / suf50 / bow, D 전부에서 BLT − H-Net DiD가 유의하다(BLT가 더 강하게 끌림, |DiD| 0.02–0.10;
+   list_gold_first는 같은 편향 때문에 BLT가 +0.046 더 이득). pre25 / pre50은 n.s.다.
 
 ## 논문용 정리
 
