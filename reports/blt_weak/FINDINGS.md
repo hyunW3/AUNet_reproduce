@@ -154,3 +154,44 @@ HF port 결과라 512 B 이후 local window가 빠져 신뢰할 수 없어서 �
 - literal과 paraphrase의 차이(잠재 연상 비용)도 BPEByte가 가장 크다. → NoLiMa에서도 BPEByte의 우위는 없다.
 - caveat: 이 runner(greedy 생성 + substr)의 BPEByte literal 1024는 0.88로, 기존 teacher-forced scorer(`probe_compare`)의
   0.98보다 낮다. BPEByte의 online-BT 생성 경로와 teacher forcing의 차이이며, 모델 간 비교는 같은 runner 안에서만 한다.
+
+---
+
+# 4차: echo 취약성의 원인과 범위 (2026-10-03) — `EXPERIMENTS_3.md`, `RESULTS3.md`
+
+5개 모델(Llama / AU-Net / BPEByte / **H-Net 1-stage XL** / BLT-1B), MC 2,000문항 × 21개 조건(+2차 echo 조건 H-Net 추가),
+그리고 BLT segmentation 이식(E2, 2,000문항 × 6조건)을 돌렸다. DiD = BLT Δ − 상대 모델 Δ(paired, item bootstrap 95% CI)이다.
+
+## 결론
+
+1. **원인은 patch 병합이 아니다.** BLT는 context에 등장한 후보 문자열 / 어휘에 더 강하게 끌린다. 즉 in-context
+   lexical priming이 더 강하다.
+   - **E2 (직접 개입)**: echo context에서 선택지 경계를 clean 때 경계로 되돌려도 Δ는 **+0.007 [−0.004, +0.018]**로 회복되지
+     않는다. 첫 선택지 선택률도 0.88 → 0.91로 그대로다. 1-byte patch로 강제해도 +0.007이다. echo_all의 −0.212는
+     segmentation을 바꿔도 남는다.
+   - **C bag-of-words**: 오답 단어를 섞어 hint로 주면 BLT 정답 선택지 patch 수가 13.45(clean 13.62)로 병합이 전혀 없다.
+     그래도 DiD vs BPEByte는 **−0.082 [−0.103, −0.061]**로 C 그룹에서 가장 크다. `suf50`(patch 12.17)도 −0.045다.
+   - **E1 거리 분리**: echo를 512 B 밖으로 옮기면 병합은 일부 풀리지만(정답 patch 4.28 → 7.79) BLT의 추가 하락은 남는다
+     (echo_all DiD −0.078 → −0.066, far−near DiD² +0.011 n.s.; echo_wrong은 far에서 −0.071로 오히려 커짐).
+   - 참고로 clean context에 병합 경계를 이식하면 −0.082다. 병합 patch는 context가 뒷받침할 때만 자연스럽다는 뜻이며,
+     echo 손실의 원인은 아니다.
+2. **취약 범위 = "답 후보가 정보로 제시될 때"이고, 일반적인 distraction은 아니다.**
+   - A 무관 / 같은 분포의 distractor 문장 1–4개: 모든 모델 |Δ| ≤ 0.015, DiD n.s. → BLT는 일반적 방해에 약하지 않다.
+     1차 S-NIAH distract에서 BLT가 가장 강했던 것과도 일치한다.
+   - B 오답을 정보로 제시: soft("Some people think…") **−0.089**, student **−0.083**, 부정문("It is NOT true…") **−0.096**
+     (모두 DiD vs BPEByte, **). **부정은 모든 모델이 무시한다**: 정답을 부정문으로 제시하면(neg_gold) 오히려 모든 모델이
+     +0.42–0.44 오르고 DiD는 0이다. 1B급 base 모델 공통의 "문자열 복사" 성향이다.
+   - C 오답 prefix 일치량에 따른 dose-response: 25% −0.017(n.s.) → 50% −0.055 → 75% −0.071 → 100%(echo_wrong) −0.077.
+     오답 끌림 비율(같은 오답을 고른 비율의 증가)도 BLT가 모든 조건에서 가장 높다(neg_wrong +0.81 vs BPEByte +0.70).
+   - D 위치 편향: 정답을 목록 처음에 두면 BLT +0.243(BPEByte +0.122), 끝에 두면 **−0.406**(BPEByte −0.191,
+     DiD −0.216). 두 개만 나열하면 다른 모델은 오르는데(+0.05–0.07) BLT만 −0.032다.
+3. **H-Net은 그 중간이다.** echo_all Δ −0.146, list_gold_last −0.307로 trio보다 취약하지만 BLT보다는 덜하다. 모든 B / C / D
+   조건에서 BLT − H-Net DiD도 유의하게 음수다(−0.02 ~ −0.10).
+
+## 논문용 정리
+
+- 주장할 수 있는 것: "BLT는 context에 나열 / 언급된 답 후보에 과도하게 끌린다(priming / positional copy bias). matched
+  BPEByte 대비 −0.08 ~ −0.22, 무관 distractor에는 차이 없음."
+- 주장하면 안 되는 것: "entropy patching(병합) 때문에 생긴다." E2와 bag-of-words가 이를 반증한다. 원인은 BLT 모델
+  자체(학습 데이터 / 규모 / 강한 in-context 복사 능력)일 가능성이 높고, 이 실험으로는 tokenizer-free 설계와
+  분리되지 않는다. BLT는 다른 데이터·규모로 학습된 외부 reference라는 점을 각주로 남겨야 한다.

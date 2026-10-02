@@ -118,22 +118,22 @@ exceed the other models' (DiD-of-DiD > 0).
 
 | cond | n | acc | pred = first listed (non-HS) |
 |---|---:|---:|---:|
-| clean_nat | 220 | 0.341 | 0.314 |
-| clean_echoseg | 220 | 0.255 | 0.268 |
-| clean_byte | 220 | 0.327 | 0.327 |
-| echo_nat | 220 | 0.286 | 0.891 |
-| echo_cleanseg | 220 | 0.295 | 0.900 |
-| echo_byte | 220 | 0.286 | 0.900 |
+| clean_nat | 2000 | 0.574 | 0.378 |
+| clean_echoseg | 2000 | 0.492 | 0.329 |
+| clean_byte | 2000 | 0.581 | 0.380 |
+| echo_nat | 2000 | 0.361 | 0.879 |
+| echo_cleanseg | 2000 | 0.368 | 0.908 |
+| echo_byte | 2000 | 0.369 | 0.897 |
 
 
 Paired effects:
 
 | contrast | n | Δacc | 95% CI |
 |---|---:|---:|---:|
-| echo_cleanseg − echo_nat | 220 | +0.009 | [-0.014, +0.036] |
-| echo_byte − echo_nat | 220 | +0.000 | [-0.032, +0.032] |
-| clean_echoseg − clean_nat | 220 | -0.086 | [-0.141, -0.032] |
-| clean_byte − clean_nat | 220 | -0.014 | [-0.055, +0.027] |
-| echo_nat − clean_nat | 220 | -0.055 | [-0.132, +0.023] |
-| echo_cleanseg − clean_nat | 220 | -0.045 | [-0.123, +0.036] |
+| echo_cleanseg − echo_nat | 2000 | +0.007 | [-0.004, +0.018] |
+| echo_byte − echo_nat | 2000 | +0.007 | [-0.006, +0.021] |
+| clean_echoseg − clean_nat | 2000 | -0.082 | [-0.100, -0.064] |
+| clean_byte − clean_nat | 2000 | +0.007 | [-0.004, +0.018] |
+| echo_nat − clean_nat | 2000 | -0.212 | [-0.238, -0.185] |
+| echo_cleanseg − clean_nat | 2000 | -0.205 | [-0.232, -0.179] |
 
