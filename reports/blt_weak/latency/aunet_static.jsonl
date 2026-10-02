@@ -1,0 +1,12 @@
+{"tag": "aunet_static", "domain": "en", "n": 8, "bytes": 3000, "ms_median": 156.16759390104562, "ms_min": 140.17578097991645, "ms_max": 167.19493409618735}
+{"tag": "aunet_static", "domain": "code", "n": 8, "bytes": 3000, "ms_median": 151.5973126515746, "ms_min": 133.6094089783728, "ms_max": 176.85458296909928}
+{"tag": "aunet_static", "domain": "zh", "n": 8, "bytes": 2998.875, "ms_median": 143.2255720719695, "ms_min": 126.77318602800369, "ms_max": 176.1269699782133}
+{"tag": "aunet_static", "domain": "te", "n": 8, "bytes": 2999.375, "ms_median": 146.1680845823139, "ms_min": 134.2043539043516, "ms_max": 158.92208297736943}
+{"tag": "aunet_static", "domain": "random_ascii", "n": 8, "bytes": 3000, "ms_median": 157.23811893258244, "ms_min": 137.21962785348296, "ms_max": 172.88630013354123}
+{"tag": "aunet_static", "domain": "hex", "n": 8, "bytes": 3000, "ms_median": 270.55515197571367, "ms_min": 247.4154019728303, "ms_max": 293.43307693488896}
+{"tag": "aunet_static", "domain": "base64", "n": 8, "bytes": 3000, "ms_median": 267.9205625317991, "ms_min": 235.76209880411625, "ms_max": 293.8157480675727}
+{"tag": "aunet_static", "domain": "uuid", "n": 8, "bytes": 3000, "ms_median": 170.45802238862962, "ms_min": 158.85959612205625, "ms_max": 198.47090682014823}
+{"tag": "aunet_static", "domain": "json_log", "n": 8, "bytes": 3000, "ms_median": 157.327234512195, "ms_min": 135.83262986503541, "ms_max": 191.36428204365075}
+{"tag": "aunet_static", "domain": "csv", "n": 8, "bytes": 3000, "ms_median": 170.49741058144718, "ms_min": 153.28960795886815, "ms_max": 183.04515606723726}
+{"tag": "aunet_static", "domain": "boilerplate", "n": 8, "bytes": 3000, "ms_median": 150.64113051630557, "ms_min": 128.21868318133056, "ms_max": 165.65151582472026}
+{"tag": "aunet_static", "domain": "repeat_line", "n": 8, "bytes": 3000, "ms_median": 162.80688054393977, "ms_min": 143.84552906267345, "ms_max": 173.81755891256034}

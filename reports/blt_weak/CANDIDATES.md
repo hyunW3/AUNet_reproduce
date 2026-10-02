@@ -1,6 +1,6 @@
 # BLT가 약할 만한 perturbation / task — BPEByte 우위 후보
 
-작성 2026-10-02. **결론은 `FINDINGS.md`** (후보 1·2는 정확도 면에서 반증됨). 비교 대상: BLT-1B (official bytelatent + xformers, entropy 512 window, released threshold
+작성 2026-10-02. **결론은 `FINDINGS.md`** (후보 1·2 반증; 3은 유의한 BLT 약점, 4·6은 비용 예측성·결정성 축에서 확인, 5는 미미 — 2차 섹션 참고). 비교 대상: BLT-1B (official bytelatent + xformers, entropy 512 window, released threshold
 1.3354, bs 1) vs. matched 1.3B trio (Llama / AU-Net / BPEByte-rg). 실험 결과는 `RESULTS.md`, 코드는
 `scripts/probes/blt_weak/`.
 
@@ -39,17 +39,17 @@
 ### 3. Echo / priming perturbation (BLT 전용 confound)
 - 질문에 선택지 문자열을 미리 넣으면(`A) … B) …`) 정답 continuation의 entropy가 떨어져 patch가 굵어지고
   loglik scoring이 바뀐다. 의미는 같은데 BLT만 segmentation이 바뀐다.
-- probe 예: 질문 2회 반복, 선택지 사전 나열, 오답만 echo. 지표: Δacc + 정답 선택지 patch 수 변화. (미실행)
+- probe 예: 질문 2회 반복, 선택지 사전 나열, 오답만 echo. 지표: Δacc + 정답 선택지 patch 수 변화. → `echo` probe (2차)
 
 ### 4. Entropy model 분포 밖 입력 — patch 크기 폭주 / 붕괴
 - random / hex / base64 / UUID haystack → 거의 1-byte patch → global seq 폭증, latency·effective context 악화.
   boilerplate / 표 / 로그처럼 반복이 많으면 반대로 과도하게 긴 patch.
 - BPEByte는 random에서도 1.39 B/patch (Llama 1.33)로 예측 가능.
-- `reports/compression_stability/summary.md`의 BLT 행이 전부 NOT MEASURED → 채우면 figure 하나. (미실행)
+- `reports/compression_stability/summary.md`의 BLT 행이 전부 NOT MEASURED → 채우면 figure 하나. → `ood` probe + latency (2차)
 
 ### 5. Entropy만 흔드는 adversarial insertion
 - zero-width space, soft hyphen, NBSP, 희귀 이모지 삽입 → 의미는 그대로, BLT는 entropy spike로 주변 경계가
-  연쇄적으로 바뀌고 3–8gram hash embedding도 교란. BPE도 쪼개지므로 차이가 작을 수 있어 우선순위 낮음. (미실행)
+  연쇄적으로 바뀌고 3–8gram hash embedding도 교란. BPE도 쪼개지므로 차이가 작을 수 있어 우선순위 낮음. → `insert` probe (2차)
 
 ### 6. 결정성 / batch invariance (시스템 강점)
 - BLT는 batch / dtype에 따라 threshold 근처 경계가 flip (`reports/blt_batch_invariance`: bs>1에서 task당 1–3% item

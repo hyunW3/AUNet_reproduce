@@ -60,3 +60,78 @@ dist512 hash d=2048(0.74 vs 0.67, CI 겹침) 정도이고, 같은 probe의 다�
 - count probe는 1B base 모델에서 floor다. 쓰려면 0–5 범위의 쉬운 셋으로 다시 만들거나 rank 대신 비교형
   ("A가 B보다 많나?")으로 바꿔야 한다.
 - 위 부수 발견 2(trio hash-needle 거리 붕괴)는 local window 설정을 확인한 뒤 따로 파고들 가치가 있다.
+
+---
+
+# 2차: 후보 3–6 (2026-10-02)
+
+같은 4개 모델, 같은 runner. MC는 ARC-E / ARC-C / PIQA / HellaSwag 각 500문항(lm-eval 표준 prompt, raw-loglik acc)이다.
+Δ는 같은 문항 쌍으로 계산한 paired 값이고, DiD는 BLT의 Δ에서 상대 모델의 Δ를 뺀 값이다. 표는 `RESULTS.md` §9–12,
+DiD bootstrap 표는 `delta_ci.md`(`delta_ci.py`, 2000 iters)에 있다.
+
+## 한 줄 요약
+
+**후보 3(echo / priming)에서 처음으로 유의하고 BLT에 특유한 약점이 나왔다.** 선택지를 질문 앞에 나열하면 BLT는
+−0.21, 나머지 세 모델은 −0.11 떨어진다(DiD −0.106 [−0.133, −0.079]). BLT는 나열된 **첫 번째 선택지를 88%** 고른다
+(나머지 60–64%, clean에서는 모두 38%). 후보 4(OOD)는 **compute 쪽 불안정성**으로 확인됐고, 후보 5·6은 BPEByte의
+우위가 작거나 없었다.
+
+## #3 echo / priming
+
+| variant | Llama Δ | AU-Net Δ | BPEByte Δ | BLT Δ | DiD BLT−BPEByte [95% CI] |
+|---|---:|---:|---:|---:|---:|
+| echo_all (선택지 나열) | −0.111 | −0.112 | −0.105 | **−0.212** | **−0.106 [−0.133, −0.079]** |
+| echo_wrong (오답 hint) | −0.483 | −0.490 | −0.467 | **−0.543** | **−0.077 [−0.095, −0.059]** |
+| echo_gold (정답 hint) | +0.443 | +0.422 | +0.432 | +0.420 | −0.011 [−0.028, +0.005] |
+| repeat_q (질문 2회) | −0.008 | −0.008 | −0.010 | −0.002 | +0.009 (n.s.) |
+
+- echo_all의 DiD는 ARC-E −0.22, ARC-C −0.10, PIQA −0.15이고 HellaSwag만 +0.04다. echo_wrong은 4개 task 모두 음수다.
+- **메커니즘(patch probe)**: 정답 선택지(평균 53.6 B)는 BLT에서 clean 13.6 patch → echo_all 3.8, echo_gold 2.8로
+  병합된다. BPEByte는 모든 variant에서 11.0으로 일정하다. 앞에 나온 문자열이 BLT에서는 다른 segmentation으로 바뀐다.
+- **해석 주의**: 위치 편향(첫 선택지 88%)은 "나열된 문자열을 그대로 복사하려는" prior다. 네 모델 모두 이 편향을
+  보이며, BLT에서 가장 강하다. patch 병합 때문인지 BLT의 강한 in-context 복사 능력 때문인지(1차 NIAH에서 BLT가
+  가장 강했다)는 이 실험으로 분리되지 않는다. 논문에서는 "priming / 선택지 echo에 대한 BLT의 취약성,
+  segmentation 변화와 동반됨" 정도로 쓰는 것이 안전하다.
+
+## #5 byte 삽입 (질문 텍스트만)
+
+전 모델에서 |Δ| ≤ 0.03으로 작다. 유의한 DiD는 **homoglyph −0.019 [−0.034, −0.004]** 하나뿐이다(BLT −0.029 vs BPEByte −0.010,
+4개 task 모두 같은 방향). zwsp / shy / nbsp / emoji는 n.s.다. prompt bytes/patch는 BLT 3.75 → 2.69(homoglyph)로 가장 크게
+잘게 쪼개지지만 정확도 손실은 작다. → 후보 5는 "BLT가 약간 더 민감" 수준이고 headline감은 아니다.
+
+## #4 OOD 입력: compute 불안정성 (확인됨)
+
+| | BLT | BPEByte | Llama (tok) |
+|---|---:|---:|---:|
+| B/patch en | 3.94 | 4.60 | 4.57 |
+| B/patch random / hex / base64 | **1.00 / 1.00 / 1.00** | 1.39 / 1.77 / 1.45 | 1.33 / 1.76 / 1.40 |
+| B/patch boilerplate / repeat_line | **30.0 / 69.9** | 4.58 / 3.13 | 4.52 / 3.12 |
+| 최대 \|log2(B/patch ÷ en)\| | **4.15** | 1.72 | 1.78 |
+| latency en → random (ms, bs 1, 3 KB) | 60 → 126 (**×2.1**) | 114 → 169 (×1.5) | 44 → 87 (×2.0) |
+
+- BLT patch 수는 domain에 따라 70배 범위로 흔들린다. 고-entropy 입력(random / hex / base64 / UUID)에서는 1 B/patch로 떨어져
+  BPEByte보다 global position이 40–77% 많고, 반복 입력에서는 한 patch가 70 B가 된다. compute와 메모리를 입력만 보고
+  예측할 수 없다는 점은 serving 관점의 약점이다.
+- 다만 **BPB는 BLT가 모든 domain에서 가장 낮고**(code 0.49 vs BPEByte 0.88, zh 1.21 vs 2.74), 절대 latency도 BLT가
+  BPEByte보다 빠르다. BPEByte latency에는 CPU parser overhead가 포함된다. 따라서 "BPEByte가 더 효율적"이 아니라
+  "BPEByte의 비용이 더 예측 가능하다"(drift 1.72 vs 4.15)고 써야 한다.
+
+## #6 결정성
+
+| BLT 경계 변화 | windows with ≥1 flip | flips / window |
+|---|---:|---:|
+| 재계산 / prefix(streaming) / +1024 pad / batch 8 | 0% | 0 |
+| **bf16 → fp32 entropy model** | **64%** | 2.96 (zh 10.95) |
+
+- official harness의 per-row entropy 경로는 batch / padding에 대해 경계 수준에서 불변이었다. `blt_batch_invariance`에서 본
+  bs>1 점수 변화는 경계가 아니라 본 모델 forward의 batch 의존성에서 온 것으로 보인다(추정).
+- 경계는 **수치 정밀도에 의존**한다. fp32 entropy model로 바꾸면 64% window에서 경계가 바뀐다. BPEByte / AU-Net은
+  모든 조건에서 0이다(입력 bytes의 순수 함수).
+
+## 종합 — BPEByte의 우위로 주장할 수 있는 것
+
+1. **선택지 echo / priming 강건성**: 유의한 정확도 차이다(−0.106, −0.077). 단 메커니즘 귀속에는 주의가 필요하다.
+2. **비용 예측 가능성**: domain 간 patch 수 drift가 1.72 vs 4.15이고, BLT 고-entropy 입력에서 latency가 ×2.1이 된다.
+3. **segmentation 결정성**: 경계가 정밀도와 무관하다(BLT는 bf16↔fp32에서 64% window flip). 반복 입력에서 BLT kernel
+   crash가 16% 발생했다(1차).
+그 외 정확도 축(NIAH 계열, copy, insertion)에서는 BLT가 같거나 강하다.
