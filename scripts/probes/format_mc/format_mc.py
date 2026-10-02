@@ -368,7 +368,7 @@ def _key(c, k):
 
 
 def run_format_mc(loglikelihood, tasks=TASKS, variants=None, limit=2000, items_dir=None, cache=None,
-                  chunk=4096, fs_k=10, log=print) -> Dict[str, dict]:
+                  chunk=4096, fs_k=10, log=print, reverse=False) -> Dict[str, dict]:
     variants = variants or all_variants(fs_k)
     fs_formats = formatspread_formats(fs_k)
     store = {}
@@ -406,6 +406,8 @@ def run_format_mc(loglikelihood, tasks=TASKS, variants=None, limit=2000, items_d
             if h not in store and h not in seen:
                 seen.add(h)
                 todo.append((h, c, k))
+        if reverse:                                    # a second worker filling the same cache from the end
+            todo.reverse()
         log(f"[format_mc] {task}: {len(items)} items x {len(variants)} variants = {len(pairs)} pairs, "
             f"{len(set(_key(c, k) for c, k in pairs))} unique, {len(todo)} to score")
         t0 = time.time()
