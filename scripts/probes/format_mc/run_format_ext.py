@@ -28,6 +28,7 @@ def main():
     ap.add_argument("--items_dir", required=True)
     ap.add_argument("--cache", required=True)
     ap.add_argument("--chunk", type=int, default=512)
+    ap.add_argument("--reverse", action="store_true", help="score the to-do list from the end (helper worker)")
     ap.add_argument("--max_len", type=int, default=4096)
     ap.add_argument("--threshold", type=float, default=1.335442066192627)
     ap.add_argument("--blt_weights", default=os.path.expanduser("~/AUNet_lc/ext/blt_weights"))
@@ -47,7 +48,7 @@ def main():
         meta = {"model": f"cartesia-ai/{a.hnet_model}", "batch_size": 8}
     variants = F.variant_group(a.group) if a.group else a.variants
     res = F.run_format_mc(lm.loglikelihood, tasks=a.tasks, variants=variants, limit=a.limit,
-                          items_dir=a.items_dir, cache=a.cache, chunk=a.chunk,
+                          items_dir=a.items_dir, cache=a.cache, chunk=a.chunk, reverse=a.reverse,
                           log=lambda s: print(time.strftime("%H:%M:%S"), s, flush=True))
     out = {"family": a.family, "tasks": a.tasks, "limit": a.limit, "max_len": a.max_len, **meta,
            "results": res, "seconds": round(time.time() - t0)}

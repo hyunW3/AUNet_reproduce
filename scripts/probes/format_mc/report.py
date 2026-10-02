@@ -42,15 +42,14 @@ def macro_delta(rows, v, metric, tasks, B=1000, seed=0):
         per.append((c, p, ch))
     cm = st.mean(st.mean(c) for c, _, _ in per)
     pm = st.mean(st.mean(p) for _, p, _ in per)
-    rng = random.Random(seed)
-    ds = []
-    for _ in range(B):
-        acc = 0.0
-        for c, p, _ in per:
-            n = len(c)
-            idx = [rng.randrange(n) for _ in range(n)]
-            acc += sum(p[i] - c[i] for i in idx) / n
-        ds.append(acc / len(per))
+    import numpy as np
+    rng = np.random.default_rng(seed)
+    ds = np.zeros(B)
+    for c, p, _ in per:
+        d = np.asarray(p, dtype=np.float32) - np.asarray(c, dtype=np.float32)
+        for b0 in range(0, B, 100):                    # 100 resamples at a time keeps memory small
+            ds[b0:b0 + 100] += d[rng.integers(0, len(d), size=(min(100, B - b0), len(d)))].mean(axis=1)
+    ds = list(ds / len(per))
     ds.sort()
     chg = st.mean(st.mean(ch) for _, _, ch in per)
     sub = [st.mean([p[i] - c[i] for i in range(len(c)) if ch[i]]) for c, p, ch in per if any(ch)]
@@ -73,7 +72,7 @@ def main():
     pp = lambda x: f"{100 * x:+.1f}"
     L.append(f"# Format / whitespace / punctuation robustness ({a.metric}, 5-task macro, ≤2000 items/task)\n")
     L.append("Δ = perturbed − clean (pt), 5-task macro (HS/ARC-E/ARC-C/PIQA/BoolQ); [95% paired bootstrap CI]. "
-             "`chg` = share of items whose prompt the variant actually changed; `Δ|chg` = Δ on those items only.\n")
+             "`chg` = share of items whose prompt the variant actually changed (Δ restricted to those items: `delta_changed` in summary.json).\n")
     hdr = "| variant | family | " + " | ".join(n for _, n in models) + " | chg |"
     L.append(hdr)
     L.append("|" + "---|" * (len(models) + 3))
