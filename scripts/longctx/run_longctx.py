@@ -179,13 +179,14 @@ def run_rank(generator, tokenizer, rows, batch):
         yield chunk, out
 
 
-def run_gen_ext(harness, rows, batch, family):
+def run_gen_ext(harness, rows, batch, family, mark=lambda chunk: None):
     """BLT / H-Net greedy bytes (no stop strings, `window` bytes). BLT: the eval_suite harness's
     re-forward loop at batch size 1. H-Net: its own inference cache (ext_models.hnet_generate)."""
     import ext_models
     rows = sorted(rows, key=lambda r: (r["window"], r["prompt_bytes"]))
     for i in range(0, len(rows), batch):
         chunk = rows[i:i + batch]
+        mark(chunk)
         if family == "hnet":
             gens = [ext_models.hnet_generate(harness.model, r["prompt"], r["window"]) for r in chunk]
         else:
@@ -197,9 +198,10 @@ def run_gen_ext(harness, rows, batch, family):
         yield chunk, out
 
 
-def run_rank_ext(harness, rows, batch):
+def run_rank_ext(harness, rows, batch, mark=lambda chunk: None):
     for i in range(0, len(rows), batch):
         chunk = rows[i:i + batch]
+        mark(chunk)
         pairs = [(r["prompt"], o) for r in chunk for o in r["options"]]
         lps = [lp for lp, _ in harness.score_pairs(pairs)]
         out, k = [], 0
@@ -257,6 +259,30 @@ def main():
     done = set()
     if out.exists():
         done = {json.loads(l)["id"] for l in open(out) if l.strip()}
+    # Crash guard (official BLT intermittently dies with a CUDA illegal memory access inside its
+    # mask construction, which kills the process): ids in flight are written to <out>.pending; on
+    # restart, in-flight ids without a result are recorded once as score=None ("crash") and skipped.
+    pending = Path(str(out) + ".pending")
+    if pending.exists():
+        crashed = [i for i in pending.read_text().split() if i and i not in done]
+        by_id = {r["id"]: r for r in rows}
+        with open(out, "a") as f:
+            for i in crashed:
+                r = by_id.get(i)
+                if r is None:
+                    continue
+                f.write(json.dumps({**{k: r[k] for k in ("id", "task", "cond", "length", "pos",
+                                                         "prompt_bytes", "mode")},
+                                    "tag": args.tag, "family": args.family, "score": None,
+                                    "error": "crash"}, ensure_ascii=False) + "\n")
+                done.add(i)
+        if crashed:
+            print(f"[{args.tag}] recorded {len(crashed)} crashed row(s) as score=None: {crashed}",
+                  flush=True)
+        pending.unlink()
+
+    def mark(chunk):
+        pending.write_text("\n".join(r["id"] for r in chunk))
     todo = [r for r in rows if r["id"] not in done]
     print(f"[{args.tag}] {args.data}: {len(rows)} rows, {len(done)} done, {len(todo)} todo",
           flush=True)
@@ -276,8 +302,8 @@ def main():
         if not sub:
             continue
         if ext:
-            it = (run_gen_ext(harness, sub, args.batch_size, args.family) if mode == "gen"
-                  else run_rank_ext(harness, sub, args.batch_size))
+            it = (run_gen_ext(harness, sub, args.batch_size, args.family, mark) if mode == "gen"
+                  else run_rank_ext(harness, sub, args.batch_size, mark))
         else:
             it = (run_gen(generator, sub, args.family, args.batch_size, args.max_tokens) if mode == "gen"
                   else run_rank(generator, tokenizer, sub, args.batch_size))
@@ -292,6 +318,8 @@ def main():
                     if "gold" in r:
                         rec["gold"] = r["gold"]
                     f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            if pending.exists():
+                pending.unlink()
             n += len(chunk)
             if n % (args.batch_size * 10) < len(chunk):
                 el = time.time() - t0
