@@ -1,6 +1,6 @@
 # BLT가 약할 만한 perturbation / task — BPEByte 우위 후보
 
-작성 2026-10-02. 비교 대상: BLT-1B (official bytelatent + xformers, entropy 512 window, released threshold
+작성 2026-10-02. **결론은 `FINDINGS.md`** (후보 1·2는 정확도 면에서 반증됨). 비교 대상: BLT-1B (official bytelatent + xformers, entropy 512 window, released threshold
 1.3354, bs 1) vs. matched 1.3B trio (Llama / AU-Net / BPEByte-rg). 실험 결과는 `RESULTS.md`, 코드는
 `scripts/probes/blt_weak/`.
 
