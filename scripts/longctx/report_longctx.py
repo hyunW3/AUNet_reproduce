@@ -49,7 +49,8 @@ def load(res_dir):
 
 
 def cell(rows, **kw):
-    return [r["score"] for r in rows if all(r.get(k) == v for k, v in kw.items())]
+    return [r["score"] for r in rows
+            if r.get("score") is not None and all(r.get(k) == v for k, v in kw.items())]
 
 
 def fmt(xs):
@@ -154,6 +155,10 @@ def main():
           "(KV k≤60, 2 FWE@6144 rows). BLT-1B (official bytelatent, xformers, bs 1) is scored only on rows "
           "with BOS+prompt+generation ≤ 4096 bytes -- its byte-level RoPE table has 4096 positions -- "
           "so its longer cells are \u2014. H-Net decodes with its own inference cache.", ""]
+    n_crash = collections.Counter(r["tag"] for r in rows if r.get("score") is None)
+    if n_crash:
+        md += ["Rows lost to a model-side CUDA crash (recorded, excluded from means): "
+               + ", ".join(f"{t}={v}" for t, v in sorted(n_crash.items())), ""]
     n_by = collections.Counter((r["tag"], r["task"]) for r in rows)
     md += ["Rows scored: " + ", ".join(f"{t}/{k}={v}" for (t, k), v in sorted(n_by.items())), ""]
 

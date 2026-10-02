@@ -56,6 +56,35 @@ inside its 3200-patch window.)
   on prose. **The effective context of the patch models is content-dependent.** This is worth a
   sentence in the paper.
 
+## External references: BLT-1B and H-Net 1-stage XL (added 2026-10-02)
+
+These are NOT matched to the trio. They differ in training data, token budget and size, so read
+them as reference rows only.
+- **BLT-1B** runs on official bytelatent with xformers, the eval_suite BLTHarness, at batch size 1.
+  It is scored only where BOS + prompt + generation ≤ 4096 bytes, because its byte-level RoPE table
+  has 4096 positions. That covers needle 1–2 KB, KV k ≤ 25, VT 1–2 KB, CWE 2 KB, FWE 2–4 KB, and
+  ICL up to about 32 shots. 7 of its 6,626 ICL rows were lost to an intermittent CUDA crash in
+  bytelatent's mask construction; they are recorded and excluded.
+- **H-Net** uses its own inference cache for greedy decoding (prefill + `model.step`). On 18/20 smoke
+  rows this was byte-identical to the harness's no-cache loop, with the same scores. Ranking uses
+  HNetHarness.
+
+What they add:
+- **BLT is the only model that really retrieves from the middle of the KV JSON.** At k = 25 the
+  middle positions (0.25 / 0.5 / 0.75) score 73–90. All four other models score 0–4 there.
+  Needle: ≥ 89 on every value type at 1–2 KB, including han4 100 and hangul4 98.8.
+  TREC-coarse / fine ICL: best of all models (80 at 32 shots).
+- **BLT SST-2 collapses at ≥ 16 shots** (53.7 / 50.7). Its log-prob gap between the two labels
+  shrinks: sd 1.0 → 0.4, both labels near ln 0.5. The predictions follow the label prior, not the
+  review. The values are well-formed and TREC at the same lengths is fine, so this looks like model
+  behaviour, but it is not verified. Flag it if quoted. AG News 16-shot for BLT is only 26 rows that
+  fit in 4 KB, hence the wide CI.
+- **H-Net matches BPEByte-rg on long-context VT** (4 / 6 KB: 63.6 / 46.0 vs 66.0 / 42.4), well above
+  Llama and AU-Net. It decays more on the needle sweep (pooled 6 KB: 63.2), and it fails the middle
+  of KV like the trio.
+- **CWE / FWE stay at or below the copy baseline for every model.** The one exception is H-Net CWE
+  @2 KB (66.2 vs baseline 56.0).
+
 ## Caveats
 
 - Single seed. n = 40–300 per cell, so the CIs are wide on the smaller cells.
