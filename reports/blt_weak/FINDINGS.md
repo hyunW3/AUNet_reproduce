@@ -135,3 +135,22 @@ DiD bootstrap 표는 `delta_ci.md`(`delta_ci.py`, 2000 iters)에 있다.
 3. **segmentation 결정성**: 경계가 정밀도와 무관하다(BLT는 bf16↔fp32에서 64% window flip). 반복 입력에서 BLT kernel
    crash가 16% 발생했다(1차).
 그 외 정확도 축(NIAH 계열, copy, insertion)에서는 BLT가 같거나 강하다.
+
+---
+
+# 3차: NoLiMa-lite (2026-10-02) — `NOLIMA.md`
+
+`niah_ext_data.make_nolima`로 셀당 200개(literal과 paraphrase는 같은 item에 query 명사만 다름, 3 distractor needle,
+1024/2048/3200 B)를 만들어 4개 모델을 같은 runner로 채점했다. 기존 BLT 수치(`reports/niah/n250/blt_probe_pairs_hfwin.json`)는
+HF port 결과라 512 B 이후 local window가 빠져 신뢰할 수 없어서 대체한다.
+
+| | Llama | AU-Net | BPEByte | BLT-1B |
+|---|---:|---:|---:|---:|
+| literal (전 길이) | 0.814 | 0.691 | 0.761 | **0.980** |
+| paraphrase (전 길이) | 0.518 | 0.421 | 0.383 | **0.704** |
+| NoLiMa 효과 (literal − paraphrase, paired) | +0.296 | +0.269 | **+0.378** | +0.276 |
+
+- BLT paraphrase − BPEByte = **+0.321 [+0.278, +0.365]**, − Llama = +0.186 [+0.139, +0.231]. 모든 길이에서 BLT가 가장 높다.
+- literal과 paraphrase의 차이(잠재 연상 비용)도 BPEByte가 가장 크다. → NoLiMa에서도 BPEByte의 우위는 없다.
+- caveat: 이 runner(greedy 생성 + substr)의 BPEByte literal 1024는 0.88로, 기존 teacher-forced scorer(`probe_compare`)의
+  0.98보다 낮다. BPEByte의 online-BT 생성 경로와 teacher forcing의 차이이며, 모델 간 비교는 같은 runner 안에서만 한다.
