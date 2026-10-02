@@ -123,7 +123,8 @@ def main():
     for f in glob.glob(f"{root}/data/*.jsonl"):
         for line in open(f):
             r = json.loads(line)
-            data[r["id"]] = r
+            if "id" in r:
+                data[r["id"]] = r
     have = defaultdict(int)
     for r in rows:
         have[r["tag"]] += 1
@@ -238,9 +239,139 @@ def main():
         md.append(patch_table(P, data, lambda r: r["task"] == "mkniah_nc",
                               [(m, lambda r, m=m: r["cond"].startswith(m)) for m in modes],
                               ["qkey1", "answer"]))
+    md += batch2(rows, P, root)
     (root / "RESULTS.md").write_text("\n".join(md) + "\n")
     print(f"wrote {root / 'RESULTS.md'}")
     plot(rows, P, data, root)
+
+
+MC = ["arc_easy", "arc_challenge", "piqa", "hellaswag"]
+OOD = ["en", "code", "zh", "te", "random_ascii", "hex", "base64", "uuid", "json_log", "csv", "boilerplate",
+       "repeat_line"]
+
+
+def batch2(rows, P, root):
+    """Sections 9-12: echo / priming (#3), byte insertions (#5), OOD compute (#4), determinism (#6)."""
+    md = []
+    sc = defaultdict(dict)                       # (tag) -> {(task, cond, mc, idx): score}
+    for r in rows:
+        if r["task"] in ("echo", "insert"):
+            sc[r["tag"]][(r["task"], r["cond"], r["length"], r["pos"])] = r["score"]
+    if sc:
+        def acc(tag, task, cond, mcs=MC):
+            v = [x for (t, c, m, _), x in sc[tag].items() if t == task and c == cond and m in mcs]
+            return v
+
+        def paired_delta(tag, task, cond, mcs=MC):
+            """acc(cond) - acc(clean) over items scored in both (clean = echo/clean)."""
+            d = [x - sc[tag][("echo", "clean", m, i)] for (t, c, m, i), x in sc[tag].items()
+                 if t == task and c == cond and m in mcs and ("echo", "clean", m, i) in sc[tag]]
+            return f"{mean(d):+.3f}" if d else "—"
+
+        for task, conds, title in (
+                ("echo", ["clean", "echo_all", "echo_gold", "echo_wrong", "repeat_q"],
+                 "## 9. Echo / priming (#3) — ARC-E / ARC-C / PIQA / HellaSwag, 500 items each, raw-loglik acc"),
+                ("insert", ["zwsp", "shy", "nbsp", "emoji", "homoglyph"],
+                 "## 10. Semantics-preserving byte insertions (#5) — same items, question text only")):
+            md.append(title + "\n")
+            body = [[c] + [cell(acc(tag, task, c)) for tag, _ in MODELS] for c in conds]
+            if task == "insert":
+                body.insert(0, ["clean"] + [cell(acc(tag, "echo", "clean")) for tag, _ in MODELS])
+            md.append(table(["variant (4 tasks pooled)"] + [m for _, m in MODELS], body))
+            md.append("\nPaired Δ vs clean (pooled; per task below):\n")
+            body = [[c] + [paired_delta(tag, task, c) for tag, _ in MODELS] for c in conds if c != "clean"]
+            md.append(table(["variant"] + [m for _, m in MODELS], body))
+            body = [[f"{c} / {m}"] + [paired_delta(tag, task, c, [m]) for tag, _ in MODELS]
+                    for c in conds if c != "clean" for m in MC]
+            md.append("\n<details><summary>per task</summary>\n\n" +
+                      table(["variant / task"] + [n for _, n in MODELS], body) + "\n</details>\n")
+            # mechanism: patch density of the prompt (insert) / patches on the gold option (echo)
+            pt = defaultdict(lambda: defaultdict(list))
+            for (tag, i), p in P.items():
+                if not i.startswith(("echo-", "ins-")):
+                    continue
+                pt[tag][p["cond"]].append(p)
+            if pt:
+                if task == "echo":
+                    md.append("\nPatches on the gold option (mean boundaries / bytes):\n")
+                    body = [[c] + [(lambda v: f"{mean([x['answer']['patches'] for x in v]):.2f} / "
+                                              f"{mean([x['answer']['bytes'] for x in v]):.1f}" if v else "—")(
+                        pt[tag].get(c, [])) for tag, _ in PT_MODELS] for c in conds]
+                else:
+                    md.append("\nPrompt bytes per patch (higher = coarser; clean = echo/clean):\n")
+                    body = [[c] + [(lambda v: f"{sum(x['n_bytes'] for x in v) / max(1, sum(x['n_patches'] for x in v)):.2f}"
+                                    if v else "—")(pt[tag].get(c, [])) for tag, _ in PT_MODELS]
+                            for c in ["clean"] + conds]
+                md.append(table(["variant"] + [m for _, m in PT_MODELS], body))
+    # ---- 11. OOD compute
+    W = [r for r in rows if r["task"] == "ood"]
+    if W:
+        md.append("## 11. Out-of-distribution inputs (#4) — 3000-byte windows, 40 per domain\n")
+        md.append("Bytes per patch (BLT entropy patcher, BPEByte / AU-Net parser) and bytes per token (Llama).\n"
+                  "Lower = more global-model positions per byte = more compute.\n")
+        win = defaultdict(lambda: defaultdict(list))
+        for (tag, i), p in P.items():
+            if i.startswith("ood-") and "domain" in p:
+                win[tag][p["domain"]].append(p)
+        tags = [("blt_1b", "BLT"), ("byte_greedyroot", "BPEByte"), ("aunet_static", "AU-Net"),
+                ("subword_llama", "Llama (tok)")]
+        body = []
+        for d in OOD:
+            line = [d]
+            for tag, _ in tags:
+                v = win[tag].get(d, [])
+                line.append(f"{sum(x['n_bytes'] for x in v) / max(1, sum(x['n_patches'] for x in v)):.2f}" if v else "—")
+            body.append(line)
+        md.append(table(["domain"] + [n for _, n in tags], body))
+        md.append("\nWorst-case drift vs English, |log2(B/patch_domain / B/patch_en)| (max over domains):\n")
+        line = ["max |log2 ratio|"]
+        for tag, _ in tags:
+            def bpp(d):
+                v = win[tag].get(d, [])
+                return sum(x["n_bytes"] for x in v) / max(1, sum(x["n_patches"] for x in v)) if v else None
+            en = bpp("en")
+            rs = [(abs(math.log2(bpp(d) / en)), d) for d in OOD if en and bpp(d)]
+            line.append(f"{max(rs)[0]:.2f} ({max(rs)[1]})" if rs else "—")
+        md.append(table(["", *[n for _, n in tags]], [line]))
+        md.append("\nBPB (summed log-prob of the window with an empty prompt / bytes):\n")
+        g = defaultdict(list)
+        for r in W:
+            g[(r["tag"], r["cond"])].append((-r["lls"][0], r["length"]))
+        body = [[d] + [(lambda v: f"{sum(a for a, _ in v) / (math.log(2) * sum(b for _, b in v)):.3f}" if v else "—")(
+            g.get((tag, d), [])) for tag, _ in MODELS] for d in OOD]
+        md.append(table(["domain"] + [m for _, m in MODELS], body))
+        lat = {}
+        for f in glob.glob(f"{root}/latency/*.jsonl"):
+            for line in open(f):
+                x = json.loads(line)
+                lat[(x["tag"], x["domain"])] = x["ms_median"]
+        if lat:
+            md.append("\nScoring latency, one 3000-byte window, bs 1, same A100 (median ms over 8 windows x 3 reps):\n")
+            body = [[d] + [f"{lat[(tag, d)]:.0f}" if (tag, d) in lat else "—" for tag, _ in MODELS] for d in OOD]
+            md.append(table(["domain"] + [m for _, m in MODELS], body))
+        # ---- 12. determinism
+        md.append("## 12. Boundary determinism (#6) — same 480 windows\n")
+        md.append("Per perturbation: % of windows with >= 1 flipped boundary · mean flipped boundaries per window.\n"
+                  "`prefix` = boundaries of the first half fed alone vs the same span inside the full window (streaming);\n"
+                  "`pad` = +1024 trailing pad bytes; `batch8` = patched in a batch with 7 other windows; `fp32` = fp32\n"
+                  "entropy model; `recompute` = same call twice.\n")
+        body = []
+        for tag, name in (("blt_1b", "BLT"), ("byte_greedyroot", "BPEByte"), ("aunet_static", "AU-Net")):
+            v = [p for d in OOD for p in win[tag].get(d, [])]
+            line = [name]
+            for k in ("flip_recompute", "flip_prefix", "flip_pad", "flip_batch8", "flip_fp32"):
+                x = [p[k] for p in v if k in p]
+                line.append(f"{100 * mean([y > 0 for y in x]):.0f}% · {mean(x):.2f}" if x else "n/a")
+            body.append(line)
+        md.append(table(["parser", "recompute", "prefix", "pad", "batch8", "fp32"], body))
+        md.append("\nBLT flips by domain (mean flipped boundaries per window: prefix / pad / batch8 / fp32):\n")
+        body = []
+        for d in OOD:
+            v = win["blt_1b"].get(d, [])
+            body.append([d] + [f"{mean([p[k] for p in v]):.2f}" if v else "—"
+                               for k in ("flip_prefix", "flip_pad", "flip_batch8", "flip_fp32")])
+        md.append(table(["domain", "prefix", "pad", "batch8", "fp32"], body))
+    return md
 
 
 def plot(rows, P, data, root):

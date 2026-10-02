@@ -1,0 +1,12 @@
+{"tag": "subword_llama", "domain": "en", "n": 8, "bytes": 3000, "ms_median": 43.735544895753264, "ms_min": 40.65565182827413, "ms_max": 56.17967713624239}
+{"tag": "subword_llama", "domain": "code", "n": 8, "bytes": 3000, "ms_median": 48.57635998632759, "ms_min": 44.39260601066053, "ms_max": 52.39071720279753}
+{"tag": "subword_llama", "domain": "zh", "n": 8, "bytes": 2998.875, "ms_median": 51.978009985759854, "ms_min": 43.65186998620629, "ms_max": 59.774766908958554}
+{"tag": "subword_llama", "domain": "te", "n": 8, "bytes": 2999.375, "ms_median": 82.69531500991434, "ms_min": 76.82950608432293, "ms_max": 92.23673399537802}
+{"tag": "subword_llama", "domain": "random_ascii", "n": 8, "bytes": 3000, "ms_median": 87.41467993240803, "ms_min": 85.01679915934801, "ms_max": 100.13338597491384}
+{"tag": "subword_llama", "domain": "hex", "n": 8, "bytes": 3000, "ms_median": 71.70497486367822, "ms_min": 69.98248491436243, "ms_max": 73.8290308509022}
+{"tag": "subword_llama", "domain": "base64", "n": 8, "bytes": 3000, "ms_median": 89.03887250926346, "ms_min": 83.35349918343127, "ms_max": 111.47232609800994}
+{"tag": "subword_llama", "domain": "uuid", "n": 8, "bytes": 3000, "ms_median": 83.99901853408664, "ms_min": 77.26590801030397, "ms_max": 88.62087596207857}
+{"tag": "subword_llama", "domain": "json_log", "n": 8, "bytes": 3000, "ms_median": 59.08531101886183, "ms_min": 57.932324009016156, "ms_max": 66.07196805998683}
+{"tag": "subword_llama", "domain": "csv", "n": 8, "bytes": 3000, "ms_median": 72.12191994767636, "ms_min": 71.24519092030823, "ms_max": 74.40693606622517}
+{"tag": "subword_llama", "domain": "boilerplate", "n": 8, "bytes": 3000, "ms_median": 40.52464396227151, "ms_min": 38.08052698150277, "ms_max": 41.187850991263986}
+{"tag": "subword_llama", "domain": "repeat_line", "n": 8, "bytes": 3000, "ms_median": 47.82645090017468, "ms_min": 47.29826492257416, "ms_max": 59.98660111799836}

@@ -92,52 +92,104 @@ class BLTPatches:
                                    patching_device="cuda").build()
         self.patcher.entropy_model = self.ent
 
-    def bounds(self, text):
+    def bounds(self, text, pad_extra=0, fp32=False):
         """Patch-start byte offsets (text byte i == token i+1; BOS is token 0), exactly as the
         eval harness patches a bs-1 row (right-padded with boe to a multiple of 128)."""
+        return self.bounds_batch([text], pad_extra, fp32)[0]
+
+    def bounds_batch(self, texts, pad_extra=0, fp32=False):
+        """Rows patched together in ONE [bs, Np] entropy forward (the harness path at bs > 1)."""
         torch = self.torch
-        ids = self.tok.encode(text, add_bos=True, add_eos=False)
-        n = len(ids)
-        Np = ((n + 127) // 128) * 128
-        t = torch.full((1, Np), self.tok.boe_id, dtype=torch.long, device="cuda")
-        t[0, :n] = torch.tensor(ids, device="cuda")
+        ids = [self.tok.encode(t, add_bos=True, add_eos=False) for t in texts]
+        Np = ((max(map(len, ids)) + 127) // 128) * 128 + pad_extra
+        t = torch.full((len(ids), Np), self.tok.boe_id, dtype=torch.long, device="cuda")
+        for i, x in enumerate(ids):
+            t[i, :len(x)] = torch.tensor(x, device="cuda")
+        model = self.ent
+        if fp32:
+            if not hasattr(self, "ent32"):
+                import copy
+                self.ent32 = copy.deepcopy(self.ent).float()
+            model = self.ent32
         with torch.inference_mode():
-            ent = self.entropy(self.ent(t)).float()
+            ent = self.entropy(model(t)).float()
             pl, _ = self.patcher.patch(t, include_next_token=False, entropies=ent)
-        starts, s = [], 0
-        for L in pl[0].tolist():
-            if L == 0:
-                break
-            starts.append(s)
-            s += L
-        return [x - 1 for x in starts if 1 <= x <= n]          # token -> text byte offset
+        out = []
+        for r, x in enumerate(ids):
+            starts, s = [], 0
+            for L in pl[r].tolist():
+                if L == 0:
+                    break
+                starts.append(s)
+                s += L
+            out.append([y - 1 for y in starts if 1 <= y <= len(x) - 1])   # token -> text byte offset
+        return out
 
 
 # ------------------------------------------------------------------------------ BPEByte / AU-Net
 class TrioPatches:
-    def __init__(self, ckpt, tok_path):
+    def __init__(self, ckpt, tok_path, family="aunet"):
         sys.path.insert(0, os.environ.get("LC_SCRIPTS", os.path.dirname(os.path.abspath(__file__))))
         from run_longctx import build_generator
-        self.g, self.tok = build_generator("aunet", ckpt, tok_path, 8192)
+        self.family = family
+        self.g, self.tok = build_generator(family, ckpt, tok_path, 8192)
 
     def bounds(self, text):
         pb = self.tok.encode(text, add_bos=False, add_eos=False)
+        if self.family == "subword":                 # token count only (offsets not needed)
+            return list(range(len(pb)))
         return [i for i, x in enumerate(self.g.regex_pool.get_levels_mask(pb)) if x > 0]
+
+
+def _diff(a, b, upto=None):
+    """Boundaries present in exactly one of a / b (restricted to offsets < upto)."""
+    a, b = set(a), set(b)
+    if upto is not None:
+        a, b = {x for x in a if x < upto}, {x for x in b if x < upto}
+    return len(a ^ b)
+
+
+def run_windows(P, family, wins, tag, f):
+    """Per window: patch count, and boundary flips under perturbations that should not matter:
+      prefix  boundaries of text[:n/2] vs the full text's boundaries before n/2 (streaming stability)
+      BLT only (entropy model numerics): pad (+1024 trailing boe), batch8 (patched alongside 7 other
+      windows of the same domain), fp32 (fp32 entropy model instead of bf16)."""
+    for k, w in enumerate(wins):
+        text = w["text"]
+        b = P.bounds(text)
+        half = text.encode()[: w["n_bytes"] // 2].decode(errors="ignore")
+        hb = len(half.encode())
+        rec = {"id": w["id"], "domain": w["domain"], "tag": tag, "n_bytes": w["n_bytes"],
+               "n_patches": len(b)}
+        if family != "subword":
+            rec["flip_prefix"] = _diff(P.bounds(half), b, upto=hb - 1)
+            rec["flip_recompute"] = _diff(P.bounds(text), b)
+        if family == "blt":
+            rec["flip_pad"] = _diff(P.bounds(text, pad_extra=1024), b)
+            dom = [x for x in wins if x["domain"] == w["domain"]]
+            j = dom.index(w)
+            mates = [dom[(j + d) % len(dom)]["text"] for d in range(1, 8)]
+            rec["flip_batch8"] = _diff(P.bounds_batch([text] + mates)[0], b)
+            rec["flip_fp32"] = _diff(P.bounds(text, fp32=True), b)
+        f.write(json.dumps(rec) + "\n")
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--family", choices=["blt", "aunet"], required=True)
+    ap.add_argument("--family", choices=["blt", "aunet", "subword"], required=True)
     ap.add_argument("--ckpt", required=True)
     ap.add_argument("--tag", required=True)
-    ap.add_argument("--data", nargs="+", required=True)
+    ap.add_argument("--data", nargs="*", default=[])
+    ap.add_argument("--windows", default=None, help="ood_windows.jsonl: patch counts + determinism")
     ap.add_argument("--tok_path", default=os.environ.get("AUNET_TOK", ""))
     ap.add_argument("--max_rows", type=int, default=None, help="first N rows per (task, cond, length)")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
-    P = BLTPatches(a.ckpt) if a.family == "blt" else TrioPatches(a.ckpt, a.tok_path)
+    P = BLTPatches(a.ckpt) if a.family == "blt" else TrioPatches(a.ckpt, a.tok_path, a.family)
     seen = {}
     with open(a.out, "w") as f:
+        if a.windows:
+            run_windows(P, a.family, [json.loads(l) for l in open(a.windows)], a.tag, f)
         for path in a.data:
             for line in open(path):
                 r = json.loads(line)
