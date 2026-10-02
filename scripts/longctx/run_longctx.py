@@ -179,9 +179,42 @@ def run_rank(generator, tokenizer, rows, batch):
         yield chunk, out
 
 
+def run_gen_ext(harness, rows, batch, family):
+    """BLT / H-Net greedy bytes (no stop strings, `window` bytes). BLT: the eval_suite harness's
+    re-forward loop at batch size 1. H-Net: its own inference cache (ext_models.hnet_generate)."""
+    import ext_models
+    rows = sorted(rows, key=lambda r: (r["window"], r["prompt_bytes"]))
+    for i in range(0, len(rows), batch):
+        chunk = rows[i:i + batch]
+        if family == "hnet":
+            gens = [ext_models.hnet_generate(harness.model, r["prompt"], r["window"]) for r in chunk]
+        else:
+            gens = harness._generate_batch([r["prompt"] for r in chunk], [], max(r["window"] for r in chunk))
+        out = []
+        for r, g in zip(chunk, gens):
+            s, w = score_gen(r, g)
+            out.append({"score": s, "gen": w})
+        yield chunk, out
+
+
+def run_rank_ext(harness, rows, batch):
+    for i in range(0, len(rows), batch):
+        chunk = rows[i:i + batch]
+        pairs = [(r["prompt"], o) for r in chunk for o in r["options"]]
+        lps = [lp for lp, _ in harness.score_pairs(pairs)]
+        out, k = [], 0
+        for r in chunk:
+            v = lps[k:k + len(r["options"])]
+            k += len(r["options"])
+            pred = max(range(len(v)), key=v.__getitem__)
+            out.append({"score": float(pred == r["gold"]), "pred": pred, "lls": v})
+        yield chunk, out
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--family", choices=["subword", "aunet"], required=True)
+    ap.add_argument("--family", choices=["subword", "aunet", "blt", "hnet"], required=True,
+                    help="blt: --ckpt = weights dir (blt_1b/, entropy/); hnet: --ckpt = model name")
     ap.add_argument("--ckpt", required=True)
     ap.add_argument("--tag", required=True)
     ap.add_argument("--data", required=True)
@@ -193,9 +226,19 @@ def main():
     ap.add_argument("--only", nargs="*", default=None, help="restrict to these task names")
     ap.add_argument("--limit", type=int, default=None, help="smoke: first N rows per (task,cond)")
     ap.add_argument("--shard", default=None, help="i/n: keep rows whose line index %% n == i")
+    ap.add_argument("--max_bytes", type=int, default=None,
+                    help="skip rows whose BOS + prompt + generation/option exceeds this many bytes "
+                         "(BLT-1B: its byte-level RoPE table covers 4096 positions)")
     args = ap.parse_args()
 
     rows = [json.loads(l) for l in open(args.data)]
+    if args.max_bytes:
+        def need(r):
+            tail = r["window"] if r["mode"] == "gen" else max(len(o.encode()) for o in r["options"])
+            return 1 + r["prompt_bytes"] + tail
+        n0 = len(rows)
+        rows = [r for r in rows if need(r) <= args.max_bytes]
+        print(f"--max_bytes {args.max_bytes}: kept {len(rows)}/{n0} rows", flush=True)
     if args.shard:
         i, n = map(int, args.shard.split("/"))
         rows = rows[i::n]
@@ -220,14 +263,24 @@ def main():
     if not todo:
         return
 
-    generator, tokenizer = build_generator(args.family, args.ckpt, args.tok_path, args.max_tokens)
+    ext = args.family in ("blt", "hnet")
+    if ext:
+        import ext_models
+        harness = (ext_models.build_blt(args.ckpt) if args.family == "blt"
+                   else ext_models.build_hnet(args.ckpt, batch_size=args.batch_size))
+    else:
+        generator, tokenizer = build_generator(args.family, args.ckpt, args.tok_path, args.max_tokens)
     t0, n = time.time(), 0
     for mode in ("gen", "rank"):
         sub = [r for r in todo if r["mode"] == mode]
         if not sub:
             continue
-        it = (run_gen(generator, sub, args.family, args.batch_size, args.max_tokens) if mode == "gen"
-              else run_rank(generator, tokenizer, sub, args.batch_size))
+        if ext:
+            it = (run_gen_ext(harness, sub, args.batch_size, args.family) if mode == "gen"
+                  else run_rank_ext(harness, sub, args.batch_size))
+        else:
+            it = (run_gen(generator, sub, args.family, args.batch_size, args.max_tokens) if mode == "gen"
+                  else run_rank(generator, tokenizer, sub, args.batch_size))
         for chunk, res in it:
             with open(out, "a") as f:
                 for r, o in zip(chunk, res):
