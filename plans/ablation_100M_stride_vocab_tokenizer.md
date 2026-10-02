@@ -186,3 +186,22 @@ P0 중 사용자 지정 4개 arm을 ece-agpu18 GPU 5,6에서 순차 학습 중. 
 arm: `stride4p57` (BPEByte 4.566 B/patch에 맞춘 고정 stride), `rg_llama3_V32k`, `rg_gpt2`, `rg_qwen2`.
 설계 대비 변경: stride를 4/5 두 개 대신 **4.57 하나**로 줄임 (5/4 교대로 BPEByte와 iso-compression). seed 반복(N-rg-s778)은 이번 범위에서 제외.
 재현 스크립트, 사전 검증, 상태 확인 명령: `scripts/ablation_svt/README.md`.
+
+## 9. 결과 — train BPB (2026-10-02, 4 arm 모두 53,504 step 완료)
+
+leaderboard와 같은 방식: 마지막 20 logged step `loss/out` 평균 ÷ ln2 (`scripts/ablation_svt/bpb_svt.py`).
+
+| arm | BPB | Δ vs rg |
+|---|---:|---:|
+| baseline `lb_rg_100M` (llama3 128K) | 1.0794 | — |
+| `stride4p57` | 1.1338 | **+0.054** |
+| `rg_llama3_V32k` | 1.0849 | +0.0055 |
+| `rg_gpt2` | 1.0843 | +0.0049 |
+| `rg_qwen2` | 1.0842 | +0.0048 |
+| (ref) `lb_aunet_100M` | 1.0821 | +0.0027 |
+
+- stride는 같은 압축률에서 +0.054로 명확히 나쁨 → 경계의 내용(content)이 중요함 (판정 기준 −0.02 충족).
+- V32k / GPT-2 / Qwen2는 셋 다 1.084로 모여 있고 baseline과 차이는 +0.005.
+  ⚠ baseline은 07-09 코드, 새 arm은 09-30 snapshot 코드로 학습됨 → 이 0.005가 tokenizer 차이인지 코드/seed 차이인지 아직 구분 불가.
+  해결: snapshot 코드로 baseline rg를 full step 재학습해 같은 조건의 기준점을 만들 것.
+- arm당 wall-clock ~8 h (step 시간 중앙값 0.27 s 기준 연산만은 ~4 h; 차이의 원인은 미확인).
