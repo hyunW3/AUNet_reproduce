@@ -15,11 +15,11 @@ every model scores ≥ 99 there.**
   14.4, hex32 32.5, UUID 46.9, num20 66.9, nonce 50.6. The damage grows with haystack length
   (alnum, ident and han all reach 0 at ≥ 4 KB). Its typical error is a near-copy that changes
   1–2 characters (`578aa70c…` for `538aa70c…`).
-- BPEByte-rg is on par with Llama for UUID (96.9 vs 91.2), hex32 (90.6 vs 93.1), num20 and
-  nonce. It is behind on alnum12 / ident (81 vs 93) and far behind on CJK / Hangul values
-  (han4 43.8, hangul4 21.9 vs Llama 71–73).
+- BPEByte-rg is on par with Llama for UUID (96.2 vs 91.2), hex32 (88.8 vs 93.1), num20 and
+  nonce. It is behind on alnum12 / ident (78 / 83 vs 93) and far behind on CJK / Hangul values
+  (han4 46.9, hangul4 31.2 vs Llama 71–73).
 - Llama is flat across length (88–90 pooled). Pooled, the byte models fall with length:
-  BPEByte 86.8 → 74.0, AU-Net 58.0 → 36.5.
+  BPEByte 86.5 → 75.5, AU-Net 58.0 → 36.5.
 - Previous teacher-forced S-NIAH-3 numbers (Llama 0.15) were a format artefact. Under generation
   scoring Llama reaches 91 on UUIDs.
 
@@ -47,7 +47,7 @@ inside its 3200-patch window.)
 - **CWE and FWE.** No model beats a trivial "copy the first k distinct words of the list"
   baseline (CWE 56 / 34 / 36, FWE 67 / 63 / 69 at 2 / 4 / 6 KB). The 2 KB CWE score of the byte
   models (57.4) equals that copier. Treat both tasks as at floor for base models of this size.
-- **Lost-in-the-Middle KV (UUID JSON).** Only the first position works: Llama 74.4, BPEByte 28.9,
+- **Lost-in-the-Middle KV (UUID JSON).** Only the first position works: Llama 74.4, BPEByte 20.0,
   AU-Net 10.0 at k ≥ 25. AU-Net also gets 23.3 at the last position. Every middle position is
   0–4 for all three, so the "U-curve" is really first-value / last-value copying. Pooled accuracy
   vs k is dominated by those edge cells.
@@ -94,12 +94,12 @@ Llama ran on ece (torch 2.7) this time, not snu233.
 
 | cell | Llama | AU-Net | BPEByte-rg | BLT-1B | H-Net |
 |---|---|---|---|---|---|
-| needle, 10 types pooled | 89.5 | 41.5 | 77.0 | **97.2** | 77.0 |
+| needle, 10 types pooled | 89.5 | 41.5 | 81.2 | **97.2** | 77.0 |
 | KV k=47, middle positions | 2.2 | 1.1 | 0.0 | **21.1** | 0.0 |
-| VT 1 chain (first-5 recall) | 26.8 | 32.0 | 64.8 | **96.4** | 64.8 |
-| VT 2 chains (first-5 recall) | 5.2 | 18.8 | 34.8 | 51.2 | 31.6 |
-| CWE (copy baseline 39.2) | 13.2 | 7.4 | 34.2 | 34.4 | 43.6 |
-| FWE (copy baseline 70.0) | 22.0 | 32.7 | 15.3 | 61.3 | 36.7 |
+| VT 1 chain (first-5 recall) | 26.8 | 32.0 | 67.2 | **96.4** | 64.8 |
+| VT 2 chains (first-5 recall) | 5.2 | 18.8 | 33.2 | 51.2 | 31.6 |
+| CWE (copy baseline 39.2) | 13.2 | 7.4 | 26.2 | 34.4 | 43.6 |
+| FWE (copy baseline 70.0) | 22.0 | 32.7 | 32.0 | 61.3 | 36.7 |
 
 - At its own window limit BLT leads every task. Its 1-chain VT (96.4) and needle (97.2, including
   hangul4 95 and han4 100) are far above the trio.
@@ -123,6 +123,21 @@ one-shot example, or hallucinated.
 - BLT's 1-chain advantage is real. First-5 recall equals window recall (98.4 at 2 KB, 96.4 at
   4K-fit).
 - Report VT with both recalls from now on. The window-based number rewards terse output formats.
+
+## Checkpoint correction (2026-10-05)
+
+Until 2026-10-04 21:31 the ece-agpu18 copy of BPEByte-rg was a symlink to the September **seed-777 retrain**
+(`~/AUNet/runs/bpebyte_br_greedy_root_1.3B_a100x4/.../0000180000`). It had the same file size, but it is not
+the paper checkpoint. Four outputs came from it: needle shard 0/2, both KV shards, and fit4k. They were rerun
+on the paper checkpoint (md5 `3fbc9bbf…`). The numbers above use the rerun. The snu20-made shards (needle
+1/2, RULER, ICL) always used the paper checkpoint.
+
+The old files are kept in `results_retrain_seed777/`, and they double as a seed-sensitivity check.
+- Only 1916 / 2300 rows got the same score from both models.
+- Some cells move a lot between the seeds: hangul4 needle +18.8, 4K-fit FWE +16.7, han4 +15.0, 4K-fit
+  VT 2-chain −9.6 (paper minus retrain).
+- So a single seed's ±10 pt differences on n = 40–80 cells are within run-to-run variation. None of the
+  conclusions above changed.
 
 ## Caveats
 
