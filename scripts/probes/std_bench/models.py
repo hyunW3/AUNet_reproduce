@@ -24,6 +24,9 @@ CK = f"{AUNET}/main/main/1.3B"
 MODELS = {
     "blt_1b": {"family": "blt", "weights": f"{AUNET}/runs/ext_ci_snu55/blt_weights",
                "threshold": 1.335442066192627},
+    # threshold calibrated to the matched models' bytes/patch (paper row BLT theta=1.61, reports/ext_ci/blt_official/t1609_*)
+    "blt_1b_t1609": {"family": "blt", "weights": f"{AUNET}/runs/ext_ci_snu55/blt_weights",
+                     "threshold": 1.6093749403933089},
     "hnet_1stage_XL": {"family": "hnet", "name": "hnet_1stage_XL", "batch_size": 8},
     "hnet_2stage_XL": {"family": "hnet", "name": "hnet_2stage_XL", "batch_size": 8},
     "llama_1.3b": {"family": "lingua_main", "max_tokens": 4096,

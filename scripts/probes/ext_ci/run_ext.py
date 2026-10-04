@@ -32,7 +32,8 @@ TASKS_DIR = os.environ.get("AUNET_TASKS", f"{LINGUA}/eval_tasks")
 PAIRS = os.environ.get("SNIAH_PAIRS", "/mnt/ssd2/hyun2/AUNet/reports/niah/sniah123_n250_le4096_pairs.jsonl")
 PERTURB_SEED = 1234
 METRIC = {"hellaswag": "acc_norm", "arc_easy": "acc_norm", "arc_challenge": "acc_norm", "piqa": "acc_norm",
-          "winogrande": "acc", "boolq": "acc", "mmlu_text": "acc"}
+          "winogrande": "acc", "boolq": "acc", "mmlu_text": "acc",
+          "lambada_openai": "acc"}  # acc = greedy exact match of the whole last word (tokenizer-neutral)
 
 
 # =============================================================================== BLT (HF)
