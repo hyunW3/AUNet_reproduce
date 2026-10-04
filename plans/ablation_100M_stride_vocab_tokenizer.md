@@ -267,3 +267,16 @@ BoolQ가 39–62로 크게 흔들림 (다수 클래스 ≈62% 근처의 노이�
 (`dbg_bpb.py`; held-out과 학습 데이터 모두 같은 경향 → 데이터가 아니라 채점 경로 문제).
 downstream도 같은 generator를 쓰므로 **100M downstream 절대값이 영향을 받았을 가능성**이 있음.
 accuracy는 chance보다 높게 나오지만 정확한 영향은 미확인. 1.3B에서는 같은 harness가 0.908을 냈음.
+
+## 12. baseline 재학습 결과 (2026-10-04 21:05 완료)
+
+`rg_snapshot_repro` = snapshot 코드로 `lb_rg_100M`과 동일 설정 재학습 (llama3 128K, seed 777).
+
+| | train BPB | held-out BPB (fmha) | HS/AE/PI | all-6 |
+|---|---:|---:|---:|---:|
+| `lb_rg_100M` (07-09 코드) | 1.0794 | 1.1058 | 41.59 | 39.60 |
+| `rg_snapshot_repro` (09-30 코드) | **1.0854** | 1.1065 | 41.96 | 39.70 |
+
+→ train BPB +0.005는 **코드 snapshot 차이**였음: 같은 코드 기준 baseline 1.0854 vs V32k 1.0849 · GPT-2 1.0843 · Qwen2 1.0842.
+held-out 기준 run 간 노이즈 ≈ 0.001. vocab/tokenizer arm은 같은 코드 baseline과 train·held-out 모두 ±0.001 이내.
+stride만 train +0.048 (1.1338 vs 1.0854), held-out +0.050.
