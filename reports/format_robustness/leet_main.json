@@ -1,0 +1,109 @@
+{
+ "B": 2000,
+ "seed": 0,
+ "n_items": {
+  "hellaswag": 2000,
+  "arc_easy": 2000,
+  "arc_challenge": 1172,
+  "piqa": 1838,
+  "boolq": 2000
+ },
+ "results": {
+  "llama": {
+   "value": 14.287,
+   "signed": -14.287,
+   "ci95": [
+    13.208,
+    15.333
+   ],
+   "half_width": 1.063,
+   "per_task": {
+    "hellaswag": -16.55,
+    "arc_easy": -29.15,
+    "arc_challenge": -9.73,
+    "piqa": -6.91,
+    "boolq": -9.1
+   }
+  },
+  "aunet": {
+   "value": 12.591,
+   "signed": -12.591,
+   "ci95": [
+    11.471,
+    13.72
+   ],
+   "half_width": 1.124,
+   "per_task": {
+    "hellaswag": -18.7,
+    "arc_easy": -30.2,
+    "arc_challenge": -10.15,
+    "piqa": -4.95,
+    "boolq": 1.05
+   }
+  },
+  "bpebyte": {
+   "value": 13.22,
+   "signed": -13.22,
+   "ci95": [
+    12.127,
+    14.292
+   ],
+   "half_width": 1.083,
+   "per_task": {
+    "hellaswag": -16.75,
+    "arc_easy": -27.15,
+    "arc_challenge": -10.49,
+    "piqa": -6.26,
+    "boolq": -5.45
+   }
+  },
+  "blt": {
+   "value": 16.367,
+   "signed": -16.367,
+   "ci95": [
+    15.283,
+    17.398
+   ],
+   "half_width": 1.058,
+   "per_task": {
+    "hellaswag": -17.15,
+    "arc_easy": -21.05,
+    "arc_challenge": -10.67,
+    "piqa": -8.87,
+    "boolq": -24.1
+   }
+  },
+  "blt1609": {
+   "value": 15.319,
+   "signed": -15.319,
+   "ci95": [
+    14.228,
+    16.342
+   ],
+   "half_width": 1.057,
+   "per_task": {
+    "hellaswag": -15.2,
+    "arc_easy": -20.75,
+    "arc_challenge": -8.53,
+    "piqa": -7.56,
+    "boolq": -24.55
+   }
+  },
+  "hnet": {
+   "value": 11.98,
+   "signed": -11.98,
+   "ci95": [
+    10.926,
+    13.049
+   ],
+   "half_width": 1.062,
+   "per_task": {
+    "hellaswag": -16.5,
+    "arc_easy": -24.4,
+    "arc_challenge": -11.09,
+    "piqa": -5.06,
+    "boolq": -2.85
+   }
+  }
+ }
+}

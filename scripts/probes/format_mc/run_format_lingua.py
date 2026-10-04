@@ -6,7 +6,7 @@ in lingua is modified.
 
   cd <lingua> && PYTHONPATH=. FORMAT_ITEMS=<items_dir> FORMAT_CACHE=<cache.jsonl> \
       python <this> config=<eval yaml with harness.tasks=[despace_mc], limit 2000>
-Env: FORMAT_TASKS (comma list, default all five), FORMAT_VARIANTS (comma list, default all).
+Env: FORMAT_ENTRY (apps.aunet.eval | apps.main.eval), FORMAT_TASKS (comma list, default all five), FORMAT_VARIANTS (comma list, default all).
 """
 import logging
 import os
@@ -14,7 +14,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import format_mc as F  # noqa: E402
-import apps.aunet.eval as E  # noqa: E402
+import importlib  # noqa: E402
+E = importlib.import_module(os.environ.get("FORMAT_ENTRY", "apps.aunet.eval"))  # apps.main.eval for Llama
 
 logger = logging.getLogger()
 
