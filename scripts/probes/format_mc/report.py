@@ -26,8 +26,13 @@ def load(in_dir, model):
     return rows
 
 
+PAPER_ACC = ("piqa", "boolq")   # metric "paper": acc on PIQA/BoolQ, acc_norm elsewhere (main-table convention)
+
+
 def bits(rows, t, v, metric):
     r = rows.get(f"fmt_{t}_{v}")
+    if metric == "paper":
+        metric = "acc" if t in PAPER_ACC else "acc_norm"
     return None if r is None else r["bits"][metric]
 
 

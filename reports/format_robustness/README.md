@@ -1,3 +1,5 @@
+> **Full write-up: [`../whitespace_robustness.md`](../whitespace_robustness.md)** (paper-convention tables, paper changes, PBP metric note).
+
 # Format / whitespace / punctuation robustness (2026-10-02)
 
 Tables: [`summary.md`](summary.md) (acc, primary), [`summary_acc_norm.md`](summary_acc_norm.md);
@@ -74,7 +76,8 @@ transformations (paraphrase, punctuation restoration) were not run.
 - Side finding: `ece-agpu18:~/AUNet_lc/ckpt/bpebyte/consolidated.pth` (used by the long-context suite)
   symlinks to `runs/bpebyte_br_greedy_root_1.3B_a100x4/.../0000180000`, whose weights differ from the paper
   checkpoint (first-50 MB md5 `b4a3207f…` vs `378ded14…`). This run used a verified copy of the paper
-  checkpoint (`~/AUNet_fmt/ckpt/bpebyte`).
+  checkpoint (`~/AUNet_fmt/ckpt/bpebyte`). Fixed 2026-10-04: `~/AUNet_lc/ckpt/bpebyte` now holds the paper checkpoint
+  (full md5 `3fbc9bbf…`; see `CHECKPOINT.md` there).
 
 ## Reproduce
 
