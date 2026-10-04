@@ -15,6 +15,11 @@ ARMS = {
     # other tokenizer sources, same online greedy root BPEByte recipe
     "rg_gpt2": {"bpe_tokenizer_path": f"{S}/tokenizer_extra/gpt2/tokenizer.json"},
     "rg_qwen2": {"bpe_tokenizer_path": f"{H}/tokenizer/qwen2/tokenizer.json"},
+    # parser ablation: random byte-n-gram trie (uniform corpus positions, llama3 length dist),
+    # vocab size calibrated so online-greedy bytes/patch = 4.567 (baseline 4.566). build_random_trie.py
+    "rg_randtrie_mcr": {"bpe_tokenizer_path": f"{S}/tokenizer_extra/randtrie_V44500_s0.model"},
+    # full-length re-train of the baseline on the snapshot code (code/seed control)
+    "rg_snapshot_repro": {},
     # equivalence check of the snapshot code vs the baseline (short smoke only)
     "smoke_rg_repro": {},
 }

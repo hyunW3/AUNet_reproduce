@@ -205,3 +205,31 @@ leaderboard와 같은 방식: 마지막 20 logged step `loss/out` 평균 ÷ ln2 
   ⚠ baseline은 07-09 코드, 새 arm은 09-30 snapshot 코드로 학습됨 → 이 0.005가 tokenizer 차이인지 코드/seed 차이인지 아직 구분 불가.
   해결: snapshot 코드로 baseline rg를 full step 재학습해 같은 조건의 기준점을 만들 것.
 - arm당 wall-clock ~8 h (step 시간 중앙값 0.27 s 기준 연산만은 ~4 h; 차이의 원인은 미확인).
+
+## 10. 후속 (2026-10-04)
+
+1. **baseline 재학습** `rg_snapshot_repro`: snapshot 코드, `lb_rg_100M`과 동일 HP. ece-agpu18 GPU 5,6이 비면 자동 시작 (현재 8장 모두 타 사용자).
+2. **평가**: `svt_downstream_queue.sh`가 arm별로 (a) 6-bench 0-shot full downstream, (b) held-out BPB
+   (`scripts/probes/bpb_windows_local.py`, held-out DCLM 320 windows, 1,228,802 B)를 snapshot 코드로 순차 실행.
+   대상: stride4p57, rg_llama3_V32k, rg_gpt2, rg_qwen2, lb_rg_100M(재채점), rg_snapshot_repro.
+   ece-agpu18(GPU 0,7)과 ece-agpu11(전체)에서 빈 GPU를 기다리는 중.
+   - 사고 기록: 첫 실행 때 `free_gpu`가 `pipefail` + `grep -q` SIGPIPE 때문에 사용 중인 GPU를 비어 있다고 판단해
+     타 사용자 GPU 0에 eval 프로세스 3개를 띄움. 셋 다 import 단계(`gen_mc_helpers` 누락)에서 10–17초 만에 종료되어
+     CUDA 메모리 할당 전이었음. 함수 수정 후 두 노드에서 "빈 GPU 없음" 반환 확인, `eval_tasks` symlink 추가.
+3. **parser ablation 현황**
+
+   | arm | 상태 | train BPB |
+   |---|---|---:|
+   | OnlineBPE (rg, llama3 128K) | `lb_rg_100M` 있음 (+ 재학습 대기) | 1.079 |
+   | fixed-stride matched-CR | `stride4p57` 완료 | 1.134 |
+   | random trie matched-CR | **구현·config 준비 완료, 학습 미실행** (`rg_randtrie_mcr`) | — |
+   | AU-Net (word) | `lb_aunet_100M` 있음 (CR 미매칭) | 1.082 |
+
+   **random trie 정의** (`scripts/ablation_svt/build_random_trie.py`): DCLM chunk.00에서 **균일 랜덤 byte 위치**의
+   n-gram을 llama3 multi-byte 토큰 길이 분포로 뽑아 vocab을 구성 (corpus 빈도는 반영, BPE merge 통계·단어 정렬은 없음).
+   256개 single byte 포함, tiktoken `.model`로 저장 → 기존 online greedy root 파이프라인을 코드 변경 없이 사용.
+   - online greedy는 trie dead-end에서 읽은 byte를 모두 commit하므로, patch 길이는 토큰 길이가 아니라 **trie 경로 집합**
+     (= vocab 크기)이 결정. 토큰 길이 0.6–1.0배로는 5.13–5.31 B/patch로 거의 변하지 않고, vocab 크기로 보정:
+     16K 3.89 · 32K 4.34 · 44K 4.56 · **44.5K 4.565** · 64K 4.82 · 128K 5.31.
+   - 실제 `tokenize()` 파이프라인 측정: **4.567 B/patch** (baseline 4.566). 예: `The qu|ick |bro|wn f|ox |ju|mps| over the |...`
+   - 주의: matched-CR을 위해 vocab 크기는 44.5K로 baseline(128K)과 다름 → 비교 대상은 "같은 압축률의 다른 경계"이고 vocab 크기는 통제되지 않음.
