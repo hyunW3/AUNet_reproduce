@@ -5,6 +5,8 @@
 #   bash run_std_bench.sh aunet_1.3b                    # 0-shot, seed 1234, full test sets, GPU 2
 #   SHOT=5 SEED=1234 GPU=3 bash run_std_bench.sh blt_1b # few-shot (seed picks the examples)
 #   LIMIT=500 TASKS="hellaswag piqa" bash run_std_bench.sh llama_1.3b
+#   TASKS=lambada_openai SUFFIX=lambada bash run_std_bench.sh bpebyte_1.3b      # opt-in task, run alone
+#                                                       # -> ds0_seed1234_lambada.json (SUFFIX keeps the 7-task file)
 #   CKPT=<consolidated dir> FAMILY=lingua_aunet bash run_std_bench.sh my_run   # any lingua checkpoint
 #   MAX_TOKENS=16384 ...                                # lingua generator max_tokens (default: registry,
 #                                                       # or 4096 lingua_main / 16384 lingua_aunet for CKPT)
@@ -31,7 +33,7 @@ TASKS=${TASKS:-"hellaswag arc_easy arc_challenge piqa winogrande boolq mmlu_text
 FAM=${FAMILY:-$(python3 "$D/models.py" family "$MODEL")}
 [ -n "$FAM" ] || { echo "unknown model $MODEL (python3 $D/models.py list), or set CKPT + FAMILY"; exit 1; }
 OUT=${OUT:-$A/reports/std_bench/$MODEL}
-TAG=ds${SHOT}_seed${SEED}${LIMIT:+_limit$LIMIT}
+TAG=ds${SHOT}_seed${SEED}${LIMIT:+_limit$LIMIT}${SUFFIX:+_$SUFFIX}
 mkdir -p "$OUT"
 
 export CUDA_VISIBLE_DEVICES=$GPU AUNET_ROOT=$A AUNET_LINGUA=$LINGUA EVAL_SUITE=${EVAL_SUITE:-/mnt/ssd2/hyun2/eval_suite}

@@ -27,6 +27,9 @@ sys.path.insert(0, f"{models.REPO}/scripts/probes/ext_ci")
 import run_ext  # noqa: E402
 
 TASKS = ["hellaswag", "arc_easy", "arc_challenge", "piqa", "winogrande", "boolq", "mmlu_text"]
+# Opt-in only (not in the default list): adding a task changes lingua's request packing, which would
+# shift item-level results of the default tasks. Run it alone: --tasks lambada_openai.
+EXTRA_TASKS = ["lambada_openai"]
 
 
 def git_state(path):
@@ -94,7 +97,7 @@ def main():
     ap.add_argument("--ckpt", default=None, help="ad-hoc lingua consolidated checkpoint dir")
     ap.add_argument("--family", default=None, choices=models.FAMILIES)
     ap.add_argument("--max_tokens", type=int, default=None, help="lingua generator max_tokens override")
-    ap.add_argument("--tasks", nargs="+", default=TASKS, choices=TASKS)
+    ap.add_argument("--tasks", nargs="+", default=TASKS, choices=TASKS + EXTRA_TASKS)
     ap.add_argument("--num_fewshot", type=int, default=0)
     ap.add_argument("--seed", type=int, default=1234)
     ap.add_argument("--limit", type=int, default=None, help="first N items per task (default: full test set)")
