@@ -1,0 +1,12 @@
+name: "format_mc_llama_leet"
+ckpt_dir: /mnt/ssd2/hyun2/AUNet/main/main/1.3B/llama_1.8B_paper/checkpoints/0000060000/consolidated
+dump_dir: /mnt/ssd2/hyun2/AUNet/.claude/worktrees/format-robustness/reports/format_robustness/leet_extra/llama
+harness:
+  log_samples: false
+  limit: 2000
+  tasks:
+    - despace_mc
+validation: null
+generator:
+  max_tokens: 4096
+  dtype: bf16

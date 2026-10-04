@@ -1,0 +1,21 @@
+2026-10-04 16:30:38 start [llama] GPU0
+2026-10-04 16:30:42 end [llama] GPU0 exit=1
+2026-10-04 16:31:02 start [blt hellaswag] GPU0
+2026-10-04 16:31:08 start [blt arc_easy] GPU0
+2026-10-04 16:31:38 start [blt arc_challenge] GPU1
+2026-10-04 16:32:08 start [blt piqa] GPU1
+2026-10-04 16:40:48 end [blt piqa] GPU1 exit=0
+2026-10-04 16:41:08 start [blt boolq] GPU1
+2026-10-04 16:41:16 start [llama] GPU1
+2026-10-04 16:42:55 end [llama] GPU1 exit=0
+2026-10-04 16:43:10 end [blt arc_challenge] GPU1 exit=0
+2026-10-04 16:43:30 worker GPU1 done
+2026-10-04 16:49:53 end [blt hellaswag] GPU0 exit=0
+2026-10-04 16:49:58 end [blt arc_easy] GPU0 exit=0
+2026-10-04 16:50:13 worker GPU0 done
+2026-10-04 16:50:14 start [llama] GPU0
+2026-10-04 16:50:18 worker GPU0 done
+2026-10-04 16:50:18 end [blt boolq] GPU1 exit=0
+2026-10-04 16:50:38 worker GPU1 done
+2026-10-04 16:50:38 ALL_DONE
+2026-10-04 16:56:48 end [llama] GPU0 exit=0
