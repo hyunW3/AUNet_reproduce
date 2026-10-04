@@ -1,0 +1,18 @@
+# Global-MMLU in the same cloze form as our English `mmlu_text`: score the loglikelihood of the
+# full answer TEXT (no A/B/C/D in the prompt). Fixed 2049-item subset shared across languages.
+dataset_path: CohereForAI/Global-MMLU
+test_split: test
+output_type: multiple_choice
+process_docs: !function utils.process_docs
+doc_to_text: "{{question.strip()}}\nAnswer:"
+doc_to_choice: choices
+doc_to_target: gold
+metric_list:
+  - metric: acc
+    aggregation: mean
+    higher_is_better: true
+  - metric: acc_norm
+    aggregation: mean
+    higher_is_better: true
+metadata:
+  version: 1.0

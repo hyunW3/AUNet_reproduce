@@ -24,6 +24,9 @@ PORT=$((29600 + GPU))
 export CUDA_VISIBLE_DEVICES=$GPU
 export LD_LIBRARY_PATH=$LINGUA/.venv/lib/python3.12/site-packages/nvidia/cusparselt/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
 export HF_DATASETS_TRUST_REMOTE_CODE=1
+# apps/aunet/generate.py::_next_byte_logits skips the final vocab_norm unless this is set; the bug feeds
+# loglikelihood (prefill) as well as decoding, so it handicaps every byte-model score. Llama (apps.main) unaffected.
+export AUNET_FIX_VOCAB_NORM=${AUNET_FIX_VOCAB_NORM:-1}
 export AUNET_TOK=$ROOT/tokenizer/llama3/tokenizer.model   # llama params.json points at the NHN tree
 export TORCHINDUCTOR_CACHE_DIR=$ROOT/runs/.cache/torchinductor TRITON_CACHE_DIR=$ROOT/runs/.cache/triton
 
@@ -38,6 +41,9 @@ declare -A SUITES=(
   [lambada_sl]="lambada_openai_mt_stablelm_en,lambada_openai_mt_stablelm_de,lambada_openai_mt_stablelm_es,lambada_openai_mt_stablelm_fr,lambada_openai_mt_stablelm_it,lambada_openai_mt_stablelm_nl,lambada_openai_mt_stablelm_pt"
   [arc]="arc_challenge,arc_ar,arc_de,arc_es,arc_fr,arc_hi,arc_id,arc_it,arc_ru,arc_vi,arc_zh"   # okapi, chance 25
   [hellaswag]="hellaswag,hellaswag_ar,hellaswag_de,hellaswag_es,hellaswag_fr,hellaswag_hi,hellaswag_id,hellaswag_it,hellaswag_ru,hellaswag_vi"
+  # Global-MMLU, cloze form (as our English mmlu_text), 2049-item parallel subset; the 24 AU-Net Table-3
+  # languages Global-MMLU has (fi/hu/th missing) + en — run via ONLY=gmmlu
+  [gmmlu]="gmmlu_cloze_en,gmmlu_cloze_ar,gmmlu_cloze_bn,gmmlu_cloze_zh,gmmlu_cloze_cs,gmmlu_cloze_nl,gmmlu_cloze_fr,gmmlu_cloze_de,gmmlu_cloze_el,gmmlu_cloze_hi,gmmlu_cloze_id,gmmlu_cloze_it,gmmlu_cloze_ja,gmmlu_cloze_ko,gmmlu_cloze_fa,gmmlu_cloze_pl,gmmlu_cloze_pt,gmmlu_cloze_ro,gmmlu_cloze_ru,gmmlu_cloze_es,gmmlu_cloze_sw,gmmlu_cloze_sv,gmmlu_cloze_te,gmmlu_cloze_tr,gmmlu_cloze_vi"
   # no-space scripts only: the AU-Net word-vs-char boundary swap matters here
   [nospace]="xnli_th,xnli_zh,xcopa_th,xcopa_zh,xstorycloze_zh,xstorycloze_my,xwinograd_jp,xwinograd_zh,paws_ja,paws_ko,paws_zh,arc_zh"
 )
