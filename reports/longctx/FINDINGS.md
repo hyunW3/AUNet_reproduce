@@ -85,6 +85,45 @@ What they add:
 - **CWE / FWE stay at or below the copy baseline for every model.** The one exception is H-Net CWE
   @2 KB (66.2 vs baseline 56.0).
 
+## 4K-fit cells: all five models at BLT's 4096-byte limit (added 2026-10-04)
+
+`summary.md` §5 has the full table. Every ~4 KB cell was rebuilt so that BOS + prompt + generation
+window ≤ 4096 B. Targets: needle haystack 3680 B (byte-budgeted), KV k = 47, VT 3968 / 3872 B,
+CWE 3808 B, FWE 3680 B; the longest row is 4095 B. All 5 × 750 rows were scored, with no BLT crashes.
+Llama ran on ece (torch 2.7) this time, not snu233.
+
+| cell | Llama | AU-Net | BPEByte-rg | BLT-1B | H-Net |
+|---|---|---|---|---|---|
+| needle, 10 types pooled | 89.5 | 41.5 | 77.0 | **97.2** | 77.0 |
+| KV k=47, middle positions | 2.2 | 1.1 | 0.0 | **21.1** | 0.0 |
+| VT 1 chain (first-5 recall) | 26.8 | 32.0 | 64.8 | **96.4** | 64.8 |
+| VT 2 chains (first-5 recall) | 5.2 | 18.8 | 34.8 | 51.2 | 31.6 |
+| CWE (copy baseline 39.2) | 13.2 | 7.4 | 34.2 | 34.4 | 43.6 |
+| FWE (copy baseline 70.0) | 22.0 | 32.7 | 15.3 | 61.3 | 36.7 |
+
+- At its own window limit BLT leads every task. Its 1-chain VT (96.4) and needle (97.2, including
+  hangul4 95 and han4 100) are far above the trio.
+- Among the matched trio the 4 KB ordering matches the 4096 cells: BPEByte-rg ≈ H-Net > Llama, AU-Net
+  on VT, and Llama > BPEByte > AU-Net on the needle sweep.
+
+## Why BLT "wins" 2-chain VT: mostly the scoring window (`vt_anatomy.md`, `analyze_vt.py`)
+
+Each name in the answer window is classified as target chain, distractor chain, copied from the
+one-shot example, or hallucinated.
+- **No model separates the two chains.** 88–100 % of answers contain distractor names, and about
+  48 % of all emitted names are distractors (BLT 48 %, the others 46–48 %). Picking 5 of the
+  10 names at random gives recall 50, which is where BLT lands.
+- **The window inflates compact answers.** BLT never writes the `VAR ` prefix (0 %, vs 20–50 % for
+  the others), so more names fit into the 54-byte window. At 1 KB it emitted 7.5 names per answer.
+  Recall over the first 5 names: BLT 75.6 → **50.8**, H-Net / BPEByte 47.2, Llama 42.0, AU-Net 38.8.
+  These are within noise of each other and of chance.
+- At 4K-fit BLT stays at chance-level discrimination (first-5 recall 51.2, target / distractor
+  52 / 46 %). The others fall below 50 because they lose chain members altogether: more
+  hallucinated or example-copied names.
+- BLT's 1-chain advantage is real. First-5 recall equals window recall (98.4 at 2 KB, 96.4 at
+  4K-fit).
+- Report VT with both recalls from now on. The window-based number rewards terse output formats.
+
 ## Caveats
 
 - Single seed. n = 40–300 per cell, so the CIs are wide on the smaller cells.

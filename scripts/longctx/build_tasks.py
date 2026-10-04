@@ -101,7 +101,7 @@ NT_INSTR = ("Some special magic values are hidden within the following text. Mak
             "memorize them. I will quiz you about the values afterwards.")
 
 
-def build_needle_types(lengths, depths, n_per_cell, seed):
+def build_needle_types(lengths, depths, n_per_cell, seed, byte_budget=False):
     pool = _essay_pool()
     rows = []
     for vt in VALUE_TYPES:
@@ -112,6 +112,8 @@ def build_needle_types(lengths, depths, n_per_cell, seed):
                     key = rng.choice(KEYS)
                     start = rng.randint(0, len(pool) - tb - 1)
                     body = pool[start:start + tb]
+                    if byte_budget:      # haystack of <= tb BYTES (multi-byte text cannot overshoot)
+                        body = body.encode()[:tb].decode("utf-8", "ignore")
                     value = make_value(vt, rng, body + NT_INSTR + " ".join(KEYS))
                     needle = f"One of the special magic values for {key} is {value}. "
                     cut = int(len(body) * d)
@@ -386,6 +388,58 @@ def build_icl(shots, n_test, seed, max_demo_bytes=400):
 
 
 # --------------------------------------------------------------------------- #
+# 4K-fit cells: the ~4 KB condition of every length-swept task, shrunk so that
+# BOS + prompt + generation window <= 4096 bytes (BLT-1B's byte RoPE table)
+# --------------------------------------------------------------------------- #
+FIT_BYTES = 4096
+
+
+def _fits(rows):
+    return max(1 + nbytes(r["prompt"]) + r["window"] for r in rows) <= FIT_BYTES
+
+
+def _largest_fit(make, start, step):
+    """Largest target (stepping down from `start`) whose rows ALL fit; returns (target, rows)."""
+    t = start
+    while t > 0:
+        rows = make(t)
+        if _fits(rows):
+            return t, rows
+        t -= step
+    raise RuntimeError("nothing fits")
+
+
+def _tag_fit(rows, target):
+    for r in rows:
+        r["id"] = "f4k-" + r["id"]
+        r["fit4k"] = True
+        r["target_bytes"] = target
+        if r["task"] != "kv_litm":
+            r["length"] = "4K-fit"
+    return rows
+
+
+def build_fit4k(seed, vocab):
+    out = {}
+    parts = [
+        ("needle_types", lambda t: build_needle_types([t], [0.1, 0.3, 0.5, 0.7, 0.9], 8, seed,
+                                                       byte_budget=True), 4096, 32),
+        ("kv_litm", lambda k: build_kv([k], [0.0, 0.25, 0.5, 0.75, 1.0], 30, seed), 60, 1),
+        ("vt1", lambda t: build_vt([t], 50, seed, 1, 4), 4096, 32),
+        ("vt2", lambda t: build_vt([t], 50, seed, 2, 4), 4096, 32),
+        ("cwe", lambda t: build_cwe([t], 50, seed, vocab), 4096, 32),
+        ("fwe", lambda t: build_fwe([t], 50, seed), 4096, 32),
+    ]
+    for name, make, start, step in parts:
+        t, rows = _largest_fit(make, start, step)
+        print(f"fit4k {name}: target {t} -> max {max(1 + nbytes(r['prompt']) + r['window'] for r in rows)} B "
+              f"incl. BOS+window, {len(rows)} rows")
+        out[name] = _tag_fit(rows, t)
+    return (out["needle_types"], out["kv_litm"],
+            out["vt1"] + out["vt2"] + out["cwe"] + out["fwe"])
+
+
+# --------------------------------------------------------------------------- #
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out_dir", default=os.path.join(
@@ -415,6 +469,9 @@ def main():
                               + build_fwe([2048, 4096, 6144], 50, s))
     if "icl" in args.tasks:
         built["icl"] = build_icl([1, 2, 4, 8, 16, 32, 64, 128], 300, s)
+    if "fit4k" in args.tasks:
+        nt, kv, ra = build_fit4k(s, common_vocab())
+        built["fit4k"] = nt + kv + ra
     for name, rows in built.items():
         if counts:
             def fits(r):

@@ -110,11 +110,11 @@ def llama_tok_counter(lingua_dir, tok_path):
         return None
 
 
-def copy_baseline(data_dir, task, length, k):
+def copy_baseline(data_dir, task, length, k, fname="ruler_agg.jsonl"):
     """Recall a trivial copier gets by emitting the first k distinct words of the scored
     list (CWE/FWE). If the models do not beat it, the task is not measuring aggregation."""
     rec = []
-    for line in open(f"{data_dir}/ruler_agg.jsonl"):
+    for line in open(f"{data_dir}/{fname}"):
         r = json.loads(line)
         if r["task"] != task or r["length"] != length:
             continue
@@ -145,6 +145,9 @@ def main():
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     rows = load(a.results)
+    # 4K-fit rows (ids f4k-*) get their own section; keep them out of the length sweeps
+    fit = [r for r in rows if r["id"].startswith("f4k-")]
+    rows = [r for r in rows if not r["id"].startswith("f4k-")]
     tags = {r["tag"] for r in rows}
     models = [(t, l) for t, l in MODELS if t in tags]
     md = ["# Long-context suite (1.3B: Llama / AU-Net / BPEByte-rg; external: BLT-1B / H-Net 1-stage XL)", "",
@@ -260,6 +263,32 @@ def main():
     fig.tight_layout()
     fig.savefig(out / "icl.png", dpi=150)
     plt.close(fig)
+
+    # --- 5. 4K-fit: every ~4 KB cell shrunk to fit BLT's 4096-byte window ------------
+    if fit:
+        fm = [(t, l) for t, l in MODELS if any(r["tag"] == t for r in fit)]
+        md += ["## 5. 4K-fit cells (all five models; BOS + prompt + generation ≤ 4096 B)", "",
+               "Same generators as above with the haystack / list / #pairs shrunk until every row fits "
+               "BLT-1B's 4096-byte window (needle haystack 3680 B, KV k=47, VT 3968 / 3872 B, CWE 3808 B, "
+               "FWE 3680 B of target text; max total 4095 B). n = 40 per needle type, 150 KV, 50 per RULER task.", ""]
+
+        def frow(label, **kw):
+            return f"| {label} | " + " | ".join(fmt(cell(fit, tag=t, **kw)) for t, _ in fm) + " |"
+        md += ["| cell | " + " | ".join(l for _, l in fm) + " |", "|---|" + "---|" * len(fm),
+               frow("needle, all 10 types", task="needle_types")]
+        for vt in vts:
+            md.append(frow(f"needle `{vt}`", task="needle_types", cond=vt))
+        kvm = [r for r in fit if r["task"] == "kv_litm" and r["pos"] in (0.25, 0.5, 0.75)]
+        md += [frow("KV k=47, all positions", task="kv_litm"),
+               "| KV k=47, middle (0.25–0.75) | " + " | ".join(fmt(cell(kvm, tag=t)) for t, _ in fm) + " |",
+               frow("KV k=47, first position", task="kv_litm", pos=0.0),
+               frow("VT 1 chain × 4 hops", task="vt", cond="c1h4"),
+               frow("VT 2 chains × 4 hops", task="vt", cond="c2h4"),
+               frow("CWE top-10", task="cwe"), frow("FWE top-3", task="fwe"), ""]
+        if os.path.exists(f"{a.data}/fit4k.jsonl"):
+            md += ["Copy-first-k baselines on the same 4K-fit lists: CWE %.1f, FWE %.1f." % (
+                copy_baseline(a.data, "cwe", "4K-fit", 10, "fit4k.jsonl"),
+                copy_baseline(a.data, "fwe", "4K-fit", 3, "fit4k.jsonl")), ""]
 
     md += ["Figures: `needle_types.png`, `kv_litm.png`, `ruler_agg.png`, `icl.png`.", ""]
     (out / "summary.md").write_text("\n".join(md))
