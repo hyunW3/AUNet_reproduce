@@ -44,7 +44,7 @@ python3 $D/std_bench_bootstrap.py reports/std_bench/*/ds0_seed1234.json \
 ## 재현성 (2026-10-01 확인)
 
 - **seed:** 0-shot에서는 점수를 바꾸지 않는다. few-shot에서는 seed가 예시를 고른다(MMLU-text는 항상 dev 앞 n개).
-- **같은 설정 반복:** 같은 모델·과제 목록·limit·GPU 1장이면 문항 단위로 똑같이 나온다(llama, H-Net에서 확인). bootstrap도 `--seed`가 같으면 결과가 같다.
+- **같은 설정 반복:** 같은 모델·과제 목록·limit·GPU 1장이면 문항 단위로 똑같이 나온다(llama, H-Net에서 확인). bootstrap도 `--seed`가 같으면 결과가 같다. 예외: H-Net의 `lambada_openai`는 실행마다 5,153문항 중 17–24문항이 달라진다(48.50 / 48.48 / 48.55, 2026-10-05). AU-Net·BPEByte·BLT 두 개·llama의 LAMBADA는 반복해도 문항 단위로 같다(`reports_NAACL/lambada/README.md`).
 - **BLT:** 요청을 하나씩 처리해서 과제 목록이 달라도 문항 결과가 같다. `reports/blt_batch_invariance`의 배치 1 결과와 문항 단위로 일치한다.
 - **lingua 모델 주의:** harness가 여러 요청을 한 시퀀스로 packing하므로, 함께 묶이는 요청이 바뀌면 bf16 수치가 바뀌어 일부 문항이 뒤집힌다. 과제 목록, limit, GPU 수를 바꾸면 문항 단위 결과가 조금 달라질 수 있다. 논문 robustness 실행(3-GPU, noise/typo 과제와 함께 실행)과 비교하면 같은 2000문항 중 0.5–0.8%가 다르고 점수 차는 0.2pt 이하다(llama/AU-Net, HellaSwag·ARC-E).
 - **manifest:** 결과 JSON에 코드 커밋과 dirty 여부(diff 해시), 패키지 버전, GPU, 가중치 SHA256, 명령줄이 남는다. lingua 작업 사본이 dirty이면 `repos.lingua.dirty=true`다.
