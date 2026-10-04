@@ -33,7 +33,9 @@ declare -A SUITES=(
   [xstorycloze]="xstorycloze"                                         # 11 langs (incl. en), chance 50
   [xwinograd]="xwinograd"                                             # 6 langs (incl. en), chance 50
   [pawsx]="pawsx"                                                     # 7 langs (incl. en), chance 50
-  [lambada]="lambada_multilingual"                                    # en fr de it es
+  [lambada]="lambada_multilingual"                                    # en fr de it es  (Google-Translate, EleutherAI)
+  # StableLM-2 re-translation (native-speaker-checked; the GT version was judged too noisy) — run via ONLY=lambada_sl
+  [lambada_sl]="lambada_openai_mt_stablelm_en,lambada_openai_mt_stablelm_de,lambada_openai_mt_stablelm_es,lambada_openai_mt_stablelm_fr,lambada_openai_mt_stablelm_it,lambada_openai_mt_stablelm_nl,lambada_openai_mt_stablelm_pt"
   [arc]="arc_challenge,arc_ar,arc_de,arc_es,arc_fr,arc_hi,arc_id,arc_it,arc_ru,arc_vi,arc_zh"   # okapi, chance 25
   [hellaswag]="hellaswag,hellaswag_ar,hellaswag_de,hellaswag_es,hellaswag_fr,hellaswag_hi,hellaswag_id,hellaswag_it,hellaswag_ru,hellaswag_vi"
   # no-space scripts only: the AU-Net word-vs-char boundary swap matters here
