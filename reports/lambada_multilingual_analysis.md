@@ -1,3 +1,5 @@
+> **SUPERSEDED (2026-10-04):** the model-accuracy sections (B-*) score BPEByte-rg / AU-Net without the final `vocab_norm` (`apps/aunet/generate.py::_next_byte_logits`, applied only with `AUNET_FIX_VOCAB_NORM=1`). Section A (data-only diagnostics) and the Llama columns are unaffected. Re-run → `runs/multilingual/1B_direct_vnfix`.
+
 # Multilingual LAMBADA — translation noise and paired-bootstrap CIs (1B direct eval)
 
 Companion to `reports/multilingual_1B_direct.md`. **gt** = EleutherAI `lambada_openai` non-English splits (Google Translate); **sl** = StableLM-2 re-translation (`lambada_multilingual_stablelm`, made because the gt version was judged too noisy by native speakers). Exact-match greedy accuracy, zero-shot; 95% CIs from 10,000 bootstrap resamples over documents; byte−Llama gaps are paired on the same documents.

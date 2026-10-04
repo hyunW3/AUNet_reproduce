@@ -1,3 +1,5 @@
+> **SUPERSEDED (2026-10-04):** every BPEByte-rg / AU-Net number below was scored without the final `vocab_norm` (`apps/aunet/generate.py::_next_byte_logits`, applied only with `AUNET_FIX_VOCAB_NORM=1`), which corrupts loglikelihood for the byte models. Llama columns are unaffected. Re-run → `runs/multilingual/1B_direct_vnfix`.
+
 # Direct multilingual eval — 1B (English-trained, no further training)
 
 Zero-shot loglikelihood eval of the DCLM-trained 1B checkpoints on non-English tasks — the multilingual counterpart of `reports/zh_cloze_1B.md` (same configs, only the task list changes). **transfer** = (non-en mean − chance) / (en − chance): the share of the English above-chance margin that survives in other languages. AU-Net char = the same `aunet2_1.3B` re-pooled per codepoint at eval (no-space scripts only).
