@@ -22,7 +22,7 @@ for arm in "${ARMS[@]}"; do
   [ -f "runs/$arm/.DONE" ] && { echo "$(date '+%F %T') skip $arm (.DONE)"; continue; }
   until gpus_idle; do echo "$(date '+%F %T') GPUs $GPUS busy; waiting"; sleep 300; done
   echo "$(date '+%F %T') START $arm on GPUs $GPUS"
-  if GPUS="$GPUS" PORT=29771 ./svt_train.sh "$arm" >> "logs/$arm.log" 2>&1 \
+  if GPUS="$GPUS" PORT="${PORT:-29771}" ./svt_train.sh "$arm" >> "logs/$arm.log" 2>&1 \
      && grep -q '"global_step": 53500,' "runs/$arm/metrics.jsonl"; then
     date '+%F %T' > "runs/$arm/.DONE"; echo "$(date '+%F %T') DONE $arm"
   else

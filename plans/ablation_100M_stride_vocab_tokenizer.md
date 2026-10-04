@@ -233,3 +233,37 @@ leaderboard와 같은 방식: 마지막 20 logged step `loss/out` 평균 ÷ ln2 
      16K 3.89 · 32K 4.34 · 44K 4.56 · **44.5K 4.565** · 64K 4.82 · 128K 5.31.
    - 실제 `tokenize()` 파이프라인 측정: **4.567 B/patch** (baseline 4.566). 예: `The qu|ick |bro|wn f|ox |ju|mps| over the |...`
    - 주의: matched-CR을 위해 vocab 크기는 44.5K로 baseline(128K)과 다름 → 비교 대상은 "같은 압축률의 다른 경계"이고 vocab 크기는 통제되지 않음.
+
+## 11. 결과 — downstream · held-out BPB (2026-10-04)
+
+실행 위치: `rg_snapshot_repro`는 GPU 5,6에서 12:42 자동 시작. `rg_randtrie_mcr`는 사용자 지시로 ece-agpu18 **GPU 3,4**에서 시작 (port 29772).
+
+**Downstream** (6-bench 0-shot full, snapshot 코드). `lb_rg_100M` 재채점이 7월 결과와 소수점까지 동일 → eval 코드 일관.
+
+| arm | HS | ARC-E | ARC-C | BoolQ | PIQA | Wino | HS/AE/PI | all-6 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `lb_rg_100M` | 30.7 | 34.6 | 23.5 | 39.1 | 59.4 | 50.2 | 41.59 | 39.60 |
+| `stride4p57` | 30.0 | 34.6 | 24.4 | 41.7 | 58.4 | 49.8 | 40.99 | 39.81 |
+| `rg_llama3_V32k` | 31.0 | 33.7 | 24.1 | 61.7 | 60.1 | 50.9 | 41.59 | 43.58 |
+| `rg_gpt2` | 30.9 | 32.3 | 22.9 | 41.5 | 58.4 | 51.3 | 40.53 | 39.55 |
+| `rg_qwen2` | 31.1 | 34.3 | 23.4 | 58.5 | 60.1 | 50.7 | 41.85 | 43.02 |
+
+BoolQ가 39–62로 크게 흔들림 (다수 클래스 ≈62% 근처의 노이즈) → all-6보다 HS/AE/PI 평균이 신뢰할 만함. 차이는 모두 ±1pt 이내.
+
+**Held-out BPB** — `scripts/ablation_svt/heldout_fmha.py` (학습 forward, `attn_impl="fmha"`; held-out DCLM 320 windows, 1,228,802 B, 8192 packing):
+
+| arm | held-out BPB | Δ vs rg | B/patch |
+|---|---:|---:|---:|
+| `lb_rg_100M` | 1.1058 | — | 4.58 |
+| `stride4p57` | 1.1563 | **+0.050** | 4.56 |
+| `rg_llama3_V32k` | 1.1066 | +0.0008 | 4.25 |
+| `rg_gpt2` | 1.1057 | −0.0001 | 4.41 |
+| `rg_qwen2` | 1.1049 | −0.0009 | 4.50 |
+
+→ train BPB의 +0.005 차이는 held-out에서 사라짐. vocab 32K·GPT-2·Qwen2 모두 baseline과 ±0.001. stride만 +0.05.
+
+**⚠ 채점 경로 문제 (미해결)**: `scripts/probes/bpb_windows_local.py`(generator 경로)는 이 100M checkpoint들에서
+2.8–3.5 BPB를 냄 (baseline 2.91). 같은 텍스트를 학습 forward로 채점하면 `fmha` 1.35, `sdpa` 4.1
+(`dbg_bpb.py`; held-out과 학습 데이터 모두 같은 경향 → 데이터가 아니라 채점 경로 문제).
+downstream도 같은 generator를 쓰므로 **100M downstream 절대값이 영향을 받았을 가능성**이 있음.
+accuracy는 chance보다 높게 나오지만 정확한 영향은 미확인. 1.3B에서는 같은 harness가 0.908을 냈음.
