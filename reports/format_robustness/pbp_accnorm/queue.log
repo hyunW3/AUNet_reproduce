@@ -1,0 +1,25 @@
+2026-10-04 20:31:22 start [blt_t1.33_hellaswag] GPU0
+2026-10-04 20:31:42 start [blt_t1.33_arc_easy] GPU0
+2026-10-04 20:32:02 start [blt_t1.33_arc_challenge] GPU1
+2026-10-04 20:32:22 start [blt_t1.33_piqa] GPU1
+2026-10-04 20:40:00 end [blt_t1.33_piqa] GPU1 exit=0
+2026-10-04 20:40:00 start [blt_t1.33_boolq] GPU1
+2026-10-04 20:41:19 end [blt_t1.33_arc_challenge] GPU1 exit=0
+2026-10-04 20:41:19 start [blt_t1.60_hellaswag] GPU1
+2026-10-04 20:47:03 end [blt_t1.33_hellaswag] GPU0 exit=0
+2026-10-04 20:47:03 start [blt_t1.60_arc_easy] GPU0
+2026-10-04 20:47:23 end [blt_t1.33_arc_easy] GPU0 exit=0
+2026-10-04 20:47:23 start [blt_t1.60_arc_challenge] GPU0
+2026-10-04 20:49:32 end [blt_t1.33_boolq] GPU1 exit=0
+2026-10-04 20:49:32 start [blt_t1.60_piqa] GPU1
+2026-10-04 20:56:37 end [blt_t1.60_arc_challenge] GPU0 exit=0
+2026-10-04 20:56:37 start [blt_t1.60_boolq] GPU0
+2026-10-04 20:57:11 end [blt_t1.60_piqa] GPU1 exit=0
+2026-10-04 20:57:11 worker GPU1 done
+2026-10-04 20:57:52 end [blt_t1.60_hellaswag] GPU1 exit=0
+2026-10-04 20:57:52 worker GPU1 done
+2026-10-04 21:02:42 end [blt_t1.60_arc_easy] GPU0 exit=0
+2026-10-04 21:02:42 worker GPU0 done
+2026-10-04 21:04:56 end [blt_t1.60_boolq] GPU0 exit=0
+2026-10-04 21:04:56 worker GPU0 done
+2026-10-04 21:04:56 ALL_DONE

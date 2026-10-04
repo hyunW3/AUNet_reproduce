@@ -221,7 +221,7 @@ def detail_tex(R):
             r"appear in Table~\ref{tab:main_13b}. \textit{Noise} averages $15$ variants ($5$ strategies $\times$ "
             r"prompt/completion/both; BoolQ: $5$ prompt-only variants, since its fixed yes/no options cannot be perturbed "
             r"without changing the label); \textit{Typo} averages $8$ variants ($4$ edits $\times$ character/word); "
-            r"\textit{Leet} applies NL-Augmenter's \texttt{leet\_letters} at its default setting to the question. "
+            r"\textit{Leet} applies the Leet Transformation of NL-Augmenter~\citep{dhole2023nl} at its default setting to the question. "
             r"Bold marks the smallest degradation among the three matched models; $^{\dagger}$BLT and $^{\ddagger}$H-Net "
             r"are external references (``--'': not measured). " + NOWIN_NOTE + "}",
             r"\label{tab:robustness_detail}", r"\end{table*}", ""]

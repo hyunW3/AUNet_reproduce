@@ -1,0 +1,194 @@
+{
+ "llama": {
+  "acc (current)": {
+   "abs_mean": 10.651967563793557,
+   "per_task": {
+    "hellaswag": -1.8500000000000016,
+    "arc_easy": -22.39999999999999,
+    "arc_challenge": -2.9010238907849875,
+    "piqa": -0.10881392818280489,
+    "boolq": -26.0
+   }
+  },
+  "acc_norm, BoolQ acc": {
+   "abs_mean": 8.959767071345542,
+   "per_task": {
+    "hellaswag": -1.2499999999999956,
+    "arc_easy": -16.75,
+    "arc_challenge": -0.8532423208191087,
+    "piqa": 0.05440696409140244,
+    "boolq": -26.0
+   }
+  },
+  "acc_norm, PIQA+BoolQ acc": {
+   "abs_mean": 8.992411249800382,
+   "per_task": {
+    "hellaswag": -1.2499999999999956,
+    "arc_easy": -16.75,
+    "arc_challenge": -0.8532423208191087,
+    "piqa": -0.10881392818280489,
+    "boolq": -26.0
+   }
+  }
+ },
+ "aunet": {
+  "acc (current)": {
+   "abs_mean": 0.047087017718471236,
+   "per_task": {
+    "hellaswag": -0.15000000000000013,
+    "arc_easy": -0.050000000000005596,
+    "arc_challenge": 0.4266211604095571,
+    "piqa": 0.10881392818280489,
+    "boolq": -0.10000000000000009
+   }
+  },
+  "acc_norm, BoolQ acc": {
+   "abs_mean": 0.3511586640769204,
+   "per_task": {
+    "hellaswag": -0.10000000000000009,
+    "arc_easy": -1.4000000000000012,
+    "arc_challenge": 0.17064846416382506,
+    "piqa": -0.32644178454842576,
+    "boolq": -0.10000000000000009
+   }
+  },
+  "acc_norm, PIQA+BoolQ acc": {
+   "abs_mean": 0.2641075215306743,
+   "per_task": {
+    "hellaswag": -0.10000000000000009,
+    "arc_easy": -1.4000000000000012,
+    "arc_challenge": 0.17064846416382506,
+    "piqa": 0.10881392818280489,
+    "boolq": -0.10000000000000009
+   }
+  }
+ },
+ "bpebyte": {
+  "acc (current)": {
+   "abs_mean": 0.14472011052227396,
+   "per_task": {
+    "hellaswag": 0.050000000000000044,
+    "arc_easy": 0.050000000000005596,
+    "arc_challenge": 0.2559726962457376,
+    "piqa": 0.21762785636562088,
+    "boolq": 0.15000000000000568
+   }
+  },
+  "acc_norm, BoolQ acc": {
+   "abs_mean": 0.20182083211087498,
+   "per_task": {
+    "hellaswag": 0.34999999999999476,
+    "arc_easy": -0.8499999999999952,
+    "arc_challenge": -0.7679180887371961,
+    "piqa": 0.10881392818281599,
+    "boolq": 0.15000000000000568
+   }
+  },
+  "acc_norm, PIQA+BoolQ acc": {
+   "abs_mean": 0.180058046474314,
+   "per_task": {
+    "hellaswag": 0.34999999999999476,
+    "arc_easy": -0.8499999999999952,
+    "arc_challenge": -0.7679180887371961,
+    "piqa": 0.21762785636562088,
+    "boolq": 0.15000000000000568
+   }
+  }
+ },
+ "blt": {
+  "acc (current)": {
+   "abs_mean": 0.0,
+   "per_task": {
+    "hellaswag": 0.0,
+    "arc_easy": 0.0,
+    "arc_challenge": 0.0,
+    "piqa": 0.0,
+    "boolq": 0.0
+   }
+  },
+  "acc_norm, BoolQ acc": {
+   "abs_mean": 0.22680974645983176,
+   "per_task": {
+    "hellaswag": 0.050000000000005596,
+    "arc_easy": -0.7499999999999951,
+    "arc_challenge": -0.5972696245733766,
+    "piqa": 0.16322089227420733,
+    "boolq": 0.0
+   }
+  },
+  "acc_norm, PIQA+BoolQ acc": {
+   "abs_mean": 0.25945392491467323,
+   "per_task": {
+    "hellaswag": 0.050000000000005596,
+    "arc_easy": -0.7499999999999951,
+    "arc_challenge": -0.5972696245733766,
+    "piqa": 0.0,
+    "boolq": 0.0
+   }
+  }
+ },
+ "blt1609": {
+  "acc (current)": {
+   "abs_mean": 0.0,
+   "per_task": {
+    "hellaswag": 0.0,
+    "arc_easy": 0.0,
+    "arc_challenge": 0.0,
+    "piqa": 0.0,
+    "boolq": 0.0
+   }
+  },
+  "acc_norm, BoolQ acc": {
+   "abs_mean": 0.1820537607653383,
+   "per_task": {
+    "hellaswag": -0.20000000000000018,
+    "arc_easy": -0.8500000000000063,
+    "arc_challenge": 0.08532423208191253,
+    "piqa": 0.05440696409140244,
+    "boolq": 0.0
+   }
+  },
+  "acc_norm, PIQA+BoolQ acc": {
+   "abs_mean": 0.1929351535836188,
+   "per_task": {
+    "hellaswag": -0.20000000000000018,
+    "arc_easy": -0.8500000000000063,
+    "arc_challenge": 0.08532423208191253,
+    "piqa": 0.0,
+    "boolq": 0.0
+   }
+  }
+ },
+ "hnet": {
+  "acc (current)": {
+   "abs_mean": 0.0,
+   "per_task": {
+    "hellaswag": 0.0,
+    "arc_easy": 0.0,
+    "arc_challenge": 0.0,
+    "piqa": 0.0,
+    "boolq": 0.0
+   }
+  },
+  "acc_norm, BoolQ acc": {
+   "abs_mean": 0.24882763205294367,
+   "per_task": {
+    "hellaswag": -0.15000000000000568,
+    "arc_easy": -0.9000000000000008,
+    "arc_challenge": -0.08532423208190698,
+    "piqa": -0.10881392818280489,
+    "boolq": 0.0
+   }
+  },
+  "acc_norm, PIQA+BoolQ acc": {
+   "abs_mean": 0.2270648464163827,
+   "per_task": {
+    "hellaswag": -0.15000000000000568,
+    "arc_easy": -0.9000000000000008,
+    "arc_challenge": -0.08532423208190698,
+    "piqa": 0.0,
+    "boolq": 0.0
+   }
+  }
+ }
+}

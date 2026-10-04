@@ -1,0 +1,145 @@
+{
+ "metric": {
+  "hellaswag": "acc_norm",
+  "arc_easy": "acc_norm",
+  "arc_challenge": "acc_norm",
+  "piqa": "acc",
+  "boolq": "acc"
+ },
+ "B": 2000,
+ "seed": 0,
+ "results": {
+  "noise": {
+   "n_items": {
+    "hellaswag": 2000,
+    "arc_easy": 2000,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "boolq": 2000
+   },
+   "llama": {
+    "value": 14.222,
+    "half_width": 0.792
+   },
+   "aunet": {
+    "value": 11.045,
+    "half_width": 0.71
+   },
+   "bpebyte": {
+    "value": 11.425,
+    "half_width": 0.663
+   },
+   "blt": {
+    "value": 12.704,
+    "half_width": 0.686
+   },
+   "blt1609": {
+    "value": 12.131,
+    "half_width": 0.706
+   },
+   "hnet": {
+    "value": 11.84,
+    "half_width": 0.718
+   }
+  },
+  "typo": {
+   "n_items": {
+    "hellaswag": 2000,
+    "arc_easy": 2000,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "boolq": 2000
+   },
+   "llama": {
+    "value": 5.801,
+    "half_width": 0.568
+   },
+   "aunet": {
+    "value": 3.942,
+    "half_width": 0.487
+   },
+   "bpebyte": {
+    "value": 3.784,
+    "half_width": 0.482
+   },
+   "blt": {
+    "value": 4.049,
+    "half_width": 0.53
+   },
+   "blt1609": {
+    "value": 3.465,
+    "half_width": 0.548
+   },
+   "hnet": {
+    "value": 4.836,
+    "half_width": 0.54
+   }
+  },
+  "despace": {
+   "n_items": {
+    "hellaswag": 2000,
+    "arc_easy": 2000,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "boolq": 2000
+   },
+   "llama": {
+    "value": 14.112,
+    "half_width": 1.19
+   },
+   "aunet": {
+    "value": 21.896,
+    "half_width": 1.254
+   },
+   "bpebyte": {
+    "value": 13.763,
+    "half_width": 1.124
+   },
+   "blt": {
+    "value": 7.279,
+    "half_width": 0.943
+   },
+   "blt1609": {
+    "value": 6.708,
+    "half_width": 0.997
+   },
+   "hnet": {
+    "value": 12.53,
+    "half_width": 1.14
+   }
+  },
+  "leet": {
+   "n_items": {
+    "hellaswag": 2000,
+    "arc_easy": 2000,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "boolq": 2000
+   },
+   "llama": {
+    "value": 14.331,
+    "half_width": 1.067
+   },
+   "aunet": {
+    "value": 12.689,
+    "half_width": 1.134
+   },
+   "bpebyte": {
+    "value": 12.927,
+    "half_width": 1.083
+   },
+   "blt": {
+    "value": 16.127,
+    "half_width": 1.014
+   },
+   "blt1609": {
+    "value": 15.101,
+    "half_width": 1.032
+   },
+   "hnet": {
+    "value": 12.013,
+    "half_width": 1.091
+   }
+  }
+ }
+}
