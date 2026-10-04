@@ -57,6 +57,16 @@ lines = ["# Direct multilingual eval — 1B (English-trained, no further trainin
 summary = []
 for suite, (metric, chance, anchor) in SUITES.items():
     res = {m: load(m, suite, metric) for m, _ in MODELS}
+    if suite == "nospace" and res["aunet_char"]:
+        # word-vs-char on the same tasks: pull every model's scores for these tasks from its own suites
+        for m, _ in MODELS:
+            if m == "aunet_char":
+                continue
+            pooled = {}
+            for s, (met, _, _) in SUITES.items():
+                if s != "nospace":
+                    pooled.update(load(m, s, met) or {})
+            res[m] = {t: pooled[t] for t in res["aunet_char"] if t in pooled} or None
     cols = [(m, n) for m, n in MODELS if res[m]]
     if not cols:
         continue
@@ -90,6 +100,24 @@ if summary:
             cells.append("–" if mean is None else f"{fmt(en)} → {fmt(mean)} · {'–' if tr is None else f'{tr:.2f}'}")
         lines.append(f"| {suite} | {chance} | " + " | ".join(cells) + " |")
     lines.append("")
-lines.append(f"_Sources: `{OUT}/<model>/<suite>/results.json`; launcher `scripts/multilingual/run_1b_direct.sh`._")
+lines += ["## Notes", "",
+          "- **Same picture as Chinese**: every family is strong in English and near chance elsewhere; "
+          "between-family gaps on the classification suites are within noise. Direct transfer from an "
+          "English-only 1B does not separate the architectures, except on LAMBADA.",
+          "- **LAMBADA is the one clear signal**: byte models beat the subword model on es/fr/it "
+          "(non-en mean ≈26–27 vs 18.9), i.e. last-word prediction in Latin-script languages transfers "
+          "better when the model is not bound to an English subword vocab.",
+          "- **PAWS-X is label bias, not ability**: the test sets are 44–45% positive in every language, so "
+          "always-'No' scores ≈55 and always-'Yes' ≈45. Llama's ≈55 and the byte models' 44–46 on ja/ko/zh "
+          "are those two degenerate answers.",
+          "- **AU-Net char vs word** (nospace table): the eval-time per-codepoint re-pool does not help an "
+          "English-trained checkpoint on CJK/Thai/Burmese either (same caveat as `zh_cloze_1B.md`: train/eval "
+          "boundary mismatch). char and word agree within ±1.5 pt on every task.",
+          "- **Llama's small CJK edge**: xwinograd_zh 60.7 vs 48.6–53.0 (n=504, ~±2.2 pt s.e.) and xstorycloze_zh "
+          "53.3 vs ≈47 — plausibly the llama3 vocab's CJK tokens; elsewhere the families are tied.",
+          "- Anchors: xcopa's English anchor is SuperGLUE COPA **validation** (100 items, noisy); xnli uses "
+          "lm-eval's default validation split (2490/lang); hellaswag_* capped at 2000 docs/lang. Llama is the "
+          "`llama_1.8B_paper` step-60000 checkpoint (same as the Chinese run).", ""]
+lines.append(f"_Sources:`{OUT}/<model>/<suite>/results.json`; launcher `scripts/multilingual/run_1b_direct.sh`._")
 DST.write_text("\n".join(lines) + "\n")
 print(f"wrote {DST}")
