@@ -19,12 +19,13 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 MODELS = [("subword_llama", "Llama (subword)"), ("aunet_static", "AU-Net"),
-          ("byte_greedyroot", "BPEByte-rg"), ("blt_1b", "BLT-1B"), ("hnet_1stage_XL", "H-Net 1-stage XL")]
+          ("byte_greedyroot", "BPEByte-rg"), ("byte_greedyroot_inc", "BPEByte-rg (inc decode)"),
+          ("blt_1b", "BLT-1B"), ("hnet_1stage_XL", "H-Net 1-stage XL")]
 # categorical slots 1-5 of the dataviz reference palette, fixed per model (never by rank)
 COLOR = {"subword_llama": "#2a78d6", "aunet_static": "#eb6834", "byte_greedyroot": "#1baf7a",
-         "blt_1b": "#eda100", "hnet_1stage_XL": "#e87ba4"}
+         "blt_1b": "#eda100", "hnet_1stage_XL": "#e87ba4", "byte_greedyroot_inc": "#008300"}
 MARK = {"subword_llama": "o", "aunet_static": "s", "byte_greedyroot": "^", "blt_1b": "D",
-        "hnet_1stage_XL": "v"}
+        "hnet_1stage_XL": "v", "byte_greedyroot_inc": "P"}
 
 
 def ci(xs, n_boot=2000, seed=0):

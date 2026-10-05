@@ -14,6 +14,10 @@ case $MODEL in
   llama)   FAM=subword TAG=subword_llama ;;
   aunet)   FAM=aunet   TAG=aunet_static ;;
   bpebyte) FAM=aunet   TAG=byte_greedyroot ;;
+  # same paper checkpoint, cached AUNET_INC_PARSE decode (exact causal boundaries) + mask check
+  bpebyte_inc) FAM=aunet TAG=byte_greedyroot_inc CKPT=$R/ckpt/bpebyte EXTRA="--bpe_decode inc --check_masks" ;;
+  # bt decode again on another host/env: separates decode effect from hardware/numerics noise
+  bpebyte_btctl) FAM=aunet TAG=byte_greedyroot_btctl CKPT=$R/ckpt/bpebyte ;;
   # external references (ext_models.py); need BLT_REPO / HNET_REPO / EVAL_SUITE in the env
   blt)     FAM=blt     TAG=blt_1b            CKPT=$R/ext/blt_weights MAX_BYTES=${MAX_BYTES:-4096} ;;
   hnet)    FAM=hnet    TAG=hnet_1stage_XL    CKPT=hnet_1stage_XL ;;
@@ -28,7 +32,7 @@ for f in $FILES; do
   CUDA_VISIBLE_DEVICES=$GPU "$PY" "$R/scripts/longctx/run_longctx.py" --family $FAM \
     --ckpt "$CKPT" --tag $TAG --data "$R/data/longctx/$f.jsonl" \
     --out "$R/results/${f}_${TAG}${SHARD:+_s${SHARD/\//of}}.jsonl" --batch_size "$BATCH" --max_tokens "$MAXTOK" \
-    ${LIMIT:+--limit $LIMIT} ${SHARD:+--shard $SHARD} ${MAX_BYTES:+--max_bytes $MAX_BYTES} 2>&1 \
+    ${LIMIT:+--limit $LIMIT} ${SHARD:+--shard $SHARD} ${MAX_BYTES:+--max_bytes $MAX_BYTES} ${EXTRA:-} 2>&1 \
     | grep --line-buffered -vE "FutureWarning|import pynvml|ProcessGroupNCCL|destroy_process_group|pytorch.org|warnings.warn"
 done
 echo "NODE_DONE $MODEL $(date +%F_%T)"
