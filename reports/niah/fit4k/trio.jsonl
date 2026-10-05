@@ -1,0 +1,9 @@
+{"tag": "llama", "cell": "sniah1/4096", "n": 250, "exact_match": 1.0}
+{"tag": "llama", "cell": "sniah2/4096", "n": 250, "exact_match": 1.0}
+{"tag": "llama", "cell": "sniah3/4096", "n": 250, "exact_match": 0.88}
+{"tag": "aunet", "cell": "sniah1/4096", "n": 250, "exact_match": 0.996}
+{"tag": "aunet", "cell": "sniah2/4096", "n": 250, "exact_match": 0.988}
+{"tag": "aunet", "cell": "sniah3/4096", "n": 250, "exact_match": 0.416}
+{"tag": "bpebyte", "cell": "sniah1/4096", "n": 250, "exact_match": 1.0}
+{"tag": "bpebyte", "cell": "sniah2/4096", "n": 250, "exact_match": 1.0}
+{"tag": "bpebyte", "cell": "sniah3/4096", "n": 250, "exact_match": 0.952}
