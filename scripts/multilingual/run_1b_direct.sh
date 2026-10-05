@@ -26,7 +26,9 @@ export LD_LIBRARY_PATH=$LINGUA/.venv/lib/python3.12/site-packages/nvidia/cuspars
 export HF_DATASETS_TRUST_REMOTE_CODE=1
 # apps/aunet/generate.py::_next_byte_logits skips the final vocab_norm unless this is set; the bug feeds
 # loglikelihood (prefill) as well as decoding, so it handicaps every byte-model score. Llama (apps.main) unaffected.
-export AUNET_FIX_VOCAB_NORM=${AUNET_FIX_VOCAB_NORM:-1}
+# Default on; pass AUNET_FIX_VOCAB_NORM= (empty) for the official/unfixed AU-Net path. (Once lingua main drops
+# the gate, BPEByte is always fixed and AU-Net always official, whatever this is set to.)
+export AUNET_FIX_VOCAB_NORM=${AUNET_FIX_VOCAB_NORM-1}
 export AUNET_TOK=$ROOT/tokenizer/llama3/tokenizer.model   # llama params.json points at the NHN tree
 export TORCHINDUCTOR_CACHE_DIR=$ROOT/runs/.cache/torchinductor TRITON_CACHE_DIR=$ROOT/runs/.cache/triton
 

@@ -22,15 +22,20 @@ from pathlib import Path
 import numpy as np
 from datasets import load_dataset
 
-OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "/mnt/ssd2/hyun2/AUNet/runs/multilingual/1B_direct")
+R = Path(sys.argv[1] if len(sys.argv) > 1 else "/mnt/ssd2/hyun2/AUNet/runs/multilingual")
 DST = Path(sys.argv[2] if len(sys.argv) > 2 else "reports/lambada_multilingual_analysis.md")
+# scorer policy (lingua main): BPEByte with vocab_norm (fixed tree), AU-Net official (no vocab_norm); Llama unaffected
+ROOT = {"llama": (R / "1B_direct_vnfix", "llama"), "rg": (R / "1B_direct_vnfix", "rg"),
+        "aunet_word": (R / "1B_direct", "aunet_word"), "aunet_word_fix": (R / "1B_direct_vnfix", "aunet_word")}
 VERSIONS = {
     "gt": ("EleutherAI/lambada_openai", ["en", "de", "es", "fr", "it"], "lambada", "lambada_openai_mt_{}"),
     "sl": ("EleutherAI/lambada_multilingual_stablelm", ["en", "de", "es", "fr", "it", "nl", "pt"], "lambada_sl",
            "lambada_openai_mt_stablelm_{}"),
 }
-MODELS = [("llama", "Llama"), ("rg", "BPEByte-rg"), ("aunet_word", "AU-Net")]
+MODELS = [("llama", "Llama"), ("rg", "BPEByte-rg"), ("aunet_word", "AU-Net"), ("aunet_word_fix", "AU-Net (fix)")]
 B = 10000
+GAPS = [("rg", "llama"), ("aunet_word", "llama"), ("aunet_word", "rg"), ("aunet_word_fix", "llama"), ("aunet_word_fix", "rg")]
+GAP_LABELS = ["rg − Llama", "AU-Net − Llama", "AU-Net − rg", "AU-Net(fix) − Llama", "AU-Net(fix) − rg"]
 rng = np.random.default_rng(0)
 random.seed(0)
 
@@ -63,7 +68,8 @@ def ci(x):
 
 
 def load_acc(model, suite, task):
-    f = OUT / model / suite / "results.json"
+    root, mdir = ROOT[model]
+    f = root / mdir / suite / "results.json"
     if not f.exists():
         return None
     s = json.load(open(f)).get("samples", {}).get(task)
@@ -108,30 +114,30 @@ for v, (path, langs, suite, tmpl) in VERSIONS.items():
         L += [f"## B-{v}. Model accuracy — not run yet (`{suite}`)", ""]
         continue
     L += [f"## B-{v}. Model accuracy with 95% CI (`{suite}`)", "",
-          "| lang | " + " | ".join(n for _, n in MODELS) + " | rg − Llama | AU-Net − Llama |",
-          "|---|" + "---:|" * (len(MODELS) + 2)]
+          "| lang | " + " | ".join(n for _, n in MODELS) + " | " + " | ".join(GAP_LABELS) + " |",
+          "|---|" + "---:|" * (len(MODELS) + len(GAPS))]
     for lang in langs:
         cells = []
         for m, _ in MODELS:
             a = acc[m, lang]
             cells.append("–" if a is None else "{:.1f} [{:.1f}, {:.1f}]".format(*ci(a)))
-        for m in ("rg", "aunet_word"):
-            a, b = acc[m, lang], acc["llama", lang]
+        for m, o in GAPS:
+            a, b = acc[m, lang], acc[o, lang]
             cells.append("–" if a is None or b is None or len(a) != len(b) else "{:+.1f} [{:+.1f}, {:+.1f}]".format(*ci(a - b)))
         L.append(f"| {lang} | " + " | ".join(cells) + " |")
     L += ["", f"**Clean targets only** (target is a bare word, no punctuation; `{suite}`) — removes the exact-match "
           "punctuation artifact (on punctuated targets the subword model collapses, e.g. gt-es 3.9% vs ≈20% for bytes)", "",
-          "| lang | n clean | " + " | ".join(n for _, n in MODELS) + " | rg − Llama | AU-Net − Llama |",
-          "|---|---:|" + "---:|" * (len(MODELS) + 2)]
+          "| lang | n clean | " + " | ".join(n for _, n in MODELS) + " | " + " | ".join(GAP_LABELS) + " |",
+          "|---|---:|" + "---:|" * (len(MODELS) + len(GAPS))]
     for lang in langs:
         if any(acc[m, lang] is None for m, _ in MODELS):
             continue
         clean = np.array([not re.search(r"[^\w]", split(t)[1]) for t in texts[v, lang]])
         cells = ["{:.1f} [{:.1f}, {:.1f}]".format(*ci(acc[m, lang][clean])) for m, _ in MODELS]
-        cells += ["{:+.1f} [{:+.1f}, {:+.1f}]".format(*ci(acc[m, lang][clean] - acc["llama", lang][clean]))
-                  for m in ("rg", "aunet_word")]
+        cells += ["{:+.1f} [{:+.1f}, {:+.1f}]".format(*ci(acc[m, lang][clean] - acc[o, lang][clean]))
+                  for m, o in GAPS]
         L.append(f"| {lang} | {int(clean.sum())} | " + " | ".join(cells) + " |")
-    L += ["", f"**Gap split by whether the target occurs in the passage** (`{suite}`; acc Llama / rg / AU-Net, then rg−Llama)", "",
+    L += ["", f"**Gap split by whether the target occurs in the passage** (`{suite}`; acc Llama / rg / AU-Net / AU-Net(fix), then rg−Llama)", "",
           "| lang | in-ctx n | in-ctx acc | in-ctx rg−Llama | not-in-ctx n | not-in-ctx acc | not-in-ctx rg−Llama |",
           "|---|---:|---|---:|---:|---|---:|"]
     for lang in langs:
@@ -153,14 +159,23 @@ L += ["## Takeaways for the paper", "",
       "**clean-target accuracy is the metric to report**; full-set accuracy goes to the appendix.",
       "- **Translation also breaks LAMBADA's design property** that the target recurs in the passage "
       "(en 81% → gt-es 31%, gt-de 46%; sl 48–76%). Report this rate next to the scores.",
-      "- **The byte>subword gap survives the cleaner sl translation and the clean-target filter**: every "
-      "non-English language, CIs excluding 0. By family: Romance (es/fr/it/pt) +9.5 to +16.3, Germanic (de/nl) "
-      "+1.6 to +6.8, English +2.0 to +2.2 — the same ordering as the AU-Net paper's multilingual-MMLU gains "
-      "(Romance ≈+4, Germanic ≈+3).",
-      "- **Mechanism caveat**: the gap lives almost entirely on targets that occur in the passage; when the "
-      "word must be produced without a copy source all three models score 2–9% and the gap vanishes (de even "
-      "favours Llama, −1.9). Frame it as *reproducing context words in an unfamiliar orthography*, not as "
-      "better cross-lingual semantic prediction. (sl-fr / sl-it not-in-ctx gaps are inflated by the odd "
-      "punctuation-only targets; the clean-target table is the reference.)", ""]
+      "- **Scorer policy** (lingua `apps/aunet/SCORING_POLICY.md`, main 6237a7b): BPEByte-rg = "
+      "`generate_bpebyte.BPEByteGenerator`, vocab_norm applied; AU-Net = official `generate.py`, no vocab_norm; "
+      "AU-Net (fix) = same checkpoint with vocab_norm (sensitivity only). Llama is unaffected.",
+      "- **The byte>subword gap survives the cleaner sl translation and the clean-target filter** (sl, clean): "
+      "BPEByte-rg − Llama is +2.1 (de), +4.1 (nl), +6.2 to +11.0 (Romance es/it/pt/fr), CIs excluding 0; "
+      "English +0.3 (n.s.). AU-Net (official) − Llama is larger, +1.6 to +16.3, with the same family ordering "
+      "(Germanic small, Romance large), matching the direction of the AU-Net paper's multilingual-MMLU gains.",
+      "- **BPEByte vs AU-Net is decided by the scorer, not the architecture, on this task.** Under the policy "
+      "(rg fixed, AU-Net official) AU-Net leads by +1.7 (en) and +3.3 to +8.3 (Romance). Like-for-like (both "
+      "with vocab_norm) the two are tied in en/es/fr/it (|Δ| ≤ 0.9, CIs covering 0), rg leads in de (−1.3) and "
+      "nl (−4.5), and AU-Net leads only in pt (+3.0). The official no-norm head scores *higher* on exact-match "
+      "LAMBADA than the normed one (same AU-Net checkpoint: +1.7 to +5.3), so any rg-vs-AU-Net LAMBADA claim "
+      "must state this asymmetry.",
+      "- **Mechanism caveat**: the gap lives on targets that occur in the passage (rg − Llama +4.9 to +10.3 in "
+      "the non-English sl languages); when the word must be produced without a copy source all models score "
+      "2–9% and the gap is ≈0 (de −0.8, nl −0.4). Frame it as *reproducing context words in an unfamiliar "
+      "orthography*, not as better cross-lingual semantic prediction. (sl-fr / sl-it not-in-ctx gaps are "
+      "inflated by the punctuation-only targets; the clean-target table is the reference.)", ""]
 DST.write_text("\n".join(L) + "\n")
 print(f"wrote {DST}")
