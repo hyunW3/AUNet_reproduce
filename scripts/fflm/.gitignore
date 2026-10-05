@@ -1,0 +1,5 @@
+.cache/
+*.log
+_*.jsonl
+_anout/
+__pycache__/

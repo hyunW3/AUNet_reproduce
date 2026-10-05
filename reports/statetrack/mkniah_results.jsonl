@@ -1,0 +1,16 @@
+{"tag": "subword_llama", "num_needles": 1, "target_bytes": 2048, "n": 40, "exact_match": 0.45}
+{"tag": "subword_llama", "num_needles": 2, "target_bytes": 2048, "n": 40, "exact_match": 0.275}
+{"tag": "subword_llama", "num_needles": 4, "target_bytes": 2048, "n": 40, "exact_match": 0.325}
+{"tag": "subword_llama", "num_needles": 8, "target_bytes": 2048, "n": 40, "exact_match": 0.175}
+{"tag": "aunet_static", "num_needles": 1, "target_bytes": 2048, "n": 40, "exact_match": 0.975}
+{"tag": "aunet_static", "num_needles": 2, "target_bytes": 2048, "n": 40, "exact_match": 0.725}
+{"tag": "aunet_static", "num_needles": 4, "target_bytes": 2048, "n": 40, "exact_match": 0.425}
+{"tag": "aunet_static", "num_needles": 8, "target_bytes": 2048, "n": 40, "exact_match": 0.3}
+{"tag": "byte_bt", "num_needles": 1, "target_bytes": 2048, "n": 40, "exact_match": 1.0}
+{"tag": "byte_bt", "num_needles": 2, "target_bytes": 2048, "n": 40, "exact_match": 0.75}
+{"tag": "byte_bt", "num_needles": 4, "target_bytes": 2048, "n": 40, "exact_match": 0.675}
+{"tag": "byte_bt", "num_needles": 8, "target_bytes": 2048, "n": 40, "exact_match": 0.55}
+{"tag": "byte_greedyroot", "num_needles": 1, "target_bytes": 2048, "n": 40, "exact_match": 1.0}
+{"tag": "byte_greedyroot", "num_needles": 2, "target_bytes": 2048, "n": 40, "exact_match": 0.9}
+{"tag": "byte_greedyroot", "num_needles": 4, "target_bytes": 2048, "n": 40, "exact_match": 0.725}
+{"tag": "byte_greedyroot", "num_needles": 8, "target_bytes": 2048, "n": 40, "exact_match": 0.325}

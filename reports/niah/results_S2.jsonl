@@ -1,0 +1,15 @@
+{"tag": "subword_llama", "family": "subword", "task": "2", "target_bytes": 512, "avg_prompt_bytes": 828, "n": 20, "exact_match": 0.9, "tok_frac": 0.975}
+{"tag": "subword_llama", "family": "subword", "task": "2", "target_bytes": 1024, "avg_prompt_bytes": 1344, "n": 20, "exact_match": 0.7, "tok_frac": 0.925}
+{"tag": "subword_llama", "family": "subword", "task": "2", "target_bytes": 2048, "avg_prompt_bytes": 2375, "n": 20, "exact_match": 0.65, "tok_frac": 0.9125}
+{"tag": "subword_llama", "family": "subword", "task": "2", "target_bytes": 4096, "avg_prompt_bytes": 4431, "n": 20, "exact_match": 0.65, "tok_frac": 0.9125}
+{"tag": "subword_llama", "family": "subword", "task": "2", "target_bytes": 6144, "avg_prompt_bytes": 6489, "n": 20, "exact_match": 0.6, "tok_frac": 0.9}
+{"tag": "aunet_static", "family": "aunet", "task": "2", "target_bytes": 512, "avg_prompt_bytes": 828, "n": 20, "exact_match": 1.0, "tok_frac": 1.0}
+{"tag": "aunet_static", "family": "aunet", "task": "2", "target_bytes": 1024, "avg_prompt_bytes": 1344, "n": 20, "exact_match": 1.0, "tok_frac": 1.0}
+{"tag": "aunet_static", "family": "aunet", "task": "2", "target_bytes": 2048, "avg_prompt_bytes": 2375, "n": 20, "exact_match": 0.95, "tok_frac": 0.9928571428571429}
+{"tag": "aunet_static", "family": "aunet", "task": "2", "target_bytes": 4096, "avg_prompt_bytes": 4431, "n": 20, "exact_match": 1.0, "tok_frac": 1.0}
+{"tag": "aunet_static", "family": "aunet", "task": "2", "target_bytes": 6144, "avg_prompt_bytes": 6489, "n": 20, "exact_match": 0.95, "tok_frac": 0.9928571428571429}
+{"tag": "byte_greedyroot", "family": "aunet", "task": "2", "target_bytes": 512, "avg_prompt_bytes": 828, "n": 20, "exact_match": 1.0, "tok_frac": 1.0}
+{"tag": "byte_greedyroot", "family": "aunet", "task": "2", "target_bytes": 1024, "avg_prompt_bytes": 1344, "n": 20, "exact_match": 1.0, "tok_frac": 1.0}
+{"tag": "byte_greedyroot", "family": "aunet", "task": "2", "target_bytes": 2048, "avg_prompt_bytes": 2375, "n": 20, "exact_match": 1.0, "tok_frac": 1.0}
+{"tag": "byte_greedyroot", "family": "aunet", "task": "2", "target_bytes": 4096, "avg_prompt_bytes": 4431, "n": 20, "exact_match": 1.0, "tok_frac": 1.0}
+{"tag": "byte_greedyroot", "family": "aunet", "task": "2", "target_bytes": 6144, "avg_prompt_bytes": 6489, "n": 20, "exact_match": 0.95, "tok_frac": 0.9928571428571429}

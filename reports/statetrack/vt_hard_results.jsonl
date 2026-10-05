@@ -1,0 +1,16 @@
+{"tag": "subword_llama", "num_hops": 1, "num_chains": 6, "n": 40, "exact_match": 0.875}
+{"tag": "subword_llama", "num_hops": 2, "num_chains": 6, "n": 40, "exact_match": 0.125}
+{"tag": "subword_llama", "num_hops": 3, "num_chains": 6, "n": 40, "exact_match": 0.175}
+{"tag": "subword_llama", "num_hops": 4, "num_chains": 6, "n": 40, "exact_match": 0.075}
+{"tag": "aunet_static", "num_hops": 1, "num_chains": 6, "n": 40, "exact_match": 0.5}
+{"tag": "aunet_static", "num_hops": 2, "num_chains": 6, "n": 40, "exact_match": 0.025}
+{"tag": "aunet_static", "num_hops": 3, "num_chains": 6, "n": 40, "exact_match": 0.0}
+{"tag": "aunet_static", "num_hops": 4, "num_chains": 6, "n": 40, "exact_match": 0.0}
+{"tag": "byte_bt", "num_hops": 1, "num_chains": 6, "n": 40, "exact_match": 0.85}
+{"tag": "byte_bt", "num_hops": 2, "num_chains": 6, "n": 40, "exact_match": 0.15}
+{"tag": "byte_bt", "num_hops": 3, "num_chains": 6, "n": 40, "exact_match": 0.15}
+{"tag": "byte_bt", "num_hops": 4, "num_chains": 6, "n": 40, "exact_match": 0.1}
+{"tag": "byte_greedyroot", "num_hops": 1, "num_chains": 6, "n": 40, "exact_match": 0.675}
+{"tag": "byte_greedyroot", "num_hops": 2, "num_chains": 6, "n": 40, "exact_match": 0.1}
+{"tag": "byte_greedyroot", "num_hops": 3, "num_chains": 6, "n": 40, "exact_match": 0.025}
+{"tag": "byte_greedyroot", "num_hops": 4, "num_chains": 6, "n": 40, "exact_match": 0.0}
