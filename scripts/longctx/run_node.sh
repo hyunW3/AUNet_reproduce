@@ -13,7 +13,9 @@ CKPT=$R/ckpt/$MODEL
 case $MODEL in
   llama)   FAM=subword TAG=subword_llama ;;
   aunet)   FAM=aunet   TAG=aunet_static ;;
-  bpebyte) FAM=aunet   TAG=byte_greedyroot ;;
+  # NOTE: run_longctx.py now defaults to --bpe_decode inc; the byte_greedyroot results in
+  # reports/longctx were produced with the bt loop, so this tag pins bt to stay reproducible
+  bpebyte) FAM=aunet   TAG=byte_greedyroot EXTRA="--bpe_decode bt" ;;
   # same paper checkpoint, cached AUNET_INC_PARSE decode (exact causal boundaries) + mask check
   bpebyte_inc) FAM=aunet TAG=byte_greedyroot_inc CKPT=$R/ckpt/bpebyte EXTRA="--bpe_decode inc --check_masks" ;;
   # bt decode again on another host/env: separates decode effect from hardware/numerics noise
