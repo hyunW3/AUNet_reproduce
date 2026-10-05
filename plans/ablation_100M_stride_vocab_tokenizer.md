@@ -280,3 +280,21 @@ accuracy는 chance보다 높게 나오지만 정확한 영향은 미확인. 1.3B
 → train BPB +0.005는 **코드 snapshot 차이**였음: 같은 코드 기준 baseline 1.0854 vs V32k 1.0849 · GPT-2 1.0843 · Qwen2 1.0842.
 held-out 기준 run 간 노이즈 ≈ 0.001. vocab/tokenizer arm은 같은 코드 baseline과 train·held-out 모두 ±0.001 이내.
 stride만 train +0.048 (1.1338 vs 1.0854), held-out +0.050.
+
+## 13. 100M parser ablation — 최종 (2026-10-05)
+
+모든 run: 98.6M, 53,504 step, 21 GB DCLM, seed 777. held-out = `heldout_fmha.py` (320 windows, 1.23 MB). downstream = 6-bench 0-shot full.
+
+| parser | 학습 코드 | B/patch (held-out) | train BPB | held-out BPB | HS/AE/PI |
+|---|---|---:|---:|---:|---:|
+| OnlineBPE (llama3 128K) `rg_snapshot_repro` | 09-30 | 4.58 | 1.0854 | 1.1065 | 41.96 |
+| OnlineBPE (llama3 128K) `lb_rg_100M` | 07-09 | 4.58 | 1.0794 | 1.1058 | 41.59 |
+| fixed-stride matched-CR `stride4p57` | 09-30 | 4.56 | 1.1338 | 1.1563 | 40.99 |
+| random trie matched-CR `rg_randtrie_mcr` | 09-30 | 4.64 | 1.1337 | 1.1575 | 41.06 |
+| AU-Net (word) `lb_aunet_100M` | 07-09 | 4.89 | 1.0821 | 1.1107 | 42.32 |
+
+- **random trie ≈ fixed stride**: train 1.1337 vs 1.1338, held-out 1.1575 vs 1.1563. corpus 빈도로 뽑은 n-gram 사전으로 greedy 파싱해도
+  내용 무관 stride보다 낫지 않음 → OnlineBPE의 이득(held-out −0.05)은 "사전 기반 greedy 파싱"이 아니라 **BPE merge 통계가 주는 경계**에서 옴.
+- AU-Net(word)은 같은 코드의 OnlineBPE 대비 held-out +0.005 (1.1107 vs 1.1058).
+- vocab/tokenizer 대체(§11–12): 32K·GPT-2·Qwen2 모두 같은 코드 baseline 대비 ±0.001.
+- downstream은 전 arm ±1pt 이내로 구분력 없음. generator 채점 경로 문제(§11)는 미해결.
