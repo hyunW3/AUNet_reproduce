@@ -25,13 +25,16 @@ CHOICES = ("no", "yes")
 CHOICE_FIELD = "_both_choices"
 NOISE_SENTINEL = "boolq_noiseboth"
 TYPO_SENTINEL = "boolq_typoboth"
+# Context only (passage + question, labels untouched): the region BoolQ uses in the five-task average, since its
+# options are the labels themselves (perturbing them measures a label-string preference, not robustness).
+TYPO_CTX_SENTINEL = "boolq_typoctx"
 
 
 def _doc_to_choice(doc):
     return list(doc[CHOICE_FIELD])
 
 
-def _make_pd(base_pd, fn, scode, base_seed, seed_fn):
+def _make_pd(base_pd, fn, scode, base_seed, seed_fn, options=True):
     def process_docs(dataset):
         if base_pd is not None:
             dataset = base_pd(dataset)
@@ -39,14 +42,14 @@ def _make_pd(base_pd, fn, scode, base_seed, seed_fn):
         def _p(doc, idx):
             r = lambda f: random.Random(seed_fn(base_seed, idx, scode, f))
             return {"passage": fn(doc["passage"], r(0)), "question": fn(doc["question"], r(1)),
-                    CHOICE_FIELD: [fn(c, r(2 + j)) for j, c in enumerate(CHOICES)]}
+                    CHOICE_FIELD: [fn(c, r(2 + j)) if options else c for j, c in enumerate(CHOICES)]}
 
         return dataset.map(_p, with_indices=True)
 
     return process_docs
 
 
-def _build(names_fns, base_seed):
+def _build(names_fns, base_seed, options=True):
     from lm_eval.tasks import TaskManager
     from lm_eval.api.task import ConfigurableTask
     from apps.aunet.eval_noise import _seed
@@ -59,7 +62,7 @@ def _build(names_fns, base_seed):
         cfg = copy.deepcopy(base_dict)
         cfg.update(callables)
         cfg["task"] = name
-        cfg["process_docs"] = _make_pd(base_pd, fn, scode, base_seed, _seed)
+        cfg["process_docs"] = _make_pd(base_pd, fn, scode, base_seed, _seed, options)
         cfg["doc_to_choice"] = _doc_to_choice
         out.append(ConfigurableTask(config=cfg))
     return out
@@ -73,6 +76,12 @@ def build_noise_both(base_seed=0):
 def build_typo_both(base_seed=0):
     from apps.aunet import eval_typo as T
     return _build([(f"boolq_typoboth_{s}", T._NOISE_FNS[s], T._STRATEGY_CODE[s]) for s in T.STRATEGIES], base_seed)
+
+
+def build_typo_ctx(base_seed=0):
+    from apps.aunet import eval_typo as T
+    return _build([(f"boolq_typoctx_{s}", T._NOISE_FNS[s], T._STRATEGY_CODE[s]) for s in T.STRATEGIES], base_seed,
+                  options=False)
 
 
 def _wrap(orig, sentinels):
@@ -98,7 +107,10 @@ def install():
     if os.environ.get("BOOLQ_BOTH_NOISE_SENTINEL") == "1":
         ns["boolq_noise"] = build_noise_both
     eval_noise.expand_noise_tasks = _wrap(eval_noise.expand_noise_tasks, ns)
-    eval_typo_ds.expand_typo_ds_tasks = _wrap(eval_typo_ds.expand_typo_ds_tasks, {TYPO_SENTINEL: build_typo_both})
+    ts = {TYPO_SENTINEL: build_typo_both, TYPO_CTX_SENTINEL: build_typo_ctx}
+    if os.environ.get("BOOLQ_TYPO_CTX") == "1":   # run_ext's typoboth axis -> context-only variants
+        ts[TYPO_SENTINEL] = build_typo_ctx
+    eval_typo_ds.expand_typo_ds_tasks = _wrap(eval_typo_ds.expand_typo_ds_tasks, ts)
     # Entry points imported later (runpy'd `-m apps.*.eval`, run_ext's in-function import) pick up the wrapped
     # attributes; modules already imported keep their own references, so rebind those.
     for mod in ("apps.main.eval", "apps.aunet.eval"):

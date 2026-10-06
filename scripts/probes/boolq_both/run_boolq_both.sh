@@ -31,6 +31,8 @@ if [ ! -f $Q ]; then
     for m in llama aunet bpebyte; do echo "trio_nt $m"; done
     for th in 1335 1609; do echo "blt_leet $th"; done
     echo "hnet_leet"; for m in llama aunet bpebyte; do echo "trio_leet $m"; done
+    # typo on the context only (passage + question; labels untouched): BoolQ's region in the five-task average
+    for th in 1335 1609; do echo "blt_tc $th"; done; echo "hnet_tc"; for m in llama aunet bpebyte; do echo "trio_tc $m"; done
   } | grep -E "$FILT" > $Q
 fi
 NV=$A/lingua/.venv/lib/python3.12/site-packages/nvidia
@@ -47,17 +49,18 @@ HNETPY=${HNETPY:-/home/hyunwoong/miniconda3/envs/spacebyte/bin/python}
 
 run(){ local g=$1 kind=$2 a=${3:-}
   case $kind in
-    trio_nt)   # within-run clean boolq + 5 noise-both + 8 typo-both variants, stock eval entry point
-      python3 - "$A/runs/robustness_paper1p3b_ext/$a/config.yaml" "$O/trio_nt_$a.yaml" "$O/trio_nt_$a" <<'EOF'
+    trio_nt|trio_tc)   # within-run clean boolq + (nt) 5 noise-both + 8 typo-both / (tc) 8 typo-context variants
+      local tl="boolq_noiseboth,boolq_typoboth"; [ $kind = trio_tc ] && tl="boolq_typoctx"
+      python3 - "$A/runs/robustness_paper1p3b_ext/$a/config.yaml" "$O/${kind}_$a.yaml" "$O/${kind}_$a" "$tl" <<'EOF'
 import sys, yaml
 c = yaml.safe_load(open(sys.argv[1])); c["name"] = c["name"] + "_boolqboth"; c["dump_dir"] = sys.argv[3]
-c["harness"]["tasks"] = ["boolq", "boolq_noiseboth", "boolq_typoboth"]
+c["harness"]["tasks"] = ["boolq"] + sys.argv[4].split(",")
 yaml.safe_dump(c, open(sys.argv[2], "w"), sort_keys=False)
 EOF
       ( cd $LW && export LD_LIBRARY_PATH="$LDP:${LD_LIBRARY_PATH:-}" TRITON_CACHE_DIR=/tmp/tr_bq_$g TORCHINDUCTOR_CACHE_DIR=/tmp/ti_bq_$g \
           CUDA_VISIBLE_DEVICES=$g PYTHONPATH=$LW AUNET_LINGUA=$LW && \
         $A/lingua/.venv/bin/python -m torch.distributed.run --nproc-per-node 1 --master-port $((29800 + g)) $L -m ${APP[$a]} \
-          config=$O/trio_nt_$a.yaml ckpt_dir=${CK[$a]} dump_dir=$O/trio_nt_$a ) ;;
+          config=$O/${kind}_$a.yaml ckpt_dir=${CK[$a]} dump_dir=$O/${kind}_$a ) ;;
     trio_leet)
       local mt=16384; [ $a = llama ] && mt=4096
       cat > $O/trio_leet_$a.yaml <<EOF
@@ -87,6 +90,14 @@ EOF
       ( cd /tmp && env CUDA_VISIBLE_DEVICES=$g $BLTENV \
           $BLTPY $L $S/ext_ci/run_ext.py --family blt_official --threshold $(thr $a) \
           --blt_weights $X/blt_weights --axis typoboth --tasks boolq --limit 2000 --out $O/blt${a}_typoboth_boolq.json ) ;;
+    blt_tc)   # BOOLQ_TYPO_CTX maps run_ext's boolq_typoboth sentinel to the context-only variants
+      ( cd /tmp && env CUDA_VISIBLE_DEVICES=$g $BLTENV BOOLQ_TYPO_CTX=1 \
+          $BLTPY $L $S/ext_ci/run_ext.py --family blt_official --threshold $(thr $a) \
+          --blt_weights $X/blt_weights --axis typoboth --tasks boolq --limit 2000 --out $O/blt${a}_typoctx_boolq.json ) ;;
+    hnet_tc)
+      ( cd /tmp && env CUDA_VISIBLE_DEVICES=$g $HNETENV BOOLQ_TYPO_CTX=1 \
+          $HNETPY $L $S/ext_ci/run_ext.py --family hnet --axis typoboth --tasks boolq --limit 2000 \
+          --out $O/hnet_typoctx_boolq.json ) ;;
     blt_leet)
       ( cd /tmp && env CUDA_VISIBLE_DEVICES=$g $BLTENV \
           $BLTPY -u $S/format_mc/run_format_ext.py --family blt_official --threshold $(thr $a) \
