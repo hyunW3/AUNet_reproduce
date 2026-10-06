@@ -33,7 +33,9 @@ PAIRS = os.environ.get("SNIAH_PAIRS", "/mnt/ssd2/hyun2/AUNet/reports/niah/sniah1
 PERTURB_SEED = 1234
 METRIC = {"hellaswag": "acc_norm", "arc_easy": "acc_norm", "arc_challenge": "acc_norm", "piqa": "acc_norm",
           "winogrande": "acc", "boolq": "acc", "mmlu_text": "acc",
-          "lambada_openai": "acc"}  # acc = greedy exact match of the whole last word (tokenizer-neutral)
+          "lambada_openai": "acc",  # acc = greedy exact match of the whole last word (tokenizer-neutral)
+          "lambada_openai_cloze_yaml": "acc",  # lm-eval GPT-3 format; few-shot demos get a double space (see tasks/lambada_openai_gpt3.yaml)
+          "lambada_openai_gpt3": "acc"}  # fixed GPT-3 fill-in-the-blank format (scripts/probes/std_bench/tasks)
 
 
 # =============================================================================== BLT (HF)

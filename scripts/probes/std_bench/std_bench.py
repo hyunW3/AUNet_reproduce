@@ -29,7 +29,7 @@ import run_ext  # noqa: E402
 TASKS = ["hellaswag", "arc_easy", "arc_challenge", "piqa", "winogrande", "boolq", "mmlu_text"]
 # Opt-in only (not in the default list): adding a task changes lingua's request packing, which would
 # shift item-level results of the default tasks. Run it alone: --tasks lambada_openai.
-EXTRA_TASKS = ["lambada_openai"]
+EXTRA_TASKS = ["lambada_openai", "lambada_openai_cloze_yaml", "lambada_openai_gpt3"]  # cloze = GPT-3 few-shot format
 
 
 def git_state(path):

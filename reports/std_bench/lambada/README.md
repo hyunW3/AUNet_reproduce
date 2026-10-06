@@ -73,3 +73,27 @@ earlier stories offer competing referents. Greedy continuations of the items rig
 names), but only 31% / 33% of the predictions are; about 15-18% of the flips copy a name that appears only in a
 demonstration (Kate->Edward, Ares->Alcander, Gregory->Hardy), and the rest switch to another passage word or a
 generic phrase (Hercules->"white one", Cooper->"the man"). Same pattern for every model; the Transformer loses most.
+
+## GPT-3 fill-in-the-blank format (2026-10-06)
+
+Prompt per item: `<passage without its last word> ____. ->` + ` <word>`, demonstrations in the same form joined by
+blank lines (Brown et al. 2020). Task `lambada_openai_gpt3` (`scripts/probes/std_bench/tasks/lambada_openai_gpt3.yaml`):
+`AUNET_TASKS=<that dir> SHOT=k TASKS=lambada_openai_gpt3 SUFFIX=gpt3 bash scripts/probes/std_bench/run_std_bench.sh <model>`.
+lm-eval's own `lambada_openai_cloze_yaml` is unusable few-shot: its demonstrations read `->  word` (two spaces; the
+target_delimiter is added only to demonstrations) while the scored continuation is ` word`, so every model scores
+0.00 at 3/5 shots. The fixed task sets target_delimiter "" (all 5,153 prompts checked: no double space). The 0-shot
+column below is the lm-eval cloze task (no demonstrations, so unaffected). Files: `<model>_gpt3_ds{0,3,5}.json`.
+
+| model | std 0 | std 3 | std 5 | GPT-3 0 | GPT-3 3 | GPT-3 5 |
+|---|---:|---:|---:|---:|---:|---:|
+| Transformer | 62.7 | 57.2 | 57.1 | 5.4 | 59.3 | 66.1 |
+| AUNet | 64.6 | 60.5 | 60.9 | 24.2 | 61.7 | 65.5 |
+| BPEByte | 64.8 | 61.5 | 61.3 | 28.5 | 66.1 | 70.8 |
+| BLT θ=1.34 | 66.3 | 61.9 | 61.7 | 12.5 | 48.0 | 50.2 |
+| BLT θ=1.61 | 65.5 | 61.1 | 61.3 | 13.0 | 46.4 | 48.4 |
+| H-Net | 48.5 | 43.1 | 43.1 | 12.3 | 39.2 | 43.5 |
+
+Paired differences (item bootstrap B=2000, 95% CI), GPT-3 format: 3-shot BPEByte−Transformer +6.8 [5.6, 8.1],
+AUNet−Transformer +2.4 [1.1, 3.8], BPEByte−AUNet +4.4 [3.1, 5.7]; 5-shot +4.7 [3.5, 6.0], −0.6 [−1.9, 0.7], +5.4 [4.2, 6.5].
+With the format cue, 5-shot beats the standard 0-shot for the three matched models; BLT and H-Net lose instead
+(BLT 50 vs 62 standard 5-shot) — not yet diagnosed.
