@@ -233,6 +233,10 @@ def nla_leet(sentence, seed=0, max_leet=0.5):
 NLA = {"nla_whitespace": nla_whitespace, "nla_underscore": nla_underscore,
        "nla_butter_fingers": nla_butter_fingers, "nla_change_char_case": nla_change_char_case,
        "nla_swap_characters": nla_swap_characters, "nla_leet": nla_leet}
+# "_both" variants (2026-10-06): the same transformation also applied to every answer option (leading space kept),
+# matching the both-region Noise/Despace/Typo axes. The context is byte-identical to the base variant. Not part of
+# all_variants(); request them explicitly (e.g. FORMAT_VARIANTS=clean,nla_leet_both).
+BOTH = {"nla_leet_both": "nla_leet"}
 
 # ----------------------------------------------------------------------------- FormatSpread
 # Value lists from msclar/formatspread grammar_definition.py. sep '' is excluded: upstream notes it
@@ -323,6 +327,7 @@ def perturb(task: str, ctx: str, variant: str, idx: int, fs_formats) -> str:
     if variant.startswith("fs"):
         return render_format(task, ctx, fs_formats[int(variant[2:])])
     block, cue = _split_cue(ctx)
+    variant = BOTH.get(variant, variant)
     if variant in NLA:
         block = NLA[variant](block)
     else:
@@ -396,6 +401,8 @@ def run_format_mc(loglikelihood, tasks=TASKS, variants=None, limit=2000, items_d
                 ks, lens = [], []
                 for opt in it["choices"]:
                     o = " " + (opt[1:] if opt.startswith(" ") else opt)
+                    if v in BOTH:
+                        o = " " + NLA[BOTH[v]](o[1:])
                     ks.append(_key(ctx, o))
                     lens.append(max(1, len(o.encode("utf-8"))))
                     pairs.append((ctx, o))
