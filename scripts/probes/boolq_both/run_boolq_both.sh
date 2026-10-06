@@ -4,17 +4,19 @@
 # average under the same protocol. Despace needs no run (despace_mc_boolq_despaceall exists; "yes"/"no" have no
 # spaces). Same settings as run_typoleet_both.sh: limit 2000, perturbation seed 1234, within-run clean baseline,
 # per-item correctness kept for the paired bootstrap.
-#   run_boolq_both.sh <out_dir> [gpus="0 1 2 3"]
+#   run_boolq_both.sh <out_dir> [gpus="0 1 2 3"] [job filter regex, e.g. '^(blt|hnet)']
+# Paths default to snu55/gpusvr0908; another node overrides LW, X (BLT weights dir), BLTPATH, BLTPY, HNETPY, HNET_REPO,
+# EVAL_SUITE, ITEMS, HF_HUB_CACHE (see run_boolq_both_snu20.sh).
 # Noise/Typo: boolq_both_tasks.py (overlay sentinels boolq_noiseboth / boolq_typoboth) via launch.py.
 # Leet: format_mc nla_leet_both on boolq (no code change; leet seed 0, the context block of the earlier runs).
 set -u
-O=$1; GPUS=${2:-0 1 2 3}
+O=$1; GPUS=${2:-0 1 2 3}; FILT=${3:-.}
 A=/mnt/ssd2/hyun2/AUNet
-LW=$A/lingua/.claude/worktrees/typo-leet-both
+LW=${LW:-$A/lingua/.claude/worktrees/typo-leet-both}
 S=$(cd "$(dirname "$0")/.." && pwd)
 L=$S/boolq_both/launch.py
-X=$A/runs/ext_ci_snu55
-ITEMS=$A/reports/format_robustness/items
+X=${X:-$A/runs/ext_ci_snu55}
+ITEMS=${ITEMS:-$A/reports/format_robustness/items}
 M=$A/main/main/1.3B
 declare -A CK=([llama]=$M/llama_1.8B_paper/checkpoints/0000060000/consolidated
                [aunet]=$M/aunet2_1.3B/checkpoints/0000180000/consolidated
@@ -29,17 +31,19 @@ if [ ! -f $Q ]; then
     for m in llama aunet bpebyte; do echo "trio_nt $m"; done
     for th in 1335 1609; do echo "blt_leet $th"; done
     echo "hnet_leet"; for m in llama aunet bpebyte; do echo "trio_leet $m"; done
-  } > $Q
+  } | grep -E "$FILT" > $Q
 fi
 NV=$A/lingua/.venv/lib/python3.12/site-packages/nvidia
 LDP="$(ls -d $NV/*/lib 2>/dev/null | paste -sd: -)"
 thr(){ [ "$1" = 1335 ] && echo 1.335442066192627 || echo 1.6093749403933089; }
 say(){ echo "$(date '+%F %T') $*" >> $O/queue.log; }
 pop(){ ( flock 9; l=$(head -n1 $Q); [ -n "$l" ] && tail -n +2 $Q > $Q.tmp && mv $Q.tmp $Q; echo "$l" ) 9>$Q.lock; }
-BLTENV="PYTHONPATH=$X/extra_site:$X/blt_official AUNET_LINGUA=$LW EVAL_SUITE=/mnt/ssd2/hyun2/eval_suite HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1 BLT_SUPPRESS_ATTN_ERROR=1"
-HNETENV="AUNET_LINGUA=$LW EVAL_SUITE=/mnt/ssd2/hyun2/eval_suite HNET_REPO=/mnt/ssd2/hyun2/hnet HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1"
-BLTPY=/mnt/ssd2/hyun2/venvs/vllm011/bin/python
-HNETPY=/home/hyunwoong/miniconda3/envs/spacebyte/bin/python
+ES=${EVAL_SUITE:-/mnt/ssd2/hyun2/eval_suite}
+HUB=${HF_HUB_CACHE:+HF_HUB_CACHE=$HF_HUB_CACHE}
+BLTENV="PYTHONPATH=${BLTPATH:-$X/extra_site:$X/blt_official} AUNET_LINGUA=$LW EVAL_SUITE=$ES HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1 BLT_SUPPRESS_ATTN_ERROR=1"
+HNETENV="AUNET_LINGUA=$LW EVAL_SUITE=$ES HNET_REPO=${HNET_REPO:-/mnt/ssd2/hyun2/hnet} HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1 $HUB"
+BLTPY=${BLTPY:-/mnt/ssd2/hyun2/venvs/vllm011/bin/python}
+HNETPY=${HNETPY:-/home/hyunwoong/miniconda3/envs/spacebyte/bin/python}
 
 run(){ local g=$1 kind=$2 a=${3:-}
   case $kind in
