@@ -35,3 +35,27 @@ commit 03c78ed). "In context" = the target occurs as a whole word in the passage
 | BLT θ=1.34 | 71.4 (+3.1) | 44.1 (+6.2) |
 | BLT θ=1.61 | 70.4 (+2.1) | 43.9 (+6.1) |
 | H-Net | 54.5 (−13.8) | 22.2 (−15.7) |
+
+## Few-shot (2026-10-06) — main-table Downstream Avg6
+
+`SHOT=3|5 TASKS=lambada_openai SUFFIX=lambada bash scripts/probes/std_bench/run_std_bench.sh <model>` on gpusvr0908
+(fewshot seed 1234 = the seed of the five multiple-choice tasks; lm-eval draws the demonstrations from the test split,
+excluding the scored item; every 5-shot prompt is < 2.6 KB, so BLT's 4096-byte context never truncates).
+Full outputs: `<model>_ds{3,5}.json` here (= `reports/std_bench/<model>/ds{3,5}_seed1234_lambada.json`).
+
+| model | 0-shot | 3-shot | 5-shot |
+|---|---:|---:|---:|
+| Transformer | 62.66 | 57.21 | 57.05 |
+| AUNet | 64.62 | 60.53 | 60.88 |
+| BPEByte | 64.78 | 61.46 | 61.34 |
+| BLT θ=1.34 | 66.33 | 61.91 | 61.69 |
+| BLT θ=1.61 | 65.46 | 61.07 | 61.30 |
+| H-Net | 48.50 | 43.10 | 43.10 |
+
+Demonstrations lower LAMBADA for every model (the harness format has no fill-in-the-blank cue); the Transformer loses
+the most. H-Net 3- and 5-shot are equal in total but differ on 572 items.
+
+Paper main table (`tab:main_robust`) Downstream Avg = mean of HS/ARC-E/ARC-C/PIQA/WG + LAMBADA at the same shot count:
+`python scripts/probes/ci_downstream6.py [--blt_prefix t1609_]` → `reports/ci_main_table/downstream6{,_t1609}.{json,md}`.
+Holm tests with these columns (8 columns × 3 pairs): `python scripts/probes/matched_holm.py --B 10000 --tex <sig_holm.tex>`
+→ `reports/sig_holm_avg6/`.

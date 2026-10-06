@@ -1,0 +1,178 @@
+{
+ "B": 2000,
+ "seed": 0,
+ "blt_prefix": "",
+ "results": {
+  "downstream6_0shot": {
+   "n_items": {
+    "hellaswag": 10042,
+    "arc_easy": 2376,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "winogrande": 1267,
+    "lambada_openai": 5153
+   },
+   "llama": {
+    "value": 60.348,
+    "ci95": [
+     59.504,
+     61.175
+    ],
+    "half_width": 0.835
+   },
+   "aunet": {
+    "value": 60.861,
+    "ci95": [
+     60.059,
+     61.704
+    ],
+    "half_width": 0.823
+   },
+   "bpebyte": {
+    "value": 61.005,
+    "ci95": [
+     60.166,
+     61.806
+    ],
+    "half_width": 0.82
+   },
+   "blt": {
+    "value": 63.837,
+    "ci95": [
+     63.058,
+     64.644
+    ],
+    "half_width": 0.793
+   },
+   "hnet": {
+    "value": 57.36,
+    "ci95": [
+     56.535,
+     58.207
+    ],
+    "half_width": 0.836
+   }
+  },
+  "lambada_0shot": {
+   "llama": 62.663,
+   "aunet": 64.623,
+   "bpebyte": 64.778,
+   "blt": 66.33,
+   "hnet": 48.496
+  },
+  "downstream6_3shot": {
+   "n_items": {
+    "hellaswag": 10042,
+    "arc_easy": 2376,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "winogrande": 1267,
+    "lambada_openai": 5153
+   },
+   "llama": {
+    "value": 61.145,
+    "ci95": [
+     60.346,
+     61.991
+    ],
+    "half_width": 0.822
+   },
+   "aunet": {
+    "value": 62.062,
+    "ci95": [
+     61.194,
+     62.886
+    ],
+    "half_width": 0.846
+   },
+   "bpebyte": {
+    "value": 62.352,
+    "ci95": [
+     61.507,
+     63.161
+    ],
+    "half_width": 0.827
+   },
+   "blt": {
+    "value": 65.489,
+    "ci95": [
+     64.691,
+     66.339
+    ],
+    "half_width": 0.824
+   },
+   "hnet": {
+    "value": 58.912,
+    "ci95": [
+     58.049,
+     59.786
+    ],
+    "half_width": 0.869
+   }
+  },
+  "lambada_3shot": {
+   "llama": 57.209,
+   "aunet": 60.528,
+   "bpebyte": 61.459,
+   "blt": 61.906,
+   "hnet": 43.101
+  },
+  "downstream6_5shot": {
+   "n_items": {
+    "hellaswag": 10042,
+    "arc_easy": 2376,
+    "arc_challenge": 1172,
+    "piqa": 1838,
+    "winogrande": 1267,
+    "lambada_openai": 5153
+   },
+   "llama": {
+    "value": 61.04,
+    "ci95": [
+     60.231,
+     61.863
+    ],
+    "half_width": 0.816
+   },
+   "aunet": {
+    "value": 62.648,
+    "ci95": [
+     61.815,
+     63.495
+    ],
+    "half_width": 0.84
+   },
+   "bpebyte": {
+    "value": 62.513,
+    "ci95": [
+     61.704,
+     63.343
+    ],
+    "half_width": 0.82
+   },
+   "blt": {
+    "value": 65.767,
+    "ci95": [
+     64.952,
+     66.567
+    ],
+    "half_width": 0.808
+   },
+   "hnet": {
+    "value": 59.267,
+    "ci95": [
+     58.418,
+     60.132
+    ],
+    "half_width": 0.857
+   }
+  },
+  "lambada_5shot": {
+   "llama": 57.054,
+   "aunet": 60.877,
+   "bpebyte": 61.343,
+   "blt": 61.692,
+   "hnet": 43.101
+  }
+ }
+}

@@ -1,0 +1,298 @@
+{
+ "B": 10000,
+ "seed": 0,
+ "points": {
+  "0-shot": {
+   "Transformer": 60.348,
+   "AUNet": 60.861,
+   "BPEByte": 61.005
+  },
+  "3-shot": {
+   "Transformer": 61.145,
+   "AUNet": 62.062,
+   "BPEByte": 62.352
+  },
+  "5-shot": {
+   "Transformer": 61.04,
+   "AUNet": 62.648,
+   "BPEByte": 62.513
+  },
+  "S-NIAH": {
+   "Transformer": 97.8,
+   "AUNet": 84.8,
+   "BPEByte": 98.533
+  },
+  "Noise": {
+   "Transformer": 20.698,
+   "AUNet": 16.185,
+   "BPEByte": 16.207
+  },
+  "Typo": {
+   "Transformer": 18.78,
+   "AUNet": 16.798,
+   "BPEByte": 17.078
+  },
+  "Despace": {
+   "Transformer": 17.415,
+   "AUNet": 23.321,
+   "BPEByte": 16.728
+  },
+  "Leet": {
+   "Transformer": 24.752,
+   "AUNet": 24.575,
+   "BPEByte": 25.137
+  }
+ },
+ "pairs": {
+  "0-shot|aunet|llama": {
+   "diff": 0.513,
+   "ci95": [
+    -0.254,
+    1.269
+   ],
+   "p": 0.1866,
+   "p_holm": 1.0
+  },
+  "0-shot|bpebyte|llama": {
+   "diff": 0.657,
+   "ci95": [
+    -0.063,
+    1.385
+   ],
+   "p": 0.0766,
+   "p_holm": 0.8426
+  },
+  "0-shot|bpebyte|aunet": {
+   "diff": 0.144,
+   "ci95": [
+    -0.56,
+    0.838
+   ],
+   "p": 0.682,
+   "p_holm": 1.0
+  },
+  "3-shot|aunet|llama": {
+   "diff": 0.917,
+   "ci95": [
+    0.15,
+    1.665
+   ],
+   "p": 0.0156,
+   "p_holm": 0.20279999999999998
+  },
+  "3-shot|bpebyte|llama": {
+   "diff": 1.207,
+   "ci95": [
+    0.467,
+    1.949
+   ],
+   "p": 0.0016,
+   "p_holm": 0.0224
+  },
+  "3-shot|bpebyte|aunet": {
+   "diff": 0.29,
+   "ci95": [
+    -0.399,
+    0.988
+   ],
+   "p": 0.4096,
+   "p_holm": 1.0
+  },
+  "5-shot|aunet|llama": {
+   "diff": 1.608,
+   "ci95": [
+    0.866,
+    2.363
+   ],
+   "p": 0.0002,
+   "p_holm": 0.003
+  },
+  "5-shot|bpebyte|llama": {
+   "diff": 1.473,
+   "ci95": [
+    0.739,
+    2.219
+   ],
+   "p": 0.0001,
+   "p_holm": 0.0024000000000000002
+  },
+  "5-shot|bpebyte|aunet": {
+   "diff": -0.135,
+   "ci95": [
+    -0.811,
+    0.551
+   ],
+   "p": 0.6984,
+   "p_holm": 1.0
+  },
+  "S-NIAH|aunet|llama": {
+   "diff": -13.0,
+   "ci95": [
+    -14.101,
+    -11.867
+   ],
+   "p": 0.0001,
+   "p_holm": 0.0024000000000000002
+  },
+  "S-NIAH|bpebyte|llama": {
+   "diff": 0.733,
+   "ci95": [
+    0.067,
+    1.4
+   ],
+   "p": 0.0292,
+   "p_holm": 0.3504
+  },
+  "S-NIAH|bpebyte|aunet": {
+   "diff": 13.733,
+   "ci95": [
+    12.7,
+    14.767
+   ],
+   "p": 0.0001,
+   "p_holm": 0.0024000000000000002
+  },
+  "Noise|aunet|llama": {
+   "diff": 4.513,
+   "ci95": [
+    3.528,
+    5.488
+   ],
+   "p": 0.0001,
+   "p_holm": 0.0024000000000000002
+  },
+  "Noise|bpebyte|llama": {
+   "diff": 4.491,
+   "ci95": [
+    3.534,
+    5.446
+   ],
+   "p": 0.0001,
+   "p_holm": 0.0024000000000000002
+  },
+  "Noise|bpebyte|aunet": {
+   "diff": -0.022,
+   "ci95": [
+    -0.882,
+    0.841
+   ],
+   "p": 0.9694,
+   "p_holm": 1.0
+  },
+  "Typo|aunet|llama": {
+   "diff": 1.982,
+   "ci95": [
+    1.075,
+    2.902
+   ],
+   "p": 0.0001,
+   "p_holm": 0.0024000000000000002
+  },
+  "Typo|bpebyte|llama": {
+   "diff": 1.703,
+   "ci95": [
+    0.834,
+    2.583
+   ],
+   "p": 0.0001,
+   "p_holm": 0.0024000000000000002
+  },
+  "Typo|bpebyte|aunet": {
+   "diff": -0.279,
+   "ci95": [
+    -1.157,
+    0.586
+   ],
+   "p": 0.5416,
+   "p_holm": 1.0
+  },
+  "Despace|aunet|llama": {
+   "diff": -5.905,
+   "ci95": [
+    -7.42,
+    -4.328
+   ],
+   "p": 0.0001,
+   "p_holm": 0.0024000000000000002
+  },
+  "Despace|bpebyte|llama": {
+   "diff": 0.687,
+   "ci95": [
+    -0.755,
+    2.155
+   ],
+   "p": 0.36,
+   "p_holm": 1.0
+  },
+  "Despace|bpebyte|aunet": {
+   "diff": 6.592,
+   "ci95": [
+    5.096,
+    8.075
+   ],
+   "p": 0.0001,
+   "p_holm": 0.0024000000000000002
+  },
+  "Leet|aunet|llama": {
+   "diff": 0.177,
+   "ci95": [
+    -1.144,
+    1.486
+   ],
+   "p": 0.8184,
+   "p_holm": 1.0
+  },
+  "Leet|bpebyte|llama": {
+   "diff": -0.385,
+   "ci95": [
+    -1.68,
+    0.873
+   ],
+   "p": 0.5498,
+   "p_holm": 1.0
+  },
+  "Leet|bpebyte|aunet": {
+   "diff": -0.562,
+   "ci95": [
+    -1.827,
+    0.718
+   ],
+   "p": 0.4006,
+   "p_holm": 1.0
+  }
+ },
+ "noninferiority": {
+  "0-shot": {
+   "pointwise": 0.45,
+   "simultaneous": 0.732
+  },
+  "3-shot": {
+   "pointwise": 0.282,
+   "simultaneous": 0.627
+  },
+  "5-shot": {
+   "pointwise": 0.704,
+   "simultaneous": 0.989
+  },
+  "S-NIAH": {
+   "pointwise": -12.867,
+   "simultaneous": -12.467
+  },
+  "Noise": {
+   "pointwise": 0.744,
+   "simultaneous": 1.13
+  },
+  "Typo": {
+   "pointwise": 1.003,
+   "simultaneous": 1.378
+  },
+  "Despace": {
+   "pointwise": -5.347,
+   "simultaneous": -4.726
+  },
+  "Leet": {
+   "pointwise": 1.624,
+   "simultaneous": 2.182
+  }
+ }
+}
