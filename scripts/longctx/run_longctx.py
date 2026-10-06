@@ -392,6 +392,8 @@ def main():
         return
 
     if args.bpe_decode == "inc":
+        # lingua >= 2026-10-06 always uses the trie cursor for the root_greedy arm (the env var is
+        # no longer read); set for older lingua checkouts that still gate it on AUNET_INC_PARSE
         os.environ["AUNET_INC_PARSE"] = "1"
     ext = args.family in ("blt", "hnet")
     if ext:
