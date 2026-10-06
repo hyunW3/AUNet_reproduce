@@ -119,3 +119,17 @@ Template ablation, first 1,000 items, 5-shot (tasks `lambada_gpt3_answer` = "___
 The `->` separator alone costs BLT 11.5 points (and helps the Transformer by 6.3), so the template choice reorders
 models; BPEByte is best under both separators. Even with `Answer:`, BLT and H-Net stay below their own standard
 0-shot score: they do not gain from cloze demonstrations, unlike the three matched models.
+
+### Patch statistics, standard vs cloze 5-shot prompts (500 items, `lambada_fewshot/patch_starts.py`, `patch_compare.py`)
+
+| parser | B/patch std / cloze | answer segmented identically | answer patches std → cloze |
+|---|---|---:|---|
+| Transformer | 4.25 / 4.24 | 100% | 1.28 → 1.28 |
+| AUNet | 4.56 / 4.37 | 100% | 1.02 → 1.02 |
+| BPEByte | 4.24 / 4.25 | 100% | 2.18 → 2.18 |
+| BLT θ=1.34 | 3.72 / 3.67 | 47.2% | 1.27 → 1.92 |
+| H-Net | 3.91 / 3.75 | 47.6% | 2.55 → 2.24 |
+
+Static parsers are context-free at the answer; the learned parsers re-segment it after a template change. BLT's
+accuracy drop is the same whether its answer segmentation changes (−9.2) or not (−8.5), so the parse does not
+explain the drop. Paper: Overleaf main 620af6a (app:lambada_gpt3, tab:lambada_gpt3, Sec 5.1 sentence).
