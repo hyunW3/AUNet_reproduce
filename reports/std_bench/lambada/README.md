@@ -59,3 +59,17 @@ Paper main table (`tab:main_robust`) Downstream Avg = mean of HS/ARC-E/ARC-C/PIQ
 `python scripts/probes/ci_downstream6.py [--blt_prefix t1609_]` → `reports/ci_main_table/downstream6{,_t1609}.{json,md}`.
 Holm tests with these columns (8 columns × 3 pairs): `python scripts/probes/matched_holm.py --B 10000 --tex <sig_holm.tex>`
 → `reports/sig_holm_avg6/`.
+
+### Why few-shot lowers LAMBADA (analysis 2026-10-06, scripts/probes/std_bench/lambada_fewshot/)
+
+Not context length: the exact prompts (rebuilt with the same lm-eval call, `dump_prompts.py`) are at most 2,003 B
+(3-shot) / 2,727 B (5-shot), far inside every model's window (Transformer 4,096 tokens, byte models >= 8,192 B, BLT 4,096 B),
+and the drop is flat across prompt-length quartiles (`flip.py`; Transformer 3-shot 5.9/4.8/6.1/5.0 points).
+
+The drop sits on targets that already occur in the passage (81% of items; Transformer -6.2 vs -2.2 points). lm-eval
+prepends 3-5 unrelated test passages joined by blank lines with no task marker, so the model reads one document whose
+earlier stories offer competing referents. Greedy continuations of the items right at 0-shot but wrong at 3-shot
+(`gen_flips.py`, `classify.py`; Transformer 483, BPEByte 397 items): 72% / 62% of these targets are capitalized (mostly
+names), but only 31% / 33% of the predictions are; about 15-18% of the flips copy a name that appears only in a
+demonstration (Kate->Edward, Ares->Alcander, Gregory->Hardy), and the rest switch to another passage word or a
+generic phrase (Hercules->"white one", Cooper->"the man"). Same pattern for every model; the Transformer loses most.
