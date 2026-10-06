@@ -9,7 +9,7 @@ BLT appears at both thresholds: released (theta=1.335) and compression-matched (
 Reads reports/patch_stats_both4/hist_<model>.json (written by measure_{trio,blt,hnet}.py) and writes
   paper_overleaf/table_appendix/patch_stats.tex           mean +- std patch length per benchmark / condition
   paper_overleaf/table_appendix/patch_dist.tex            distribution summary per evaluation family
-  paper_overleaf/figure_appendix/src/patch_len_hist.pdf   patch-length distributions (small multiples)
+  reports/patch_stats_both4/patch_len_hist.{pdf,png}           patch-length distributions (not in the paper since 2026-10-06)
   reports/patch_stats_both4/summary.md                    the same numbers, for the repo
 
 Because patches tile the text, the mean patch length (bytes / patches, pooled over all patches
@@ -128,7 +128,7 @@ def table_means(H):
            r"pooled over its four tasks with free-text answers; \textit{Noise}, \textit{Typo}, \textit{Despace}, and "
            r"\textit{Leet} each perturb both the context and every answer option, and \textit{PBP} is byte-identical "
            r"to \textit{Clean}, so it yields identical patches for every model. "
-           r"Table~\ref{tab:patch_dist} and Figure~\ref{fig:patch_len_hist} give the full distributions. "
+           r"Table~\ref{tab:patch_dist} summarizes the full distributions. "
            r"$^{\dagger}$BLT and $^{\ddagger}$H-Net are external references.}}",
            r"\label{tab:patch_stats}",
            r"\small", r"\setlength{\tabcolsep}{5pt}",
@@ -168,7 +168,7 @@ def table_dist(H):
            r"robustness suite). P95/P99 are percentiles over patches; \emph{1-byte patches} is the share of patches "
            r"that hold a single byte (no compression at that position), and \emph{Bytes in patches $>$16\,B} is the "
            r"share of input bytes that land in patches longer than $16$ bytes (information pooled into one global "
-           r"position). Figure~\ref{fig:patch_len_hist} plots the full distributions. "
+           r"position). "
            r"$^{\dagger}$BLT and $^{\ddagger}$H-Net are external references.}}",
            r"\label{tab:patch_dist}",
            r"\small", r"\setlength{\tabcolsep}{5pt}",
@@ -268,7 +268,7 @@ def main():
         od.mkdir(parents=True, exist_ok=True)
     (od / "patch_stats.tex" if od else OVL / "table_appendix/patch_stats.tex").write_text(table_means(H))
     (od / "patch_dist.tex" if od else OVL / "table_appendix/patch_dist.tex").write_text(table_dist(H))
-    figure(H, od / "patch_len_hist.pdf" if od else OVL / "figure_appendix/src/patch_len_hist.pdf",
+    figure(H, (od or IN) / "patch_len_hist.pdf",
            (od or IN) / "patch_len_hist.png")
     md = (od or IN) / "summary.md"
     summary_md(H, md)
