@@ -35,7 +35,8 @@ METRIC = {"hellaswag": "acc_norm", "arc_easy": "acc_norm", "arc_challenge": "acc
           "winogrande": "acc", "boolq": "acc", "mmlu_text": "acc",
           "lambada_openai": "acc",  # acc = greedy exact match of the whole last word (tokenizer-neutral)
           "lambada_openai_cloze_yaml": "acc",  # lm-eval GPT-3 format; few-shot demos get a double space (see tasks/lambada_openai_gpt3.yaml)
-          "lambada_openai_gpt3": "acc"}  # fixed GPT-3 fill-in-the-blank format (scripts/probes/std_bench/tasks)
+          "lambada_openai_gpt3": "acc",  # fixed GPT-3 fill-in-the-blank format (scripts/probes/std_bench/tasks)
+          "lambada_gpt3_noblank": "acc", "lambada_gpt3_answer": "acc"}  # format ablations of lambada_openai_gpt3
 
 
 # =============================================================================== BLT (HF)

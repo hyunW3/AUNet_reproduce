@@ -97,3 +97,25 @@ Paired differences (item bootstrap B=2000, 95% CI), GPT-3 format: 3-shot BPEByte
 AUNet−Transformer +2.4 [1.1, 3.8], BPEByte−AUNet +4.4 [3.1, 5.7]; 5-shot +4.7 [3.5, 6.0], −0.6 [−1.9, 0.7], +5.4 [4.2, 6.5].
 With the format cue, 5-shot beats the standard 0-shot for the three matched models; BLT and H-Net lose instead
 (BLT 50 vs 62 standard 5-shot) — not yet diagnosed.
+
+### Why BLT and H-Net lose in the GPT-3 format (2026-10-06, `format_ablation/`)
+
+Not length or a harness fault: 5-shot GPT-3 prompts are at most 2,776 B (inside BLT's 4,096), the `LIMIT=1000` reruns
+reproduce the full runs item by item (Transformer and BLT 1000/1000, H-Net 996/1000), and greedy outputs are single words.
+Greedy continuations on 200 items that BPEByte gets right and the model gets wrong (`gen_items.py`, `classify5.py`):
+BLT answers with another word of the same passage in 90.5% (113/181 of them capitalized, i.e. another character),
+an earlier demonstration's answer in 2%; H-Net: passage word 62%, new word 20%, demonstration answer 9%.
+
+Template ablation, first 1,000 items, 5-shot (tasks `lambada_gpt3_answer` = "____. Answer:", `lambada_gpt3_noblank` = "BLANK. ->"):
+
+| model | std 0-shot | std 5-shot | `____. ->` | `____. Answer:` | `BLANK. ->` |
+|---|---:|---:|---:|---:|---:|
+| Transformer | 61.7 | 56.6 | 63.7 | 57.4 | 43.8 |
+| AUNet | 63.0 | 60.0 | 62.4 | 63.4 | – |
+| BPEByte | 65.2 | 61.5 | 69.2 | 69.8 | – |
+| BLT θ=1.34 | 66.1 | 61.4 | 47.1 | 58.6 | 45.3 |
+| H-Net | 46.3 | 42.2 | 41.9 | 43.7 | 28.5 |
+
+The `->` separator alone costs BLT 11.5 points (and helps the Transformer by 6.3), so the template choice reorders
+models; BPEByte is best under both separators. Even with `Answer:`, BLT and H-Net stay below their own standard
+0-shot score: they do not gain from cloze demonstrations, unlike the three matched models.

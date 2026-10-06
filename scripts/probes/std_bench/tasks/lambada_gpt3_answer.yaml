@@ -1,0 +1,23 @@
+# GPT-3 fill-in-the-blank LAMBADA (Brown et al. 2020): "<passage without its last word> ____. Answer:" + " <word>".
+# Same as lm-eval's lambada_openai_cloze_yaml except target_delimiter "": lm-eval scores a loglikelihood request on
+# doc_to_target alone (" word") but writes few-shot demonstrations as target_delimiter + doc_to_target, so with the
+# default " " the demonstrations read "->  word" (two spaces), and greedy exact match fails on every item
+# (0.00 at 3/5 shots for all models). With "" both read "-> word".
+task: lambada_gpt3_answer
+dataset_path: EleutherAI/lambada_openai
+dataset_name: default
+output_type: loglikelihood
+test_split: test
+doc_to_text: "{{text.split(' ')[:-1]|join(' ')}} ____. Answer:"
+doc_to_target: "{{' '+text.split(' ')[-1]}}"
+target_delimiter: ""
+fewshot_delimiter: "\n\n"
+metric_list:
+  - metric: perplexity
+    aggregation: perplexity
+    higher_is_better: false
+  - metric: acc
+    aggregation: mean
+    higher_is_better: true
+metadata:
+  version: 1.0
