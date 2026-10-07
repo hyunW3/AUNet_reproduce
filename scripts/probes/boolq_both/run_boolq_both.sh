@@ -12,7 +12,7 @@
 set -u
 O=$1; GPUS=${2:-0 1 2 3}; FILT=${3:-.}
 A=/mnt/ssd2/hyun2/AUNet
-LW=${LW:-$A/lingua/.claude/worktrees/typo-leet-both}
+LW=${LW:-$A/lingua}   # lingua main (paper runs; the typo-leet-both worktree is no longer used)
 S=$(cd "$(dirname "$0")/.." && pwd)
 L=$S/boolq_both/launch.py
 X=${X:-$A/runs/ext_ci_snu55}
