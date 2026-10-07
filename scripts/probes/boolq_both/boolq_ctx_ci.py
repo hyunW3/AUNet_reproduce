@@ -14,9 +14,7 @@ import glob, json, os, sys
 import numpy as np
 
 L = "/mnt/ssd2/hyun2/AUNet"
-# Import ci_main_table / paper_robustness_tables from this checkout, not the shared main one: main's
-# paper_robustness_tables now reads BLT PBP from the 4-task pbp4.json, which has no BoolQ entry.
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # scripts/probes
 import ci_main_table as C  # noqa: E402
 import paper_robustness_tables as P  # noqa: E402
 
@@ -100,6 +98,8 @@ def main():
             res[m]["pbp"] = dict(delta=0.0)
             continue
         pr = R[m]["pbp"]
+        if "pbp_mc_boolq_space" not in pr:   # the 4-task BLT PBP re-run (pbp4.json) has no BoolQ: use the windowed BoolQ run
+            pr = J(f"{L}/reports/robustness_ext/{m}_pbp_ext.json")["raw"]
         res[m]["pbp"] = dict(delta=P._get(pr["pbp_mc_boolq_space"], "acc") - P._get(pr["pbp_mc_boolq_canonical"], "acc"))
     for m in MODELS:
         print(f"{m:8s} clean {res[m]['noise']['clean']:5.1f}  PBP {res[m]['pbp']['delta']:+6.2f}  " + "  ".join(
