@@ -17,12 +17,13 @@ lingua 기본값도 이 방식입니다(`34c5791`). `BPEBYTE_VOCAB_NORM=1`을 �
 | Despace | `runs/robustness_despace_bits/bpebyte` | 09-28 | **없음** | 기간 이전 |
 | Typo, Leet (메인/상세/범주 표, sig_holm, Fig.1) | `runs/robustness_paper4task_nonorm/{typo,leet}/bpebyte` | 10-07 | **없음** | `BPEBYTE_VOCAB_NORM=0`, lingua `aebc6a4`. 옛 경로 재현: Despace 2/640비트(vocab_norm이면 27/640), PIQA clean 72.63(옛 72.58) |
 | 100M parser ablation | `reports_NAACL/parser_ablation_100M` | 10-05~06 | **없음** | ece 스냅샷 `3528f19`(기간 이전 코드) |
-| BoolQ context-only Typo (`tab:boolq_robust`, −6.39) | `runs/robustness_boolq_ctx/trio_tc_bpebyte` | 10-07 00:09 | **있음** | `typo-leet-both` worktree `1293152`. **재실행 필요** |
-| BoolQ Leet both (부록 "n0 97–100%, 37–39%") | `runs/robustness_boolq_both/trio_leet_bpebyte` | 10-06 20:54 | **있음** | 같음. **재실행 필요** |
+| BoolQ context-only Typo (`tab:boolq_robust`, −5.79 ± 1.4) | `runs/robustness_boolq_nonorm/trio_tc_bpebyte` | 10-07 13:52 | **없음** | `eval_meta.scoring.vocab_norm=False`. Overleaf `0f9b27b`에 반영(이전 vocab_norm 실행 `runs/robustness_boolq_ctx/trio_tc_bpebyte`는 −6.39) |
+| BoolQ Leet both (부록 "n0 97–100%, 37–39%") | `runs/robustness_boolq_nonorm/trio_leet_bpebyte` | 10-07 13:46 | **없음** | `eval_meta.scoring.vocab_norm=False`. 정확도 37.3%(이전 37.2%)라 문장은 그대로 성립 |
 | BPB 0.908 | 논문 커밋 `7fafb65` | 07-29 | 해당 없음 | `model.forward`(학습과 같은 경로)로 계산 |
 | Latency | fast-decode 경로 | — | 해당 없음 | 채점이 아니라 속도 측정. 이 경로는 원래 vocab_norm을 적용 |
 
 ## 논문에 쓰이지 않는 vocab_norm 결과 (참고)
+- `runs/robustness_boolq_ctx/trio_tc_bpebyte`, `runs/robustness_boolq_both/trio_leet_bpebyte`: 위의 nonorm 재실행으로 대체됐습니다.
 - `runs/robustness_typoleet_both/trio_{typo,leet}_bpebyte` (10-06): 위의 nonorm 재실행으로 대체됐습니다.
 - `runs/robustness_boolq_both/trio_nt_bpebyte` (10-06): `five_task_summary.json`에만 쓰입니다.
 - `runs/robustness_paper4task/{noise_pbp,despace}/bpebyte` (10-07): vocab_norm 효과를 보려고 일부러 돌린 비교 실행입니다.
