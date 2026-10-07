@@ -411,8 +411,11 @@ def main():
         # 14 CUTE subtasks (eval_tasks/gen_mc/cute_*.yaml), generate_until + exact_match on the quoted
         # span; per-item raw/filtered responses kept so truncation and extraction can be audited.
         from lm_eval import simple_evaluate
-        attach_early_stop(lm, a.family)
-        r = simple_evaluate(lm, tasks=expand_cute_tasks(["cute"]), num_fewshot=0,
+        if not os.environ.get("CUTE_NO_EARLY_STOP"):   # =1: canonical harness decode (equivalence check)
+            attach_early_stop(lm, a.family)
+        tl = [t for t in a.tasks if t.startswith("cute_")] or expand_cute_tasks(["cute"])  # shard by subtask
+        out["tasks"] = tl
+        r = simple_evaluate(lm, tasks=tl, num_fewshot=0,
                             task_manager=safe_task_manager(f"{TASKS_DIR}/gen_mc"), limit=a.limit,
                             log_samples=True, bootstrap_iters=0, random_seed=0,
                             numpy_random_seed=PERTURB_SEED, torch_random_seed=PERTURB_SEED)
