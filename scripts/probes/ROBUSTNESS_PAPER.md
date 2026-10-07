@@ -13,6 +13,12 @@ PBP·Despace 원시 실행에는 BoolQ 결과도 들어 있지만 표에서는 �
 `scripts/probes/paper_robustness_tables.py --overleaf paper_overleaf`
 → `table_appendix/robustness_detail.tex`, `tables/robustness_category.tex`
 
+## 한 번에 재현 (Transformer / AUNet / BPEByte)
+
+`bash lingua/scripts/eval/robustness/queue_robustness_paper.sh [out=runs/robustness_paper4task] [gpus=0,1,2,3] [arms]`
+→ `<out>/{noise_pbp,typo,despace,leet}/<arm>/results.json`. 4태스크, both 변형, seed 1234이며 아래 표의 개별 실행과 같은 프로토콜입니다.
+표 스크립트는 아직 아래 기존 경로를 읽습니다.
+
 ## 축별 실행 스크립트 → 결과 위치
 
 | 축 | Transformer / AUNet / BPEByte | BLT (θ=1.34, 1.61) · H-Net |
