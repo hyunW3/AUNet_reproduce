@@ -36,7 +36,7 @@ PBP·Despace 원시 실행에는 BoolQ 결과도 들어 있지만 표에서는 �
 
 ## 주의
 
-- 논문 표를 만든 4태스크 버전 `paper_robustness_tables.py`(`TASKS`에서 BoolQ 제거, typoboth/leet 로딩)는 2026-10-07 기준 **아직 커밋되지 않았습니다**. main의 커밋본은 5태스크입니다.
+- BPEByte 채점은 2026-10-05부터 `vocab_norm`을 적용합니다(`lingua/apps/aunet/SCORING_POLICY.md`). 기존 Noise/PBP(8/29)와 Despace(9/28) 결과는 적용 전, Typo/Leet(10/6)는 적용 후 코드로 나왔습니다.
 - Typo/Leet 실행: `bash scripts/probes/run_typoleet_both.sh runs/robustness_typoleet_both "0 1 2 3"` (`typo-leet-both` 브랜치를 main에 merge, lingua `eval_typo_ds` typoboth 포함).
 - `runs/`는 gitignore 대상이라 Despace 큐 `runs/robustness_despace_bits/queue.sh`는 추적되지 않습니다. 실행 당시(2026-09-28)에만 있던 `lingua/run_robustness_local.sh` 사본을 호출하므로, 재실행할 때는 `lingua/scripts/eval/robustness/run_robustness_local.sh`를 쓰면 됩니다. 결과는 이미 있어 표 생성에는 영향이 없습니다.
 - 메인 표 ± CI: Noise/Despace는 `reports/ci_main_table/ci_both4.json`(생성 스크립트는 저장소에 없음), Typo/Leet는 `reports/ci_main_table/ci_typoleet_both.py` → `ci_typoleet_both.json`입니다.
