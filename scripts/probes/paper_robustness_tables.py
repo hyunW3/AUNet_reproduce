@@ -55,9 +55,8 @@ DESPACE = (("despace", "Context"), ("despaceans", "Answer"), ("despaceall", "Bot
 # runs/robustness_typoleet_both.
 REGION_AXES = ("noise", "typo", "despace", "leet")
 TL = f"{L}/runs/robustness_typoleet_both"
-# BPEByte Typo/Leet: no-vocab_norm reruns (official AU-Net generator, the scoring path of every other paper BPEByte
-# number; lingua SCORING_POLICY.md 2026-10-07). The 2026-10-06 trio_{typo,leet}_bpebyte runs applied vocab_norm.
-TL_NONORM = f"{L}/runs/robustness_paper4task_nonorm"
+# BPEByte Typo/Leet: 2026-10-07 rerun (scripts/eval/robustness/queue_robustness_paper.sh, stages typo/leet)
+TL_BPE = f"{L}/runs/robustness_paper4task_bpebyte"
 T4 = ("hellaswag", "arc_easy", "arc_challenge", "piqa")
 
 
@@ -140,9 +139,9 @@ def load_results():
     # nla_leet_both, each with its own within-run clean baseline.
     for m in MODELS:
         typo, leet = {}, {}
-        tf = ([f"{TL_NONORM}/typo/bpebyte/results.json"] if m == "bpebyte" else [f"{TL}/trio_typo_{m}/results.json"] if m in MATCHED else
+        tf = ([f"{TL_BPE}/typo/bpebyte/results.json"] if m == "bpebyte" else [f"{TL}/trio_typo_{m}/results.json"] if m in MATCHED else
               sorted(glob.glob(f"{TL}/blt1335_typoboth_*.json")) if m == "blt" else [f"{TL}/hnet_typoboth.json"])
-        lf = ([f"{TL_NONORM}/leet/bpebyte/results.json"] if m == "bpebyte" else [f"{TL}/trio_leet_{m}/results.json"] if m in MATCHED else
+        lf = ([f"{TL_BPE}/leet/bpebyte/results.json"] if m == "bpebyte" else [f"{TL}/trio_leet_{m}/results.json"] if m in MATCHED else
               sorted(glob.glob(f"{TL}/blt1335_leetboth_*.json")) if m == "blt" else [f"{TL}/hnet_leetboth.json"])
         for f in tf:
             typo.update(json.load(open(f))["results"])

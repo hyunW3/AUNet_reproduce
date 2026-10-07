@@ -10,8 +10,8 @@ sys.path.insert(0, "/mnt/ssd2/hyun2/AUNet/scripts/probes")
 import ci_main_table as C
 
 R = Path("/mnt/ssd2/hyun2/AUNet/runs/robustness_typoleet_both")
-# BPEByte: no-vocab_norm reruns (official AU-Net generator; lingua SCORING_POLICY.md 2026-10-07).
-NONORM = Path("/mnt/ssd2/hyun2/AUNet/runs/robustness_paper4task_nonorm")
+# BPEByte Typo/Leet: 2026-10-07 rerun (scripts/eval/robustness/queue_robustness_paper.sh, stages typo/leet)
+BPE = Path("/mnt/ssd2/hyun2/AUNet/runs/robustness_paper4task_bpebyte")
 T4 = ("hellaswag", "arc_easy", "arc_challenge", "piqa")
 MET = {"hellaswag": "acc_norm", "arc_easy": "acc_norm", "arc_challenge": "acc_norm", "piqa": "acc"}
 MODELS = ("llama", "aunet", "bpebyte", "blt", "blt161", "hnet")
@@ -19,7 +19,7 @@ MODELS = ("llama", "aunet", "bpebyte", "blt", "blt161", "hnet")
 
 def typo_samples(m):
     if m == "bpebyte":
-        return json.load(open(NONORM / "typo/bpebyte/results.json"))["samples"]
+        return json.load(open(BPE / "typo/bpebyte/results.json"))["samples"]
     if m in ("llama", "aunet"):
         return json.load(open(R / f"trio_typo_{m}/results.json"))["samples"]
     S = {}
@@ -31,7 +31,7 @@ def typo_samples(m):
 
 def leet_rows(m):
     files = {"llama": ["trio_leet_llama/results.json"], "aunet": ["trio_leet_aunet/results.json"],
-             "bpebyte": [str(NONORM / "leet/bpebyte/results.json")], "blt": sorted(glob.glob(str(R / "blt1335_leetboth_*.json"))),
+             "bpebyte": [str(BPE / "leet/bpebyte/results.json")], "blt": sorted(glob.glob(str(R / "blt1335_leetboth_*.json"))),
              "blt161": sorted(glob.glob(str(R / "blt1609_leetboth_*.json"))), "hnet": ["hnet_leetboth.json"]}[m]
     rows = {}
     for f in files:
