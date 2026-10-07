@@ -133,3 +133,29 @@ models; BPEByte is best under both separators. Even with `Answer:`, BLT and H-Ne
 Static parsers are context-free at the answer; the learned parsers re-segment it after a template change. BLT's
 accuracy drop is the same whether its answer segmentation changes (−9.2) or not (−8.5), so the parse does not
 explain the drop. Paper: Overleaf main 620af6a (app:lambada_gpt3, tab:lambada_gpt3, Sec 5.1 sentence).
+
+### Why BLT / H-Net swing: referent choice among the passage's names (2026-10-07, `lambada_fewshot/cand_*.py`)
+
+300 items whose target is a character name already in the passage; candidates = the passage's names (mean 3.0,
+chance ~1/3); choice = argmax log P(" name"); greedy = harness acc. Exact std_bench prompts at 0/3/5 shots.
+
+| model | std 0 | std 3 | std 5 | cloze 0 | cloze 3 | cloze 5 | Answer: 5 |
+|---|---|---|---|---|---|---|---|
+| Transformer | 90.3 / 66.3 | 90.7 / 60.3 | 87.7 / 59.0 | 59.0 / 9.7 | 76.7 / 64.0 | 75.0 / 67.7 | 71.3 / 63.7 |
+| AUNet | 90.0 / 65.3 | 91.3 / 64.0 | 88.7 / 63.7 | 67.0 / 32.0 | 84.3 / 67.7 | 78.7 / 66.7 | 79.7 / 69.0 |
+| BPEByte | 88.7 / 70.0 | 90.7 / 66.0 | 89.0 / 64.7 | 66.0 / 25.7 | 83.0 / 72.7 | 83.0 / 76.7 | 84.0 / 76.7 |
+| BLT θ=1.34 | 94.7 / 73.0 | 93.3 / 68.3 | 93.7 / 65.3 | 79.0 / 14.3 | 65.7 / 52.7 | 61.0 / 48.3 | 70.3 / 58.7 |
+| H-Net | 81.0 / 47.3 | 83.3 / 41.3 | 81.3 / 40.7 | 52.7 / 12.3 | 59.0 / 41.0 | 55.0 / 43.3 | 61.0 / 46.3 |
+
+(cells: name-choice % / greedy %)
+
+- Standard format: every model knows the referent (81–95%); greedy loses 20–40 points to non-name continuations
+  (the problem the cloze format was designed for).
+- Cloze, 0-shot: BLT resolves the blank best of all models (79.0 vs 52.7–67.0), so it understands the frame itself.
+- Cloze demonstrations: the three matched models gain 17–18 points of name choice (0→3 shots); BLT loses 13–18
+  (79.0 → 65.7 → 61.0) and H-Net stays flat. BLT's loss is not copying (demonstration answers are not candidates,
+  and greedy copies them in 2%): the demonstrations blur its ranking among the passage's own names
+  (margin +3.57 → +0.64 nats at 5 shots). "Answer:" softens it (70.3).
+- Wrong names are not biased to the most frequent or most recent other name: on items with >= 2 other names, both
+  rates match a uniform draw over the other names (e.g. BLT cloze 70.1% vs 62.2%, 34.3% vs 37.8%). The earlier
+  "~80% most frequent" reading was an artifact of items with a single other name.
