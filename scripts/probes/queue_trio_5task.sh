@@ -38,9 +38,9 @@ launch() {   # arm ckpt step cfg gpu port
 
 i=0
 for spec in \
-  "llama|$M/llama_1.8B_paper/checkpoints/0000060000/consolidated|60000|apps/main/configs/eval_robustness_llama_5task_local.yaml" \
-  "aunet|$M/aunet2_1.3B/checkpoints/0000180000/consolidated|180000|apps/aunet/configs/eval_robustness_aunet2_5task_local.yaml" \
-  "bpebyte|$M/bpebyte_br_greedy_root_1.3B/checkpoints/0000180000/consolidated|180000|apps/aunet/configs/eval_robustness_bpebyte_5task_local.yaml" ; do
+  "llama|$M/llama_1.8B_paper/checkpoints/0000060000/consolidated|60000|apps/main/configs/robustness_legacy/eval_robustness_llama_5task_local.yaml" \
+  "aunet|$M/aunet2_1.3B/checkpoints/0000180000/consolidated|180000|apps/aunet/configs/robustness_legacy/eval_robustness_aunet2_5task_local.yaml" \
+  "bpebyte|$M/bpebyte_br_greedy_root_1.3B/checkpoints/0000180000/consolidated|180000|apps/aunet/configs/robustness_legacy/eval_robustness_bpebyte_5task_local.yaml" ; do
   IFS='|' read -r arm ck step cfg <<< "$spec"
   if [ -f "$OUT/$arm/results.json" ]; then echo "SKIP $arm"; continue; fi
   g=""

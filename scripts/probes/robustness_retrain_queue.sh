@@ -2,8 +2,8 @@
 # 재학습본 1.3B robustness — 논문 학습본(runs/robustness_paper1p3b{,_ext}) 과 짝을 맞춘 실행.
 #
 # 왜 두 번 도는가: §12.1 의 5태스크 표는 config 두 개의 합이다.
-#   base : hellaswag, arc_easy            (eval_robustness_*_local.yaml)
-#   ext  : arc_challenge, piqa, boolq     (eval_robustness_*_local_ext.yaml)
+#   base : hellaswag, arc_easy            (robustness_legacy/eval_robustness_*_local.yaml)
+#   ext  : arc_challenge, piqa, boolq     (robustness_legacy/eval_robustness_*_local_ext.yaml)
 # despace/pbp_mc 는 코드가 태스크를 하드코딩하므로 실행기에 환경변수로 넘겨야 한다.
 #
 # GPU 는 논문 실행과 같은 0,1,2 세 장을 쓴다(당시 헤더: "gpus=0,1,2"). 점수에는 영향이 없지만
@@ -29,9 +29,9 @@ run(){  # arm step cfg_kind
   out=$L/runs/robustness_retrain1p3b$suffix/$arm
   if [ -f "$out/results.json" ]; then say "생략 $arm/$kind (결과 있음)"; return 0; fi
   case "$arm" in
-    llama)   cfg=apps/main/configs/eval_robustness_llama_local ;;
-    bpebyte) cfg=apps/aunet/configs/eval_robustness_bpebyte_local ;;
-    aunet)   cfg=apps/aunet/configs/eval_robustness_aunet2_local ;;
+    llama)   cfg=apps/main/configs/robustness_legacy/eval_robustness_llama_local ;;
+    bpebyte) cfg=apps/aunet/configs/robustness_legacy/eval_robustness_bpebyte_local ;;
+    aunet)   cfg=apps/aunet/configs/robustness_legacy/eval_robustness_aunet2_local ;;
   esac
   [ "$kind" = ext ] && cfg="${cfg}_ext"
   say "시작 $arm/$kind (GPU$GPUS)"

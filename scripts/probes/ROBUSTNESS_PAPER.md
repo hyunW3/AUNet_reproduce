@@ -17,6 +17,8 @@ PBP·Despace 원시 실행에는 BoolQ 결과도 들어 있지만 표에서는 �
 
 `bash lingua/scripts/eval/robustness/queue_robustness_paper.sh [out=runs/robustness_paper4task] [gpus=0,1,2,3] [arms]`
 → `<out>/{noise_pbp,typo,despace,leet}/<arm>/results.json`. 4태스크, both 변형, seed 1234이며 아래 표의 개별 실행과 같은 프로토콜입니다.
+기본 config: `lingua/apps/{main,aunet}/configs/eval_robustness_<arm>_paper4.yaml`(4태스크). 큐가 단계별 `harness.tasks`로 덮어써 `<out>/cfg/<stage>_<arm>.yaml`을 만듭니다.
+논문 표에 쓰지 않는 이전 설정(HS/ARC-E + `_ext`, `5task`, B200 pbp/typo, despace_graded)은 `configs/robustness_legacy/`로 옮겼습니다.
 표 스크립트는 아직 아래 기존 경로를 읽습니다.
 
 ## 축별 실행 스크립트 → 결과 위치
