@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""논문 robustness 표 생성 — 통일 5태스크 프로토콜 (HellaSwag/ARC-E/ARC-C/PIQA/BoolQ, limit 2000).
+"""논문 robustness 표 생성 — 통일 4태스크 프로토콜 (HellaSwag/ARC-E/ARC-C/PIQA, limit 2000).
+2026-10-06: BoolQ 를 모든 축에서 제외 (1B 모델이 다수 클래스 baseline 62.2% 근처라 신호가 약함).
 
 두 표를 TeX 로 직접 쓴다 (손 전사 금지):
   table_appendix/robustness_detail.tex : 태스크별 clean→perturbed (Δ), 축 평균 = tab:main_13b 값
@@ -30,7 +31,7 @@ FMT = os.environ.get("FORMAT_ROBUSTNESS_DIR",
                      os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "reports", "format_robustness"))
 FMT_SRC = {"llama": ["leet_extra/llama/results.json"], "aunet": ["raw/aunet/results.json"],
            "bpebyte": ["raw/bpebyte/results.json"], "blt": ["raw/blt_*_B.json"], "hnet": ["raw/hnet.json"]}
-TASKS = ("hellaswag", "arc_easy", "arc_challenge", "piqa", "boolq")
+TASKS = ("hellaswag", "arc_easy", "arc_challenge", "piqa")  # BoolQ dropped from every axis (2026-10-06)
 TNAME = {"hellaswag": "HellaSwag", "arc_easy": "ARC-Easy", "arc_challenge": "ARC-Challenge",
          "piqa": "PIQA", "boolq": "BoolQ"}
 MODELS = ("llama", "aunet", "bpebyte", "blt", "hnet")
@@ -41,11 +42,24 @@ NOWIN = {}
 NOWIN_MARK = r"$^{\circ}$"
 NOWIN_NOTE = ""
 MATCHED = ("llama", "aunet", "bpebyte")
+DETAIL_MODELS = ("llama", "aunet", "bpebyte", "blt", "blt1609", "hnet")   # detail table: + BLT theta=1.61
+PBP_ZERO = ("blt1609",)   # PBP not run; Delta = 0 by construction for byte-level input
 NOISE = ("antspeak", "drop", "randomcase", "repeat", "uppercase")
 NOISE_POS = ("prompt", "completion", "both")
 TYPO = ("delete", "swap", "key", "insert")
 TYPO_LVL = ("char", "word")
 DESPACE = (("despace", "Context"), ("despaceans", "Answer"), ("despaceall", "Both"))
+# 2026-10-06: every perturbation (Noise, Typo, Despace, Leet) is applied to the context AND the answer options
+# ("both" region) and averaged over the four tasks with free-text answers; BoolQ is excluded because its yes/no
+# options cannot be perturbed. PBP perturbs no option but uses the same four tasks (TASKS == T4). Typo / Leet both-region runs:
+# runs/robustness_typoleet_both.
+REGION_AXES = ("noise", "typo", "despace", "leet")
+TL = f"{L}/runs/robustness_typoleet_both"
+T4 = ("hellaswag", "arc_easy", "arc_challenge", "piqa")
+
+
+def axis_tasks(axis):
+    return T4 if axis in REGION_AXES else TASKS
 
 
 def _get(r, metric):
@@ -119,23 +133,43 @@ def load_results():
             if m == "blt" and ax == "despace":
                 res.update(json.load(open(f"{L}/reports/blt_threshold_ab/rob_despace_thr1.3354.json"))["raw"])
             R[m][ax] = res
-    for m in MODELS:          # Leet: clean / nla_leet per-item bits of the format_mc runs
-        rows = {}
-        for pat in FMT_SRC[m]:
-            for f in glob.glob(os.path.join(FMT, pat)):
-                rows.update(json.load(open(f))["results"])
-        R[m]["leet"] = rows
+    # Typo / Leet on the both region (scripts/probes/run_typoleet_both.sh): typoboth variants and format_mc
+    # nla_leet_both, each with its own within-run clean baseline.
+    for m in MODELS:
+        typo, leet = {}, {}
+        tf = ([f"{TL}/trio_typo_{m}/results.json"] if m in MATCHED else
+              sorted(glob.glob(f"{TL}/blt1335_typoboth_*.json")) if m == "blt" else [f"{TL}/hnet_typoboth.json"])
+        lf = ([f"{TL}/trio_leet_{m}/results.json"] if m in MATCHED else
+              sorted(glob.glob(f"{TL}/blt1335_leetboth_*.json")) if m == "blt" else [f"{TL}/hnet_leetboth.json"])
+        for f in tf:
+            typo.update(json.load(open(f))["results"])
+        for f in lf:
+            leet.update(json.load(open(f))["results"])
+        R[m]["typo"], R[m]["leet"] = typo, leet
+    # BLT at the compression-matched entropy threshold (theta=1.61, 2026-10-06): same official-bytelatent protocol;
+    # Noise/Despace from reports/ext_ci/blt_official/t1609_*, Typo/Leet from the both-region blt1609_* runs.
+    # PBP is not re-run: it leaves the byte sequence unchanged, so its Delta is 0 by construction (PBP_ZERO).
+    d = f"{L}/reports/ext_ci/blt_official"
+    b = {"pbp": {}, "noise": {}, "despace": {}, "typo": {}, "leet": {}}
+    for f in sorted(glob.glob(f"{d}/t1609_noise_*.json")):
+        b["noise"].update(json.load(open(f))["results"])
+    b["despace"].update(json.load(open(f"{d}/t1609_despace.json"))["results"])
+    for f in sorted(glob.glob(f"{TL}/blt1609_typoboth_*.json")):
+        b["typo"].update(json.load(open(f))["results"])
+    for f in sorted(glob.glob(f"{TL}/blt1609_leetboth_*.json")):
+        b["leet"].update(json.load(open(f))["results"])
+    R["blt1609"] = b
     return R
 
 
-def noise_keys(t, strat=None):
+def noise_keys(t, strat=None, pos=("both",)):
     ss = (strat,) if strat else NOISE
-    return [f"{t}_noise_{s}_{p}" for s in ss for p in NOISE_POS]
+    return [f"{t}_noise_{s}_{p}" for s in ss for p in pos]
 
 
 def typo_keys(t, op=None):
     ops = (op,) if op else TYPO
-    return [f"{t}_typo_{o}_{l}" for o in ops for l in TYPO_LVL]
+    return [f"{t}_typoboth_{o}_{l}" for o in ops for l in TYPO_LVL]
 
 
 def cell(model_res, t, axis, sub=None):
@@ -153,7 +187,7 @@ def cell(model_res, t, axis, sub=None):
         p = _norm(res.get(f"despace_mc_{t}_{sub or 'despaceall'}"), t)
         return None if c is None or p is None else (c, p)
     if axis == "leet":       # acc_norm, PIQA/BoolQ acc (as Noise/Typo/Despace); from per-item bits
-        c, p = res.get(f"fmt_{t}_clean"), res.get(f"fmt_{t}_nla_leet")
+        c, p = res.get(f"fmt_{t}_clean"), res.get(f"fmt_{t}_nla_leet_both")
         if not c or not p:
             return None
         k = _metric(t)
@@ -165,8 +199,8 @@ def cell(model_res, t, axis, sub=None):
 
 
 def axis_delta(res, axis, sub=None):
-    """5태스크 macro 평균 Δ (signed). 한 태스크라도 없으면 None."""
-    cs = [cell(res, t, axis, sub) for t in TASKS]
+    """태스크 macro 평균 Δ (signed; Noise/Despace 는 T4, 나머지는 5태스크). 한 태스크라도 없으면 None."""
+    cs = [cell(res, t, axis, sub) for t in axis_tasks(axis)]
     return None if any(c is None for c in cs) else st.mean(p - c for c, p in cs)
 
 
@@ -189,51 +223,48 @@ def _signed(x, nd):
 
 
 def detail_tex(R):
+    MODELS = DETAIL_MODELS
     head = " & " + " & ".join([r"\textbf{Transformer}", r"\textbf{AUNet}", r"\textbf{BPEByte}",
-                               r"\textbf{BLT}$^{\dagger}$", r"\textbf{H-Net}$^{\ddagger}$"]) + r" \\"
+                               r"\textbf{BLT}$^{\dagger}$", r"\textbf{BLT}$^{\dagger}$ ($\theta{=}1.61$)",
+                               r"\textbf{H-Net}$^{\ddagger}$"]) + r" \\"
     blocks = [("pbp", r"\emph{Prompt-boundary shift} (acc, canonical $\rightarrow$ shifted, $\Delta$)"),
-              ("noise", r"\emph{Character noise} (acc\_norm; PIQA/BoolQ acc, clean $\rightarrow$ perturbed, $\Delta$)"),
-              ("typo", r"\emph{Typos} (acc\_norm; PIQA/BoolQ acc, clean $\rightarrow$ perturbed, $\Delta$)"),
-              ("despace", r"\emph{Despace} (acc\_norm; PIQA/BoolQ acc, clean $\rightarrow$ all spaces removed, $\Delta$)"),
-              ("leet", r"\emph{Leet} (acc\_norm; PIQA/BoolQ acc, clean $\rightarrow$ leetspeak, $\Delta$)")]
+              ("noise", r"\emph{Character noise} (acc\_norm; PIQA acc, clean $\rightarrow$ context and options perturbed, $\Delta$)"),
+              ("typo", r"\emph{Typos} (acc\_norm; PIQA acc, clean $\rightarrow$ context and options perturbed, $\Delta$)"),
+              ("despace", r"\emph{Despace} (acc\_norm; PIQA acc, clean $\rightarrow$ all spaces removed from context and options, $\Delta$)"),
+              ("leet", r"\emph{Leet} (acc\_norm; PIQA acc, clean $\rightarrow$ leetspeak context and options, $\Delta$)")]
     out = [r"% GENERATED by AUNet/scripts/probes/paper_robustness_tables.py — edit the script, not this file.",
-           r"\begin{table*}[t]", r"\centering", r"\small", r"\setlength{\tabcolsep}{2.5pt}",
-           r"\fitcolumn[\textwidth]{%", r"\begin{tabular}{lccccc}", r"\toprule", head, r"\midrule"]
+           r"\begin{table*}[t]", r"\centering",
+           "\\caption{\\hyun{Per-task robustness at 1B under the unified four-task protocol (HellaSwag, ARC-Easy, ARC-Challenge, PIQA) (up to $2{,}000$ items per task, shared perturbation seed). Each cell gives the perturbed accuracy and, in parentheses, its change from the model's own clean baseline; the \\emph{Average $\\Delta$} rows are the task means whose absolute values appear in Table~\\ref{tab:main_robust}. \\textit{Noise} averages its $5$ strategies, \\textit{Typo} its $8$ variants ($4$ edits $\\times$ character/word), \\textit{Leet} applies the Leet Transformation of NL-Augmenter~\\citep{dhole2023nl} at its default setting, and \\textit{Despace} removes all spaces; each is applied to both the context and the answer options. Accuracy is \\texttt{acc\\_norm} on HellaSwag and ARC and \\texttt{acc} on PIQA, except for \\textit{PBP}, which uses \\texttt{acc} throughout.} Bold marks the smallest degradation among the three matched models; \\hyun{$^{\\dagger}$BLT and $^{\\ddagger}$H-Net are external references (``--'': not measured). BLT is evaluated at its released entropy threshold ($\\theta{=}1.34$) and at the compression-matched threshold $\\theta{=}1.61$ (Appendix~\\ref{app:blt_threshold}); \\textit{PBP} is not re-run at $\\theta{=}1.61$, as it leaves the byte sequence unchanged and its $\\Delta$ is $0$ by construction.} }" + NOWIN_NOTE,
+           r"\label{tab:robustness_detail}",
+           r"\small", r"\setlength{\tabcolsep}{2.5pt}",
+           r"\fitcolumn[\textwidth]{%", r"\begin{tabular}{lcccccc}", r"\toprule", head, r"\midrule"]
     for bi, (ax, title) in enumerate(blocks):
         if bi:
             out.append(r"\midrule")
-        out.append(r"\multicolumn{6}{l}{" + title + r"} \\")
-        for t in TASKS:
+        out.append(r"\multicolumn{7}{l}{\hyun{" + title + r"}} \\")
+        for t in axis_tasks(ax):
             cs = [cell(R[m], t, ax) for m in MODELS]
-            b = _bold_set(cs, lambda c: abs(c[1] - c[0]), 2 if ax == "pbp" else 1)
+            b = _bold_set(cs, lambda c: abs(c[1] - c[0]), 2)
             row = []
             for i, c in enumerate(cs):
                 if c is None:
                     row.append("--"); continue
-                nd = 2 if ax == "pbp" else 1
-                s = f"{c[1]:.1f} ({_signed(c[1] - c[0], nd)})"
+                nd = 2
+                s = f"{c[1]:.2f} ({_signed(c[1] - c[0], nd)})"
                 s = r"\textbf{" + s + "}" if i in b else s
+                s = r"\hyun{" + s + "}"
                 row.append(s + NOWIN_MARK if ax in NOWIN.get(MODELS[i], ()) else s)
             out.append(r"\quad " + TNAME[t] + " & " + " & ".join(row) + r" \\")
-        ds = [axis_delta(R[m], ax) for m in MODELS]
-        b = _bold_set(ds, abs, 2 if ax == "pbp" else 1)
+        ds = [0.0 if (ax == "pbp" and m in PBP_ZERO) else axis_delta(R[m], ax) for m in MODELS]
+        b = _bold_set(ds, abs, 2)
         row = []
         for i, d in enumerate(ds):
-            s = "--" if d is None else _signed(d, 2 if ax == "pbp" else 1)
+            s = "--" if d is None else _signed(d, 2)
             s = r"\textbf{" + s + "}" if i in b and d is not None else s
+            s = r"\hyun{" + s + "}" if d is not None else s
             row.append(s + NOWIN_MARK if d is not None and ax in NOWIN.get(MODELS[i], ()) else s)
         out.append(r"\quad \emph{Average $\Delta$} & " + " & ".join(row) + r" \\")
-    out += [r"\bottomrule", r"\end{tabular}", "}",
-            r"\caption{Per-task robustness at 1B under the unified five-task protocol (up to $2{,}000$ items per task, "
-            r"shared perturbation seed). Each cell gives the perturbed accuracy and, in parentheses, its change from the "
-            r"model's own clean baseline; the \emph{Average $\Delta$} rows are the five-task means whose absolute values "
-            r"appear in Table~\ref{tab:main_13b}. \textit{Noise} averages $15$ variants ($5$ strategies $\times$ "
-            r"prompt/completion/both; BoolQ: $5$ prompt-only variants, since its fixed yes/no options cannot be perturbed "
-            r"without changing the label); \textit{Typo} averages $8$ variants ($4$ edits $\times$ character/word); "
-            r"\textit{Leet} applies the Leet Transformation of NL-Augmenter~\citep{dhole2023nl} at its default setting to the question. "
-            r"Bold marks the smallest degradation among the three matched models; $^{\dagger}$BLT and $^{\ddagger}$H-Net "
-            r"are external references (``--'': not measured). " + NOWIN_NOTE + "}",
-            r"\label{tab:robustness_detail}", r"\end{table*}", ""]
+    out += [r"\bottomrule", r"\end{tabular}", "}", r"\end{table*}", ""]
     return "\n".join(out)
 
 
@@ -247,26 +278,26 @@ def category_tex(R):
     vals = {m: [axis_delta(R[m], ax, sub) for ax, sub in cols] for m in MODELS}
     best = [_bold_set([vals[m][j] for m in MODELS], abs, 1) for j in range(len(cols))]
     out = [r"% GENERATED by AUNet/scripts/probes/paper_robustness_tables.py — edit the script, not this file.",
-           r"\begin{table*}[t]", r"\centering", r"\small", r"\setlength{\tabcolsep}{4pt}",
+           r"\begin{table*}[t]", r"\centering",
+           "\\caption{\nRobustness by perturbation category aggregated in Table~\\ref{tab:main_13b}: $|\\Delta\\mathrm{Acc}|$ in percentage points; lower is better. \n\\textit{Noise}: AntSpeak, character drop, random case, character repetition, and uppercasing, each applied to both the context and the answer options. \\textit{Typo}: character- and word-level deletion, swap, keyboard substitution, and insertion, each applied to both the context and the answer options. \\textit{Despace}: all spaces removed from the context only, the answer options only, or both. \\textbf{Bold} marks the best matched model; $^{\\dagger}$BLT and $^{\\ddagger}$H-Net are external references.\n} " + NOWIN_NOTE,
+           r"\label{tab:robustness_category}",
+           r"\small", r"\setlength{\tabcolsep}{4pt}",
            r"\begin{tabular}{l|ccccc|cccc|ccc}", r"\toprule",
            r" & \multicolumn{5}{c|}{\textbf{Noise}} & \multicolumn{4}{c|}{\textbf{Typo}} & \multicolumn{3}{c}{\textbf{Despace}} \\",
            r"\textbf{Model} & " + " & ".join(label[s] for _, s in cols) + r" \\", r"\midrule"]
     for m in MODELS:
         if m == "blt":
-            out.append(r"\specialrule{0.01em}{0.3ex}{0.35ex}")
+            out += [r"\specialrule{0.01em}{0.3ex}{0.35ex}", r"\extgroup{13}"]
         row = []
         for j, v in enumerate(vals[m]):
             s = "--" if v is None else f"{abs(v):.1f}"
             row.append(r"\textbf{" + s + "}" if MODELS.index(m) in best[j] and v is not None else s)
-        out.append(name[m] + " & " + " & ".join(row) + r" \\")
-    out += [r"\bottomrule", r"\end{tabular}",
-            r"\caption{Robustness by perturbation category at 1B: $|\Delta\mathrm{Acc}|$ in percentage points, averaged "
-            r"over the five-task suite of Table~\ref{tab:main_13b}; lower is better. \textit{Noise}: AntSpeak, character "
-            r"drop, random case, character repetition, and uppercasing, each averaged over prompt/completion/both "
-            r"targets. \textit{Typo}: character- and word-level deletion, swap, keyboard substitution, and insertion. "
-            r"\textit{Despace}: all spaces removed from the context only, the answer options only, or both. "
-            r"\textbf{Bold} marks the best matched model; $^{\dagger}$BLT and $^{\ddagger}$H-Net are external references. " + NOWIN_NOTE + "}",
-            r"\label{tab:robustness_category}", r"\end{table*}", ""]
+        if m in ("blt", "hnet"):   # external references: gray via \ext (main.tex)
+            row, nm = [r"\ext{" + c + "}" for c in row], r"\ext{" + name[m] + "}"
+        else:
+            nm = name[m]
+        out.append(nm + " & " + " & ".join(row) + r" \\")
+    out += [r"\bottomrule", r"\end{tabular}", r"\end{table*}", ""]
     return "\n".join(out), vals, cols
 
 

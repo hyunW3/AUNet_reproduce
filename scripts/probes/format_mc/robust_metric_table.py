@@ -7,6 +7,7 @@ but the metric per task is a parameter instead of the hardcoded "acc_norm, BoolQ
 "acc" (Despace). Six rows: Transformer, AUNet, BPEByte, BLT theta=1.34, BLT theta=1.61, H-Net.
 
   python robust_metric_table.py --acc boolq,piqa              # acc on BoolQ+PIQA, acc_norm elsewhere
+  python robust_metric_table.py --acc piqa --tasks hellaswag,arc_easy,arc_challenge,piqa   # 4-task mean, no BoolQ
   python robust_metric_table.py --acc hellaswag,arc_easy,arc_challenge,piqa,boolq   # acc everywhere
 """
 import argparse, glob, json, os, sys
@@ -66,12 +67,15 @@ def load(model, metric):
 
 
 def main():
+    global R5
     ap = argparse.ArgumentParser()
     ap.add_argument("--acc", default="boolq,piqa", help="tasks scored with acc; the rest use acc_norm")
+    ap.add_argument("--tasks", default=",".join(R5), help="tasks averaged (e.g. drop boolq for the 4-task mean)")
     ap.add_argument("--B", type=int, default=2000)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
+    R5 = tuple(a.tasks.split(","))
     acc = set(a.acc.split(",")) if a.acc else set()
     metric = {t: "acc" if t in acc else "acc_norm" for t in R5}
     R = {m: load(m, metric) for m, _ in ROWS}

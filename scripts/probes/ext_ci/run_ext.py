@@ -245,7 +245,7 @@ def run_lm_eval(lm, tasks, num_fewshot, limit):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--family", choices=["blt", "blt_official", "hnet"], required=True)
-    ap.add_argument("--axis", choices=["downstream", "noise", "typo", "typoboth", "despace", "sniah", "bpb"], required=True)
+    ap.add_argument("--axis", choices=["downstream", "noise", "typo", "typoboth", "despace", "sniah", "bpb", "pbp"], required=True)
     ap.add_argument("--tasks", nargs="*", default=["hellaswag", "arc_easy", "arc_challenge", "piqa", "boolq"])
     ap.add_argument("--num_fewshot", type=int, default=0)
     ap.add_argument("--limit", type=int, default=None)
@@ -263,6 +263,7 @@ def main():
     a = ap.parse_args()
 
     os.environ["DESPACE_TASKS"] = ",".join(a.tasks)
+    os.environ["PBP_MC_TASKS"] = ",".join(a.tasks)   # read at import time by eval_pbp_mc
     os.environ.update(DESPACE_ANSWER="1", DESPACE_FULL="1", DESPACE_BITS="1", DESPACE_PROBS="")
     _lm_eval_compat()
     sys.path.insert(0, LINGUA)
@@ -271,6 +272,7 @@ def main():
     from apps.aunet.eval_typo import expand_typo_tasks, summarize_typo
     from apps.aunet.eval_typo_ds import expand_typo_ds_tasks, summarize_typo_ds
     from apps.aunet.eval_despace_mc import run_despace_mc
+    from apps.aunet.eval_pbp_mc import run_pbp_mc
 
     t0 = time.time()
     if a.family == "blt":
@@ -319,6 +321,10 @@ def main():
               f"bytes={total_bytes} BPB={out['results']['bpb']:.4f}", flush=True)
     elif a.axis == "despace":
         out["results"] = run_despace_mc(lm.loglikelihood, limit=a.limit or 2000)
+    elif a.axis == "pbp":
+        # Prompt-boundary shift (eval_suite/robust_axes_ext.py --axis pbp protocol): the canonical and the
+        # space-committed prompt/answer cut, scored with acc; byte models see identical bytes in both.
+        out["results"] = run_pbp_mc(lm.loglikelihood, limit=a.limit or 2000)
     else:  # sniah
         recs = [json.loads(l) for l in open(PAIRS)]
         got = lm.score_pairs([(r["prompt"], " " + r["values"][0]) for r in recs])
