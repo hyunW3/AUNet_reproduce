@@ -1,7 +1,9 @@
 # Robustness 평가: 논문 4태스크 기준 스크립트 위치
 
 **프로토콜**: HellaSwag / ARC-E / ARC-C / PIQA, 태스크당 limit 2000, perturbation seed 1234, 문맥과 보기를 모두 변형.
-BoolQ는 2026-10-06에 제외했습니다(yes/no 보기는 변형할 수 없음). PBP만 5태스크 정의가 남아 있습니다.
+BoolQ는 2026-10-06에 **모든 축(PBP 포함)**에서 제외했습니다(yes/no 보기는 변형할 수 없음).
+다섯 축 모두 같은 문항 집합을 씁니다: HS 2000 / ARC-E 2000 / ARC-C 1172 / PIQA 1838.
+PBP·Despace 원시 실행에는 BoolQ 결과도 들어 있지만 표에서는 쓰지 않습니다.
 
 **지표**: HellaSwag/ARC는 `acc_norm`, PIQA는 `acc`, PBP는 전부 `acc`입니다.
 축 값은 4태스크 평균 (변형 − clean)의 |Δ|입니다.
@@ -28,6 +30,8 @@ BoolQ는 2026-10-06에 제외했습니다(yes/no 보기는 변형할 수 없음)
 
 ## 주의
 
+- 논문 표를 만든 4태스크 버전 `paper_robustness_tables.py`(`TASKS`에서 BoolQ 제거, typoboth/leet 로딩)는 2026-10-07 기준 **아직 커밋되지 않았습니다**. main의 커밋본은 5태스크입니다.
 - Typo/Leet 실행: `bash scripts/probes/run_typoleet_both.sh runs/robustness_typoleet_both "0 1 2 3"` (`typo-leet-both` 브랜치를 main에 merge, lingua `eval_typo_ds` typoboth 포함).
 - `runs/`는 gitignore 대상이라 Despace 큐 `runs/robustness_despace_bits/queue.sh`는 추적되지 않습니다. 실행 당시(2026-09-28)에만 있던 `lingua/run_robustness_local.sh` 사본을 호출하므로, 재실행할 때는 `lingua/scripts/eval/robustness/run_robustness_local.sh`를 쓰면 됩니다. 결과는 이미 있어 표 생성에는 영향이 없습니다.
-- CI 스크립트(`robustness_bootstrap_ci.py`, `ci_main_table.py`, `format_mc/robust_metric_table.py`)는 아직 5태스크(BoolQ 포함)와 이전 Typo 기준이라 논문 표와 다릅니다.
+- 메인 표 ± CI: Noise/Despace는 `reports/ci_main_table/ci_both4.json`(생성 스크립트는 저장소에 없음), Typo/Leet는 `reports/ci_main_table/ci_typoleet_both.py` → `ci_typoleet_both.json`입니다.
+- 이전 CI 스크립트(`robustness_bootstrap_ci.py`, `ci_main_table.py`, `format_mc/robust_metric_table.py`)는 아직 5태스크(BoolQ 포함)와 이전 Typo 기준이라 논문 표와 다릅니다.
