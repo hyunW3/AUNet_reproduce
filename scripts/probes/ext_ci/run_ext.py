@@ -196,6 +196,93 @@ def build_hnet_lm(batch_size, max_len, name="hnet_1stage_XL"):
     return HNetHarness(model.eval(), batch_size, max_len)
 
 
+# =============================================================================== early-stop greedy decode
+# The eval_suite harnesses (blt_eval / hnet_eval `_generate_batch`) always decode max_gen_toks bytes
+# and cut at the first stop string afterwards. These are the same loops (same padding, same forward,
+# same argmax) that break once every row has emitted a stop string, so the output is identical and
+# only the wasted steps are skipped. Needed for CUTE at max_gen_toks=128 with BLT at batch size 1.
+def _hit(s, until):
+    return any(u in s for u in until)
+
+
+def _cut(s, until):
+    for u in until:
+        j = s.find(u)
+        if j >= 0:
+            s = s[:j]
+    return s
+
+
+@torch.inference_mode()
+def _blt_generate_early(h, prompts, until, max_gen_toks):
+    a128 = lambda n: ((n + 127) // 128) * 128
+    a64 = lambda n: ((n + 63) // 64) * 64
+    boe, cap, outs = h.tokenizer.boe_id, h.max_len - max_gen_toks - 1, []
+    for p in prompts:  # batch size 1: BLT scores depend on batch composition (build_blt_official)
+        t = h.tokenizer.encode(p, add_bos=True, add_eos=False)[-cap:]
+        n = len(t)
+        toks = torch.full((1, n + max_gen_toks), boe, dtype=torch.long, device="cuda")
+        toks[0, :n] = torch.tensor(t, device="cuda")
+        for curr in range(n, n + max_gen_toks):
+            Np = a128(curr); cur = toks[:, :curr]
+            if Np > curr:
+                cur = torch.cat([cur, torch.full((1, Np - curr), boe, dtype=torch.long, device="cuda")], dim=1)
+            pl, _ = h.patcher.patch(cur, include_next_token=False)
+            P, Pp = pl.shape[1], a64(pl.shape[1])
+            if Pp > P:
+                pl = torch.cat([pl, torch.zeros((1, Pp - P), dtype=pl.dtype, device="cuda")], dim=1)
+            toks[0, curr] = h.model(cur, patch_lengths=pl)[0, curr - 1].argmax(-1)
+            if _hit(h.tokenizer.decode(toks[0, n:curr + 1].tolist()), until):
+                break
+        outs.append(_cut(h.tokenizer.decode(toks[0, n:curr + 1].tolist()), until))
+    return outs
+
+
+@torch.inference_mode()
+def _hnet_generate_early(h, prompts, until, max_gen_toks):
+    import hnet_eval.harness as hh
+    dec = lambda ids: bytes(b for b in ids if b < 254).decode("utf-8", "ignore")
+    cap = h.max_len - max_gen_toks - 1
+    ptoks = [([hh.BOS] + h._enc(p))[-cap:] for p in prompts]
+    plen = [len(t) for t in ptoks]
+    start, end, bs = min(plen), max(plen) + max_gen_toks, len(ptoks)
+    toks = torch.zeros((bs, end), dtype=torch.long, device=hh.DEVICE)
+    real = torch.zeros((bs, end), dtype=torch.bool, device=hh.DEVICE)
+    for i, t in enumerate(ptoks):
+        toks[i, :len(t)] = torch.tensor(t, device=hh.DEVICE); real[i, :len(t)] = True
+    full = torch.ones((bs, end), dtype=torch.bool, device=hh.DEVICE)
+    for curr in range(start, end):
+        nxt = h.model(toks[:, :curr], mask=full[:, :curr]).logits[:, curr - 1].argmax(-1)
+        toks[:, curr] = torch.where(real[:, curr], toks[:, curr], nxt)
+        rows = toks[:, :curr + 1].tolist()
+        if all(curr >= n and _hit(dec(r[n:n + max_gen_toks]), until) for r, n in zip(rows, plen)):
+            break
+    rows = toks.tolist()
+    return [_cut(dec(r[n:min(n + max_gen_toks, curr + 1)]), until) for r, n in zip(rows, plen)]
+
+
+def attach_early_stop(lm, family):
+    """Replace lm.generate_until with the early-stop decode, keeping the harness grouping/order."""
+    gen = _hnet_generate_early if family == "hnet" else _blt_generate_early
+
+    def generate_until(requests):
+        groups = defaultdict(list)
+        for i, req in enumerate(requests):
+            gk = req.args[1] or {}
+            u = gk.get("until", ["\n"]) or ["\n"]
+            u = [u] if isinstance(u, str) else list(u)
+            groups[(tuple(u), int(gk.get("max_gen_toks", 32)))].append(i)
+        res = [None] * len(requests)
+        for (u, mgt), idxs in groups.items():
+            idxs.sort(key=lambda i: len(requests[i].args[0]))
+            for b in range(0, len(idxs), lm.batch_size):
+                chunk = idxs[b:b + lm.batch_size]
+                for i, o in zip(chunk, gen(lm, [requests[i].args[0] for i in chunk], list(u), mgt)):
+                    res[i] = o
+        return res
+    lm.generate_until = generate_until
+
+
 # =============================================================================== lm-eval shims
 def _lm_eval_compat():
     """The AU-Net perturbation helpers call TaskManager.load (removed in lm-eval 0.4.10/0.4.11) and
@@ -245,7 +332,7 @@ def run_lm_eval(lm, tasks, num_fewshot, limit):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--family", choices=["blt", "blt_official", "hnet"], required=True)
-    ap.add_argument("--axis", choices=["downstream", "noise", "typo", "typoboth", "despace", "sniah", "bpb", "pbp"], required=True)
+    ap.add_argument("--axis", choices=["downstream", "noise", "typo", "typoboth", "despace", "sniah", "bpb", "pbp", "cute"], required=True)
     ap.add_argument("--tasks", nargs="*", default=["hellaswag", "arc_easy", "arc_challenge", "piqa", "boolq"])
     ap.add_argument("--num_fewshot", type=int, default=0)
     ap.add_argument("--limit", type=int, default=None)
@@ -273,6 +360,7 @@ def main():
     from apps.aunet.eval_typo_ds import expand_typo_ds_tasks, summarize_typo_ds
     from apps.aunet.eval_despace_mc import run_despace_mc
     from apps.aunet.eval_pbp_mc import run_pbp_mc
+    from apps.aunet.eval_cute import expand_cute_tasks, summarize_cute
 
     t0 = time.time()
     if a.family == "blt":
@@ -319,6 +407,22 @@ def main():
                           "bpb": -total_lp / (math.log(2) * total_bytes)}
         print(f"[{a.family}] {os.path.basename(a.windows)}: windows={len(wins)} "
               f"bytes={total_bytes} BPB={out['results']['bpb']:.4f}", flush=True)
+    elif a.axis == "cute":
+        # 14 CUTE subtasks (eval_tasks/gen_mc/cute_*.yaml), generate_until + exact_match on the quoted
+        # span; per-item raw/filtered responses kept so truncation and extraction can be audited.
+        from lm_eval import simple_evaluate
+        attach_early_stop(lm, a.family)
+        r = simple_evaluate(lm, tasks=expand_cute_tasks(["cute"]), num_fewshot=0,
+                            task_manager=safe_task_manager(f"{TASKS_DIR}/gen_mc"), limit=a.limit,
+                            log_samples=True, bootstrap_iters=0, random_seed=0,
+                            numpy_random_seed=PERTURB_SEED, torch_random_seed=PERTURB_SEED)
+        res = dict(r["results"])
+        res.update(summarize_cute(res))
+        out["results"] = res
+        out["samples"] = {t: [{"doc_id": int(x["doc_id"]), "target": x["target"], "resp": x["resps"][0][0],
+                               "filtered": x["filtered_resps"][0], "exact_match": float(x["exact_match"])}
+                              for x in sorted(rows, key=lambda x: int(x["doc_id"]))]
+                          for t, rows in r["samples"].items()}
     elif a.axis == "despace":
         out["results"] = run_despace_mc(lm.loglikelihood, limit=a.limit or 2000)
     elif a.axis == "pbp":
