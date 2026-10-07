@@ -28,7 +28,6 @@ BoolQ는 2026-10-06에 제외했습니다(yes/no 보기는 변형할 수 없음)
 
 ## 주의
 
-- `run_typoleet_both.sh`, `run_ext.py`의 `typoboth` 축, `format_mc`의 `nla_leet_both`는 아직 **`typo-leet-both` 브랜치**(+ lingua worktree)에만 있습니다.
-- `runs/`는 gitignore 대상이라 `runs/robustness_despace_bits/queue.sh`는 추적되지 않습니다.
-  이 스크립트가 호출하는 `$L/lingua/run_robustness_local.sh` 경로는 `lingua/scripts/eval/robustness/`로 바꿔야 합니다.
+- Typo/Leet 실행: `bash scripts/probes/run_typoleet_both.sh runs/robustness_typoleet_both "0 1 2 3"` (`typo-leet-both` 브랜치를 main에 merge, lingua `eval_typo_ds` typoboth 포함).
+- `runs/`는 gitignore 대상이라 Despace 큐 `runs/robustness_despace_bits/queue.sh`는 추적되지 않습니다. 실행 당시(2026-09-28)에만 있던 `lingua/run_robustness_local.sh` 사본을 호출하므로, 재실행할 때는 `lingua/scripts/eval/robustness/run_robustness_local.sh`를 쓰면 됩니다. 결과는 이미 있어 표 생성에는 영향이 없습니다.
 - CI 스크립트(`robustness_bootstrap_ci.py`, `ci_main_table.py`, `format_mc/robust_metric_table.py`)는 아직 5태스크(BoolQ 포함)와 이전 Typo 기준이라 논문 표와 다릅니다.

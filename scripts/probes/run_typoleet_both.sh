@@ -4,11 +4,11 @@
 # main-table models (+ BLT at both thresholds). Per-item correctness bits are kept for the paired bootstrap.
 #   run_typoleet_both.sh <out_dir> [gpus="0 1 2 3"]
 # One worker per GPU pops jobs from <out_dir>/jobs.txt (resumable: finished jobs leave their output json).
-# Code: lingua worktree (eval_typo_ds typoboth) + this AUNet worktree (run_ext typoboth, format_mc nla_leet_both).
+# Code: lingua (eval_typo_ds typoboth) + this AUNet checkout (run_ext typoboth, format_mc nla_leet_both).
 set -u
 O=$1; GPUS=${2:-0 1 2 3}
 A=/mnt/ssd2/hyun2/AUNet
-LW=$A/lingua/.claude/worktrees/typo-leet-both
+LW=$A/lingua
 S=$(cd "$(dirname "$0")" && pwd)
 X=$A/runs/ext_ci_snu55
 ITEMS=$A/reports/format_robustness/items
