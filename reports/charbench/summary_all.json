@@ -1,0 +1,50 @@
+{
+ "charbench_gen": {
+  "Llama": 30.3,
+  "AU-Net2": 28.025,
+  "BPEByte": 29.075,
+  "BLT1.34": 30.6,
+  "BLT1.61": 30.499999999999996,
+  "H-Net": 25.875000000000004
+ },
+ "charbench_cloze": {
+  "Llama": 32.875,
+  "AU-Net2": 28.75,
+  "BPEByte": 30.7,
+  "BLT1.34": 32.625,
+  "BLT1.61": 32.675,
+  "H-Net": 28.474999999999998
+ },
+ "strawberry_gen": {
+  "Llama": 0.3,
+  "AU-Net2": 0.5,
+  "BPEByte": 0.475,
+  "BLT1.34": 0.85,
+  "BLT1.61": 0.775,
+  "H-Net": 0.825
+ },
+ "strawberry_cloze": {
+  "Llama": 2.65,
+  "AU-Net2": 3.05,
+  "BPEByte": 2.975,
+  "BLT1.34": 8.35,
+  "BLT1.61": 7.725,
+  "H-Net": 2.625
+ },
+ "strawberry_nocopy_acc": {
+  "Llama": 56.2,
+  "AU-Net2": 56.375,
+  "BPEByte": 56.425,
+  "BLT1.34": 60.2,
+  "BLT1.61": 59.975,
+  "H-Net": 55.825
+ },
+ "strawberry_copy_rate": {
+  "Llama": 28.6,
+  "AU-Net2": 33.35,
+  "BPEByte": 35.825,
+  "BLT1.34": 26.85,
+  "BLT1.61": 27.175,
+  "H-Net": 33.925
+ }
+}

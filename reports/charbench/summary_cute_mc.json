@@ -1,0 +1,470 @@
+{
+ "Llama": {
+  "spell": {
+   "acc": 33.900000000000006,
+   "acc_norm": 59.199999999999996,
+   "pick_input": 62.0,
+   "nocopy_acc": 86.0
+  },
+  "spell_inverse": {
+   "acc": 88.9,
+   "acc_norm": 56.8,
+   "pick_input": 3.3,
+   "nocopy_acc": 92.0
+  },
+  "contains_char": {
+   "acc": 50.9,
+   "acc_norm": 49.4
+  },
+  "contains_word": {
+   "acc": 47.4,
+   "acc_norm": 50.6
+  },
+  "orth": {
+   "acc": 55.300000000000004,
+   "acc_norm": 45.6
+  },
+  "sem": {
+   "acc": 45.7,
+   "acc_norm": 51.2
+  },
+  "ins_char": {
+   "acc": 14.6,
+   "acc_norm": 16.400000000000002,
+   "pick_input": 66.8,
+   "nocopy_acc": 43.5
+  },
+  "ins_word": {
+   "acc": 64.7,
+   "acc_norm": 69.1,
+   "pick_input": 14.6,
+   "nocopy_acc": 72.9
+  },
+  "del_char": {
+   "acc": 1.2,
+   "acc_norm": 0.3,
+   "pick_input": 94.4,
+   "nocopy_acc": 35.3
+  },
+  "del_word": {
+   "acc": 2.7,
+   "acc_norm": 0.5,
+   "pick_input": 94.6,
+   "nocopy_acc": 55.6
+  },
+  "sub_char": {
+   "acc": 6.4,
+   "acc_norm": 6.4,
+   "pick_input": 90.8,
+   "nocopy_acc": 40.12409513960703
+  },
+  "sub_word": {
+   "acc": 17.0,
+   "acc_norm": 18.099999999999998,
+   "pick_input": 70.7,
+   "nocopy_acc": 60.9
+  },
+  "swap_char": {
+   "acc": 3.6999999999999997,
+   "acc_norm": 3.6999999999999997,
+   "pick_input": 93.6,
+   "nocopy_acc": 43.0
+  },
+  "swap_word": {
+   "acc": 6.0,
+   "acc_norm": 6.0,
+   "pick_input": 91.7,
+   "nocopy_acc": 75.4
+  }
+ },
+ "AU-Net2": {
+  "spell": {
+   "acc": 99.5,
+   "acc_norm": 99.6,
+   "pick_input": 0.0,
+   "nocopy_acc": 99.5
+  },
+  "spell_inverse": {
+   "acc": 93.5,
+   "acc_norm": 85.6,
+   "pick_input": 3.3,
+   "nocopy_acc": 96.8
+  },
+  "contains_char": {
+   "acc": 50.8,
+   "acc_norm": 52.1
+  },
+  "contains_word": {
+   "acc": 49.7,
+   "acc_norm": 51.7
+  },
+  "orth": {
+   "acc": 48.699999999999996,
+   "acc_norm": 44.4
+  },
+  "sem": {
+   "acc": 56.99999999999999,
+   "acc_norm": 61.3
+  },
+  "ins_char": {
+   "acc": 3.3000000000000003,
+   "acc_norm": 4.7,
+   "pick_input": 92.1,
+   "nocopy_acc": 43.0
+  },
+  "ins_word": {
+   "acc": 28.4,
+   "acc_norm": 35.199999999999996,
+   "pick_input": 62.9,
+   "nocopy_acc": 68.7
+  },
+  "del_char": {
+   "acc": 0.2,
+   "acc_norm": 0.2,
+   "pick_input": 97.3,
+   "nocopy_acc": 28.0
+  },
+  "del_word": {
+   "acc": 2.1999999999999997,
+   "acc_norm": 1.0999999999999999,
+   "pick_input": 96.6,
+   "nocopy_acc": 52.1
+  },
+  "sub_char": {
+   "acc": 3.4000000000000004,
+   "acc_norm": 3.4000000000000004,
+   "pick_input": 97.2,
+   "nocopy_acc": 27.611168562564632
+  },
+  "sub_word": {
+   "acc": 17.299999999999997,
+   "acc_norm": 18.2,
+   "pick_input": 76.8,
+   "nocopy_acc": 65.7
+  },
+  "swap_char": {
+   "acc": 0.2,
+   "acc_norm": 0.2,
+   "pick_input": 99.7,
+   "nocopy_acc": 43.5
+  },
+  "swap_word": {
+   "acc": 2.3,
+   "acc_norm": 2.3,
+   "pick_input": 97.0,
+   "nocopy_acc": 74.7
+  }
+ },
+ "BPEByte": {
+  "spell": {
+   "acc": 95.0,
+   "acc_norm": 96.6,
+   "pick_input": 0.9,
+   "nocopy_acc": 95.8
+  },
+  "spell_inverse": {
+   "acc": 94.39999999999999,
+   "acc_norm": 88.5,
+   "pick_input": 1.3,
+   "nocopy_acc": 95.7
+  },
+  "contains_char": {
+   "acc": 49.4,
+   "acc_norm": 49.4
+  },
+  "contains_word": {
+   "acc": 50.2,
+   "acc_norm": 50.5
+  },
+  "orth": {
+   "acc": 56.89999999999999,
+   "acc_norm": 47.8
+  },
+  "sem": {
+   "acc": 55.400000000000006,
+   "acc_norm": 57.699999999999996
+  },
+  "ins_char": {
+   "acc": 24.099999999999998,
+   "acc_norm": 26.0,
+   "pick_input": 45.0,
+   "nocopy_acc": 43.5
+  },
+  "ins_word": {
+   "acc": 12.5,
+   "acc_norm": 17.2,
+   "pick_input": 83.3,
+   "nocopy_acc": 64.3
+  },
+  "del_char": {
+   "acc": 0.6,
+   "acc_norm": 0.2,
+   "pick_input": 91.1,
+   "nocopy_acc": 28.3
+  },
+  "del_word": {
+   "acc": 1.9,
+   "acc_norm": 0.6,
+   "pick_input": 97.3,
+   "nocopy_acc": 53.8
+  },
+  "sub_char": {
+   "acc": 5.4,
+   "acc_norm": 5.4,
+   "pick_input": 69.7,
+   "nocopy_acc": 28.128231644260598
+  },
+  "sub_word": {
+   "acc": 14.099999999999998,
+   "acc_norm": 16.2,
+   "pick_input": 78.5,
+   "nocopy_acc": 66.0
+  },
+  "swap_char": {
+   "acc": 6.1,
+   "acc_norm": 6.1,
+   "pick_input": 90.9,
+   "nocopy_acc": 49.4
+  },
+  "swap_word": {
+   "acc": 4.1000000000000005,
+   "acc_norm": 4.1000000000000005,
+   "pick_input": 94.3,
+   "nocopy_acc": 74.9
+  }
+ },
+ "BLT1.34": {
+  "spell": {
+   "acc": 99.9,
+   "acc_norm": 99.9,
+   "pick_input": 0.0,
+   "nocopy_acc": 99.9
+  },
+  "spell_inverse": {
+   "acc": 99.9,
+   "acc_norm": 99.9,
+   "pick_input": 0.0,
+   "nocopy_acc": 99.9
+  },
+  "contains_char": {
+   "acc": 46.800000000000004,
+   "acc_norm": 48.6
+  },
+  "contains_word": {
+   "acc": 51.4,
+   "acc_norm": 50.6
+  },
+  "orth": {
+   "acc": 39.7,
+   "acc_norm": 33.1
+  },
+  "sem": {
+   "acc": 70.5,
+   "acc_norm": 75.3
+  },
+  "ins_char": {
+   "acc": 48.9,
+   "acc_norm": 50.5,
+   "pick_input": 5.8,
+   "nocopy_acc": 52.2
+  },
+  "ins_word": {
+   "acc": 66.60000000000001,
+   "acc_norm": 69.6,
+   "pick_input": 14.5,
+   "nocopy_acc": 77.0
+  },
+  "del_char": {
+   "acc": 55.900000000000006,
+   "acc_norm": 51.300000000000004,
+   "pick_input": 20.8,
+   "nocopy_acc": 66.5
+  },
+  "del_word": {
+   "acc": 60.3,
+   "acc_norm": 52.5,
+   "pick_input": 17.9,
+   "nocopy_acc": 70.0
+  },
+  "sub_char": {
+   "acc": 48.3,
+   "acc_norm": 48.6,
+   "pick_input": 7.2,
+   "nocopy_acc": 50.361944157187175
+  },
+  "sub_word": {
+   "acc": 60.199999999999996,
+   "acc_norm": 61.5,
+   "pick_input": 24.7,
+   "nocopy_acc": 78.0
+  },
+  "swap_char": {
+   "acc": 45.2,
+   "acc_norm": 45.300000000000004,
+   "pick_input": 10.1,
+   "nocopy_acc": 50.2
+  },
+  "swap_word": {
+   "acc": 51.300000000000004,
+   "acc_norm": 51.300000000000004,
+   "pick_input": 35.0,
+   "nocopy_acc": 76.5
+  }
+ },
+ "BLT1.61": {
+  "spell": {
+   "acc": 100.0,
+   "acc_norm": 100.0,
+   "pick_input": 0.0,
+   "nocopy_acc": 100.0
+  },
+  "spell_inverse": {
+   "acc": 99.8,
+   "acc_norm": 99.8,
+   "pick_input": 0.0,
+   "nocopy_acc": 99.8
+  },
+  "contains_char": {
+   "acc": 49.8,
+   "acc_norm": 49.6
+  },
+  "contains_word": {
+   "acc": 50.9,
+   "acc_norm": 50.8
+  },
+  "orth": {
+   "acc": 46.2,
+   "acc_norm": 40.9
+  },
+  "sem": {
+   "acc": 59.199999999999996,
+   "acc_norm": 62.1
+  },
+  "ins_char": {
+   "acc": 47.099999999999994,
+   "acc_norm": 49.0,
+   "pick_input": 9.4,
+   "nocopy_acc": 51.6
+  },
+  "ins_word": {
+   "acc": 62.7,
+   "acc_norm": 65.60000000000001,
+   "pick_input": 19.5,
+   "nocopy_acc": 75.8
+  },
+  "del_char": {
+   "acc": 57.3,
+   "acc_norm": 53.400000000000006,
+   "pick_input": 11.4,
+   "nocopy_acc": 63.0
+  },
+  "del_word": {
+   "acc": 27.200000000000003,
+   "acc_norm": 20.599999999999998,
+   "pick_input": 61.7,
+   "nocopy_acc": 62.9
+  },
+  "sub_char": {
+   "acc": 43.8,
+   "acc_norm": 43.8,
+   "pick_input": 13.8,
+   "nocopy_acc": 49.01758014477766
+  },
+  "sub_word": {
+   "acc": 49.1,
+   "acc_norm": 52.2,
+   "pick_input": 37.6,
+   "nocopy_acc": 76.1
+  },
+  "swap_char": {
+   "acc": 44.4,
+   "acc_norm": 44.7,
+   "pick_input": 12.1,
+   "nocopy_acc": 50.7
+  },
+  "swap_word": {
+   "acc": 41.199999999999996,
+   "acc_norm": 41.199999999999996,
+   "pick_input": 47.3,
+   "nocopy_acc": 75.4
+  }
+ },
+ "H-Net": {
+  "spell": {
+   "acc": 18.4,
+   "acc_norm": 30.8,
+   "pick_input": 80.2,
+   "nocopy_acc": 87.9
+  },
+  "spell_inverse": {
+   "acc": 94.1,
+   "acc_norm": 83.89999999999999,
+   "pick_input": 0.4,
+   "nocopy_acc": 94.4
+  },
+  "contains_char": {
+   "acc": 57.199999999999996,
+   "acc_norm": 56.10000000000001
+  },
+  "contains_word": {
+   "acc": 50.8,
+   "acc_norm": 50.0
+  },
+  "orth": {
+   "acc": 35.4,
+   "acc_norm": 32.0
+  },
+  "sem": {
+   "acc": 62.2,
+   "acc_norm": 64.4
+  },
+  "ins_char": {
+   "acc": 8.4,
+   "acc_norm": 11.4,
+   "pick_input": 78.0,
+   "nocopy_acc": 44.3
+  },
+  "ins_word": {
+   "acc": 5.3,
+   "acc_norm": 9.9,
+   "pick_input": 92.7,
+   "nocopy_acc": 63.8
+  },
+  "del_char": {
+   "acc": 0.2,
+   "acc_norm": 0.1,
+   "pick_input": 98.1,
+   "nocopy_acc": 34.2
+  },
+  "del_word": {
+   "acc": 1.3,
+   "acc_norm": 0.4,
+   "pick_input": 97.3,
+   "nocopy_acc": 53.3
+  },
+  "sub_char": {
+   "acc": 4.0,
+   "acc_norm": 4.1000000000000005,
+   "pick_input": 96.3,
+   "nocopy_acc": 36.918304033092035
+  },
+  "sub_word": {
+   "acc": 4.1000000000000005,
+   "acc_norm": 5.2,
+   "pick_input": 93.4,
+   "nocopy_acc": 62.8
+  },
+  "swap_char": {
+   "acc": 1.7000000000000002,
+   "acc_norm": 1.7000000000000002,
+   "pick_input": 97.5,
+   "nocopy_acc": 52.1
+  },
+  "swap_word": {
+   "acc": 0.3,
+   "acc_norm": 0.3,
+   "pick_input": 99.6,
+   "nocopy_acc": 73.4
+  }
+ }
+}
