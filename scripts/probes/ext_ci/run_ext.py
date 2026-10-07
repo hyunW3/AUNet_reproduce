@@ -17,7 +17,7 @@ byte-identical perturbed prompts (the Aug-29 external runs used base_seed 0).
   python run_ext.py --family blt --axis downstream --num_fewshot 0 --tasks hellaswag arc_easy ... --out X.json
   python run_ext.py --family blt --axis noise --tasks hellaswag arc_easy arc_challenge piqa boolq --out X.json
   python run_ext.py --family blt --axis sniah --out X.json
-Axes: downstream | noise | typo | despace | sniah.   Needs AUNET_LINGUA (apps.aunet eval code)
+Axes: downstream | noise | typo | typoboth | despace | sniah.   Needs AUNET_LINGUA (apps.aunet eval code)
 and AUNET_TASKS (lm-eval YAMLs) on the path; see ext_ci/README.md.
 """
 import argparse, glob, json, math, os, statistics as st, sys, time
@@ -245,7 +245,7 @@ def run_lm_eval(lm, tasks, num_fewshot, limit):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--family", choices=["blt", "blt_official", "hnet"], required=True)
-    ap.add_argument("--axis", choices=["downstream", "noise", "typo", "despace", "sniah", "bpb"], required=True)
+    ap.add_argument("--axis", choices=["downstream", "noise", "typo", "typoboth", "despace", "sniah", "bpb"], required=True)
     ap.add_argument("--tasks", nargs="*", default=["hellaswag", "arc_easy", "arc_challenge", "piqa", "boolq"])
     ap.add_argument("--num_fewshot", type=int, default=0)
     ap.add_argument("--limit", type=int, default=None)
@@ -289,9 +289,11 @@ def main():
     if a.axis == "downstream":
         res, samples = run_lm_eval(lm, a.tasks, a.num_fewshot, a.limit)
         out["results"], out["samples"] = res, samples
-    elif a.axis in ("noise", "typo"):
+    elif a.axis in ("noise", "typo", "typoboth"):
         if a.axis == "noise":
             tl = expand_noise_tasks([x for t in a.tasks for x in (t, f"{t}_noise")], base_seed=PERTURB_SEED)
+        elif a.axis == "typoboth":   # typo on the context AND the answer options (hellaswag/arc/piqa)
+            tl = expand_typo_ds_tasks([x for t in a.tasks for x in (t, f"{t}_typoboth")], base_seed=PERTURB_SEED)
         else:
             tl = expand_typo_tasks([x for t in a.tasks for x in (t, f"{t}_typo")], base_seed=PERTURB_SEED)
             tl = expand_typo_ds_tasks(tl, base_seed=PERTURB_SEED)
