@@ -1,0 +1,330 @@
+{
+ "typo": {
+  "n_items": {
+   "hellaswag": 2000,
+   "arc_easy": 2000,
+   "arc_challenge": 1172,
+   "piqa": 1838
+  },
+  "llama": {
+   "value": 18.78,
+   "ci95": [
+    17.826,
+    19.757
+   ],
+   "half_width": 0.966,
+   "per_task": {
+    "hellaswag": {
+     "clean": 55.65,
+     "perturbed": 36.225
+    },
+    "arc_easy": {
+     "clean": 65.4,
+     "perturbed": 37.425000000000004
+    },
+    "arc_challenge": {
+     "clean": 35.49488054607509,
+     "perturbed": 26.898464163822528
+    },
+    "piqa": {
+     "clean": 74.9183895538629,
+     "perturbed": 55.79434167573449
+    }
+   }
+  },
+  "aunet": {
+   "value": 16.798,
+   "ci95": [
+    15.866,
+    17.728
+   ],
+   "half_width": 0.931,
+   "per_task": {
+    "hellaswag": {
+     "clean": 57.599999999999994,
+     "perturbed": 39.04375
+    },
+    "arc_easy": {
+     "clean": 65.2,
+     "perturbed": 40.43125
+    },
+    "arc_challenge": {
+     "clean": 35.92150170648464,
+     "perturbed": 27.933020477815703
+    },
+    "piqa": {
+     "clean": 72.95973884657236,
+     "perturbed": 57.07970620239391
+    }
+   }
+  },
+  "bpebyte": {
+   "value": 16.605,
+   "ci95": [
+    15.676,
+    17.596
+   ],
+   "half_width": 0.96,
+   "per_task": {
+    "hellaswag": {
+     "clean": 57.199999999999996,
+     "perturbed": 39.537499999999994
+    },
+    "arc_easy": {
+     "clean": 66.64999999999999,
+     "perturbed": 42.412499999999994
+    },
+    "arc_challenge": {
+     "clean": 37.116040955631405,
+     "perturbed": 28.082337883959045
+    },
+    "piqa": {
+     "clean": 72.63329706202394,
+     "perturbed": 57.14771490750816
+    }
+   }
+  },
+  "blt": {
+   "value": 16.848,
+   "ci95": [
+    15.953,
+    17.772
+   ],
+   "half_width": 0.909,
+   "per_task": {
+    "hellaswag": {
+     "clean": 62.74999999999999,
+     "perturbed": 44.5
+    },
+    "arc_easy": {
+     "clean": 64.5,
+     "perturbed": 42.20625
+    },
+    "arc_challenge": {
+     "clean": 39.249146757679185,
+     "perturbed": 30.695392491467576
+    },
+    "piqa": {
+     "clean": 76.6594124047878,
+     "perturbed": 58.365070729053315
+    }
+   }
+  },
+  "blt161": {
+   "value": 15.886,
+   "ci95": [
+    14.997,
+    16.842
+   ],
+   "half_width": 0.923,
+   "per_task": {
+    "hellaswag": {
+     "clean": 61.1,
+     "perturbed": 44.224999999999994
+    },
+    "arc_easy": {
+     "clean": 63.849999999999994,
+     "perturbed": 42.2125
+    },
+    "arc_challenge": {
+     "clean": 37.96928327645051,
+     "perturbed": 30.27943686006826
+    },
+    "piqa": {
+     "clean": 75.78890097932536,
+     "perturbed": 58.44668117519043
+    }
+   }
+  },
+  "hnet": {
+   "value": 16.97,
+   "ci95": [
+    16.015,
+    17.958
+   ],
+   "half_width": 0.972,
+   "per_task": {
+    "hellaswag": {
+     "clean": 54.1,
+     "perturbed": 37.18125
+    },
+    "arc_easy": {
+     "clean": 65.55,
+     "perturbed": 40.9375
+    },
+    "arc_challenge": {
+     "clean": 38.310580204778155,
+     "perturbed": 28.562286689419796
+    },
+    "piqa": {
+     "clean": 72.52448313384113,
+     "perturbed": 55.92355821545157
+    }
+   }
+  }
+ },
+ "leet": {
+  "n_items": {
+   "hellaswag": 2000,
+   "arc_easy": 2000,
+   "arc_challenge": 1172,
+   "piqa": 1838
+  },
+  "llama": {
+   "value": 24.752,
+   "ci95": [
+    23.264,
+    26.197
+   ],
+   "half_width": 1.467,
+   "per_task": {
+    "hellaswag": {
+     "clean": 56.3,
+     "perturbed": 31.45
+    },
+    "arc_easy": {
+     "clean": 66.45,
+     "perturbed": 26.650000000000002
+    },
+    "arc_challenge": {
+     "clean": 34.72696245733788,
+     "perturbed": 21.58703071672355
+    },
+    "piqa": {
+     "clean": 74.9183895538629,
+     "perturbed": 53.69967355821545
+    }
+   }
+  },
+  "aunet": {
+   "value": 24.575,
+   "ci95": [
+    23.148,
+    26.044
+   ],
+   "half_width": 1.448,
+   "per_task": {
+    "hellaswag": {
+     "clean": 57.550000000000004,
+     "perturbed": 33.15
+    },
+    "arc_easy": {
+     "clean": 66.60000000000001,
+     "perturbed": 26.55
+    },
+    "arc_challenge": {
+     "clean": 36.262798634812285,
+     "perturbed": 22.26962457337884
+    },
+    "piqa": {
+     "clean": 73.23177366702937,
+     "perturbed": 53.37323177366703
+    }
+   }
+  },
+  "bpebyte": {
+   "value": 24.33,
+   "ci95": [
+    22.939,
+    25.77
+   ],
+   "half_width": 1.415,
+   "per_task": {
+    "hellaswag": {
+     "clean": 56.95,
+     "perturbed": 33.35
+    },
+    "arc_easy": {
+     "clean": 67.80000000000001,
+     "perturbed": 27.85
+    },
+    "arc_challenge": {
+     "clean": 37.79863481228669,
+     "perturbed": 21.928327645051194
+    },
+    "piqa": {
+     "clean": 72.68770402611534,
+     "perturbed": 54.78781284004353
+    }
+   }
+  },
+  "blt": {
+   "value": 24.139,
+   "ci95": [
+    22.667,
+    25.491
+   ],
+   "half_width": 1.412,
+   "per_task": {
+    "hellaswag": {
+     "clean": 62.849999999999994,
+     "perturbed": 36.75
+    },
+    "arc_easy": {
+     "clean": 65.25,
+     "perturbed": 31.4
+    },
+    "arc_challenge": {
+     "clean": 39.76109215017065,
+     "perturbed": 24.317406143344712
+    },
+    "piqa": {
+     "clean": 76.6594124047878,
+     "perturbed": 55.49510337323177
+    }
+   }
+  },
+  "blt161": {
+   "value": 23.263,
+   "ci95": [
+    21.854,
+    24.652
+   ],
+   "half_width": 1.399,
+   "per_task": {
+    "hellaswag": {
+     "clean": 61.45,
+     "perturbed": 36.25
+    },
+    "arc_easy": {
+     "clean": 64.8,
+     "perturbed": 31.6
+    },
+    "arc_challenge": {
+     "clean": 37.96928327645051,
+     "perturbed": 23.72013651877133
+    },
+    "piqa": {
+     "clean": 75.78890097932536,
+     "perturbed": 55.386289445048966
+    }
+   }
+  },
+  "hnet": {
+   "value": 24.141,
+   "ci95": [
+    22.624,
+    25.59
+   ],
+   "half_width": 1.483,
+   "per_task": {
+    "hellaswag": {
+     "clean": 54.25,
+     "perturbed": 32.2
+    },
+    "arc_easy": {
+     "clean": 66.4,
+     "perturbed": 27.900000000000002
+    },
+    "arc_challenge": {
+     "clean": 39.249146757679185,
+     "perturbed": 21.245733788395903
+    },
+    "piqa": {
+     "clean": 72.36126224156692,
+     "perturbed": 54.352557127312295
+    }
+   }
+  }
+ }
+}
