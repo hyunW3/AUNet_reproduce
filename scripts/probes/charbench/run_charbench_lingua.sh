@@ -9,6 +9,7 @@ ITEMS=${ITEMS:-$L/reports/charbench/items}
 OUT=$(realpath -m "${1:-$L/reports/charbench/runs}")
 PLAN=${2:-"llama:0 aunet:1 bpebyte:3"}
 LIMIT=${3:-}
+GROUPS_=${CB_GROUPS:-"charbench_gen charbench_cloze strawberry_gen strawberry_cloze"}   # task_lists.json keys
 M=$L/main/main/1.3B
 VENV=$L/lingua/.venv
 RUNNER=$L/lingua/scripts/eval/robustness/run_robustness_local.sh
@@ -23,14 +24,13 @@ mkdir -p "$OUT/cfg" "$OUT/logs"
 say(){ echo "$(date '+%F %T') $*" | tee -a "$OUT/queue.log"; }
 
 mkcfg(){  # arm -> $OUT/cfg/<arm>.yaml (name/generator from the arm's paper config)
-  "$VENV/bin/python" - "$L/lingua/${BASE[$1]}" "$OUT/cfg/$1.yaml" "$ITEMS" "$LIMIT" <<'PY'
+  "$VENV/bin/python" - "$L/lingua/${BASE[$1]}" "$OUT/cfg/$1.yaml" "$ITEMS" "$LIMIT" "$GROUPS_" <<'PY'
 import json, sys, yaml
 c = yaml.safe_load(open(sys.argv[1])); items = sys.argv[3]
 names = json.load(open(f"{items}/task_lists.json"))
 c["name"] = c["name"].split("_robustness")[0] + "_charbench"
 c["harness"] = {"include_path": f"{items}/tasks", "log_samples": True,
-                "tasks": [t for k in ("charbench_gen", "charbench_cloze", "strawberry_gen", "strawberry_cloze")
-                          for t in names[k]]}
+                "tasks": [t for k in sys.argv[5].split() for t in names[k]]}
 if sys.argv[4]:
     c["harness"]["limit"] = int(sys.argv[4])
 yaml.safe_dump(c, open(sys.argv[2], "w"), sort_keys=False)
