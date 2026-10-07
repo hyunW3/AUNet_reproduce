@@ -227,7 +227,7 @@ def _blt_generate_early(h, prompts, until, max_gen_toks):
             Np = a128(curr); cur = toks[:, :curr]
             if Np > curr:
                 cur = torch.cat([cur, torch.full((1, Np - curr), boe, dtype=torch.long, device="cuda")], dim=1)
-            pl, _ = h.patcher.patch(cur, include_next_token=False)
+            pl, _ = h.patcher.patch(cur, include_next_token=False, entropies=h._row_entropies(cur))
             P, Pp = pl.shape[1], a64(pl.shape[1])
             if Pp > P:
                 pl = torch.cat([pl, torch.zeros((1, Pp - P), dtype=pl.dtype, device="cuda")], dim=1)
