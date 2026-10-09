@@ -6,7 +6,9 @@ OVL=os.environ.get('PAPER_DIR','paper_overleaf')
 from compression_stability import build_parser
 V=[('num7','0487647'),('uuid','18fc9fb6-4943-8493-2af3-bda6fe8102c0'),('uuid_space','affcbaef b209 fe78 3290 7900f39af60c'),
    ('hex','0db7 7f32 1cba e143 b47c d00d afc9 9bae'),('digits','59287540400471469063340271224236'),('letters','fzfswwvhavslrvhquqdvibnvnyobynes'),
-   ('tok4','ruby-empo-cers-quis-itto-orgh-bate'),('rand4','odvx-jppl-flux-wbvh-khrv-ahom-nceo')]  # first items of items_v2.jsonl
+   ('tok4','ruby-empo-cers-quis-itto-orgh-bate'),('rand4','ahgf-eajp-bicy-bwqv-wuoq-hrwg-nncg')]
+# tok4: first item of items_v2.jsonl. rand4: the item whose BPEByte parse is closest to the variant mean (B/patch 1.89 vs
+# 1.88) among items with no group that is a BPE vocab token (the first item, odvx-jppl-flux-..., contains 'flux').
 P={m:build_parser(m) for m in ('aunet','bpebyte')}
 pre='The special magic code for glacier is'
 for k,v in V:
