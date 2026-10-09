@@ -31,7 +31,7 @@ out = {}
 for t in ORDER:
     for m in MODELS:
         bins, lens, bpp = collections.defaultdict(list), collections.defaultdict(list), []
-        ge4 = [0, 0]  # value bytes inside a parsing unit of >= 4 bytes (all items; the unit as parsed, incl. a leading space)
+        ge4 = [0, 0]  # bytes of the HAYSTACK needle value inside a parsing unit of >= 4 bytes (all items; unit as parsed)
         for k, q in items.items():
             if q["task"] != t:
                 continue
@@ -39,9 +39,10 @@ for t in ORDER:
             bins["<256" if d < 256 else "256-512" if d < 512 else ">=512"].append(e); bins["all"].append(e)
             lens[str(q["length"])].append(e)
             if m != "llama":
-                text = q["prompt"] + " " + q["value"]; b = text.encode(); vs = len(b) - len(q["value"].encode())
+                text = q["prompt"] + " " + q["value"]; b = text.encode(); vb = q["value"].encode()
                 stt = sorted(set(P[m](text)) | {0}) + [len(b)]
-                for i in range(vs, len(b)):
+                c = b.find(vb); assert 0 <= c < len(q["prompt"].encode())   # first occurrence = the needle
+                for i in range(c, c + len(vb)):
                     j = bisect.bisect_right(stt, i)
                     ge4[0] += stt[j] - stt[j - 1] >= 4; ge4[1] += 1
             if int(k.split("/")[-1]) % 5 == 0:
