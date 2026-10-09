@@ -3,7 +3,7 @@
 final S-NIAH set: exact match by distance to the query ((1-depth) x cell length; <256, 256-512, >=512 bytes) and by cell
 length, and B/patch on the value (value bytes / parsing units covering it; every 5th item).
   PYTHONPATH=lingua lingua/.venv/bin/python scripts/niah/needle_variants_summary.py -> reports/niah/needle_variants/summary.json"""
-import json, sys, collections, statistics as st
+import bisect, json, sys, collections, statistics as st
 L = "/mnt/ssd2/hyun2/AUNet"
 sys.path.insert(0, f"{L}/scripts/probes"); sys.path.insert(0, f"{L}/scripts/probes/patch_stats")
 from compression_stability import build_parser
@@ -31,17 +31,24 @@ out = {}
 for t in ORDER:
     for m in MODELS:
         bins, lens, bpp = collections.defaultdict(list), collections.defaultdict(list), []
+        ge4 = [0, 0]  # value bytes inside a parsing unit of >= 4 bytes (all items; the unit as parsed, incl. a leading space)
         for k, q in items.items():
             if q["task"] != t:
                 continue
             e = sc[(m, k)]; d = (1 - q["depth"]) * q["length"]
             bins["<256" if d < 256 else "256-512" if d < 512 else ">=512"].append(e); bins["all"].append(e)
             lens[str(q["length"])].append(e)
+            if m != "llama":
+                text = q["prompt"] + " " + q["value"]; b = text.encode(); vs = len(b) - len(q["value"].encode())
+                stt = sorted(set(P[m](text)) | {0}) + [len(b)]
+                for i in range(vs, len(b)):
+                    j = bisect.bisect_right(stt, i)
+                    ge4[0] += stt[j] - stt[j - 1] >= 4; ge4[1] += 1
             if int(k.split("/")[-1]) % 5 == 0:
                 text = q["prompt"] + " " + q["value"]; b = text.encode(); vs = len(b) - len(q["value"].encode())
                 bpp.append(len(q["value"].encode()) / (1 + sum(1 for s in P[m](text) if vs < s < len(b))))
         out[f"{t}|{m}"] = {"bins": {k: [sum(v) / len(v), len(v)] for k, v in bins.items()},
                            "len": {k: sum(v) / len(v) for k, v in sorted(lens.items(), key=lambda x: int(x[0]))},
-                           "bpp": st.mean(bpp)}
+                           "bpp": st.mean(bpp), "ge4": ge4[0] / ge4[1] if ge4[1] else None}
         print(t, m, {k: round(v[0], 3) for k, v in out[f"{t}|{m}"]["bins"].items()}, {k: round(v, 3) for k, v in out[f"{t}|{m}"]["len"].items()}, round(out[f"{t}|{m}"]["bpp"], 2))
 json.dump(out, open(f"{L}/reports/niah/needle_variants/summary.json", "w"), indent=1)

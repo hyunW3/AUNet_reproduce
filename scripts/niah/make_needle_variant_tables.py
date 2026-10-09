@@ -23,22 +23,23 @@ def main_table():
          r"\caption{\hyun{S-NIAH exact match of AUNet and BPEByte at 1B by needle value. Every row uses the same "
          r"$1{,}000$ S-NIAH-3 items (essay haystack, the four context lengths of Table~\ref{tab:sniah_full}) and changes "
          r"only the needle value; the 7-digit and UUID rows are S-NIAH-2 and S-NIAH-3 themselves. B/patch is the value "
-         r"length divided by the number of parsing units that cover it. Distance is the number of haystack bytes between "
+         r"length divided by the number of parsing units that cover it, and ${\\geq}$4B the share of value bytes (\\%) in "
+         r"units of at least four bytes. Distance is the number of haystack bytes between "
          f"the needle and the query ($(1{{-}}\\text{{depth}}) \\times$ context length; ${n['<256'][1]}$, ${n['256-512'][1]}$, "
          f"and ${n['>=512'][1]}$ items per bin). Appendix~\\ref{{app:niah_variants}} gives the results by context length, "
          r"including the Transformer.}}", r"\label{tab:niah_aunet}",
          r"\small", r"\setlength{\tabcolsep}{3.5pt}", r"\fitcolumn{%",
-         r"\begin{tabular}{llccccc}", r"\toprule",
-         r" & & & \multicolumn{4}{c}{\textbf{Acc (\%)}} \\", r"\cmidrule(lr){4-7}",
-         r" & & & \multicolumn{3}{c}{Distance to query} & \\", r"\cmidrule(lr){4-6}",
-         r"\textbf{Needle value} & \textbf{Model} & \textbf{B/patch} & ${<}256$ & $256$--$512$ & ${\geq}512$ & \textbf{All} \\",
+         r"\begin{tabular}{llcccccc}", r"\toprule",
+         r" & & & & \multicolumn{4}{c}{\textbf{Acc (\%)}} \\", r"\cmidrule(lr){5-8}",
+         r" & & & & \multicolumn{3}{c}{Distance to query} & \\", r"\cmidrule(lr){5-7}",
+         r"\textbf{Needle value} & \textbf{Model} & \textbf{B/patch} & \textbf{${\geq}$4B (\%)} & ${<}256$ & $256$--$512$ & ${\geq}512$ & \textbf{All} \\",
          r"\midrule"]
     for j, (k, a, b) in enumerate([r for r in ROWS if r[0] in MAIN]):
         if j:
             t.append(r"\midrule")
         for i, m in enumerate(("aunet", "bpebyte")):
             s = S[f"{k}|{m}"]; bn = s["bins"]
-            t.append(f"{(a, b)[i]} & {NM[m]} & ${s['bpp']:.1f}$ & " +
+            t.append(f"{(a, b)[i]} & {NM[m]} & ${s['bpp']:.1f}$ & {f2(s['ge4'])} & " +
                      " & ".join(f2(bn[x][0]) for x in ("<256", "256-512", ">=512")) + f" & {f2(allm(s))}" + r" \\")
     t += [r"\bottomrule", r"\end{tabular}", "}", r"\end{table}", ""]
     (OVL / "tables/niah_aunet.tex").write_text("\n".join(t))
