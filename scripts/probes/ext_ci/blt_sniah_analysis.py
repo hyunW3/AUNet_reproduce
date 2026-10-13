@@ -165,11 +165,13 @@ def write_depth_table(depth):
         for lab, dd in (("no cap (released)", depth), ("cap $32$ bytes", cap_depth)):
             if dd is None:
                 continue
-            cells = []
+            cells = [f"{cname} context, {lab}"]
             for b in range(5):
                 k, n = dd.get((cname, b), [0, 0])
                 cells.append(f"{100 * k / n:.1f}" if n else "--")
-            out.append(f"{cname} context, {lab} & " + " & ".join(cells) + r" \\")
+            if dd is cap_depth:   # rows added 2026-10-13, marked as new text
+                cells = [rf"\hyun{{{c}}}" for c in cells]
+            out.append(" & ".join(cells) + r" \\")
     if capd:
         out += [r"\midrule",
                 r"\multicolumn{6}{l}{\emph{By context length} (released patcher vs.\ $32$-byte cap)} \\",
