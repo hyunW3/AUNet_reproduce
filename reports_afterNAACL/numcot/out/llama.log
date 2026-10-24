@@ -1,0 +1,278 @@
+/home/ansible-test/miniconda3/envs/aunet_leak/lib/python3.11/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+llama: 18828 to do (0 done)
+generate_until: 28/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+128/18828  0.1 min  0.05 s/item  eta 0.3 h
+generate_until: 57/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+256/18828  0.2 min  0.04 s/item  eta 0.2 h
+generate_until: 32/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+384/18828  0.2 min  0.03 s/item  eta 0.2 h
+generate_until: 26/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+512/18828  0.3 min  0.03 s/item  eta 0.2 h
+generate_until: 18/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+640/18828  0.3 min  0.03 s/item  eta 0.2 h
+generate_until: 13/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+768/18828  0.4 min  0.03 s/item  eta 0.1 h
+generate_until: 11/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+896/18828  0.4 min  0.03 s/item  eta 0.1 h
+generate_until: 20/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+1024/18828  0.5 min  0.03 s/item  eta 0.1 h
+generate_until: 16/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+1152/18828  0.5 min  0.03 s/item  eta 0.1 h
+generate_until: 13/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+1280/18828  0.6 min  0.03 s/item  eta 0.1 h
+generate_until: 14/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+1408/18828  0.7 min  0.03 s/item  eta 0.1 h
+generate_until: 16/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+1536/18828  0.7 min  0.03 s/item  eta 0.1 h
+generate_until: 14/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+1664/18828  0.8 min  0.03 s/item  eta 0.1 h
+generate_until: 8/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+1792/18828  0.8 min  0.03 s/item  eta 0.1 h
+generate_until: 11/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+1920/18828  0.9 min  0.03 s/item  eta 0.1 h
+generate_until: 22/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+2048/18828  1.0 min  0.03 s/item  eta 0.1 h
+generate_until: 44/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+2176/18828  1.1 min  0.03 s/item  eta 0.1 h
+generate_until: 59/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+2304/18828  1.2 min  0.03 s/item  eta 0.1 h
+generate_until: 78/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+2432/18828  1.2 min  0.03 s/item  eta 0.1 h
+generate_until: 72/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+2560/18828  1.3 min  0.03 s/item  eta 0.1 h
+generate_until: 121/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+2688/18828  1.4 min  0.03 s/item  eta 0.1 h
+generate_until: 66/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+2816/18828  1.5 min  0.03 s/item  eta 0.1 h
+generate_until: 3/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+2944/18828  1.5 min  0.03 s/item  eta 0.1 h
+3072/18828  1.6 min  0.03 s/item  eta 0.1 h
+3200/18828  1.6 min  0.03 s/item  eta 0.1 h
+3328/18828  1.7 min  0.03 s/item  eta 0.1 h
+3456/18828  1.7 min  0.03 s/item  eta 0.1 h
+3584/18828  1.8 min  0.03 s/item  eta 0.1 h
+3712/18828  1.8 min  0.03 s/item  eta 0.1 h
+3840/18828  1.8 min  0.03 s/item  eta 0.1 h
+3968/18828  1.9 min  0.03 s/item  eta 0.1 h
+4096/18828  1.9 min  0.03 s/item  eta 0.1 h
+4224/18828  2.0 min  0.03 s/item  eta 0.1 h
+4352/18828  2.0 min  0.03 s/item  eta 0.1 h
+4480/18828  2.1 min  0.03 s/item  eta 0.1 h
+4608/18828  2.1 min  0.03 s/item  eta 0.1 h
+generate_until: 1/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=64)
+4736/18828  2.2 min  0.03 s/item  eta 0.1 h
+4864/18828  2.3 min  0.03 s/item  eta 0.1 h
+4992/18828  2.3 min  0.03 s/item  eta 0.1 h
+5120/18828  2.4 min  0.03 s/item  eta 0.1 h
+5248/18828  2.4 min  0.03 s/item  eta 0.1 h
+5376/18828  2.5 min  0.03 s/item  eta 0.1 h
+5504/18828  2.6 min  0.03 s/item  eta 0.1 h
+generate_until: 26/118 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=80)
+5632/18828  2.7 min  0.03 s/item  eta 0.1 h
+generate_until: 76/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=80)
+5760/18828  2.8 min  0.03 s/item  eta 0.1 h
+generate_until: 105/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=80)
+5888/18828  2.9 min  0.03 s/item  eta 0.1 h
+generate_until: 40/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=80)
+6016/18828  3.0 min  0.03 s/item  eta 0.1 h
+generate_until: 3/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=80)
+6144/18828  3.1 min  0.03 s/item  eta 0.1 h
+6272/18828  3.2 min  0.03 s/item  eta 0.1 h
+generate_until: 75/86 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=96)
+6400/18828  3.3 min  0.03 s/item  eta 0.1 h
+generate_until: 116/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=96)
+6528/18828  3.4 min  0.03 s/item  eta 0.1 h
+generate_until: 94/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=96)
+6656/18828  3.5 min  0.03 s/item  eta 0.1 h
+generate_until: 46/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=96)
+6784/18828  3.6 min  0.03 s/item  eta 0.1 h
+generate_until: 40/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=96)
+6912/18828  3.7 min  0.03 s/item  eta 0.1 h
+generate_until: 21/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=96)
+7040/18828  3.9 min  0.03 s/item  eta 0.1 h
+generate_until: 26/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=96)
+7168/18828  4.0 min  0.03 s/item  eta 0.1 h
+generate_until: 1/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=96)
+7296/18828  4.1 min  0.03 s/item  eta 0.1 h
+generate_until: 3/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=96)
+7424/18828  4.3 min  0.03 s/item  eta 0.1 h
+generate_until: 6/90 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=96)
+generate_until: 34/38 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=240)
+7552/18828  4.6 min  0.04 s/item  eta 0.1 h
+generate_until: 116/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=240)
+7680/18828  5.0 min  0.04 s/item  eta 0.1 h
+generate_until: 111/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=240)
+7808/18828  5.4 min  0.04 s/item  eta 0.1 h
+generate_until: 87/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=240)
+7936/18828  5.8 min  0.04 s/item  eta 0.1 h
+8064/18828  5.9 min  0.04 s/item  eta 0.1 h
+8192/18828  6.0 min  0.04 s/item  eta 0.1 h
+generate_until: 1/122 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=240)
+generate_until: 2/6 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=272)
+8320/18828  6.2 min  0.04 s/item  eta 0.1 h
+generate_until: 92/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=272)
+8448/18828  6.7 min  0.05 s/item  eta 0.1 h
+generate_until: 91/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=272)
+8576/18828  7.5 min  0.05 s/item  eta 0.1 h
+generate_until: 38/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=272)
+8704/18828  8.4 min  0.06 s/item  eta 0.2 h
+generate_until: 3/10 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=272)
+generate_until: 84/118 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+8832/18828  9.4 min  0.06 s/item  eta 0.2 h
+generate_until: 124/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+8960/18828  10.3 min  0.07 s/item  eta 0.2 h
+generate_until: 118/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+9088/18828  11.2 min  0.07 s/item  eta 0.2 h
+generate_until: 106/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+9216/18828  12.2 min  0.08 s/item  eta 0.2 h
+generate_until: 111/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+9344/18828  13.2 min  0.08 s/item  eta 0.2 h
+generate_until: 88/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+9472/18828  14.2 min  0.09 s/item  eta 0.2 h
+generate_until: 82/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+9600/18828  15.1 min  0.09 s/item  eta 0.2 h
+generate_until: 91/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+9728/18828  16.1 min  0.10 s/item  eta 0.3 h
+generate_until: 76/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+9856/18828  17.1 min  0.10 s/item  eta 0.3 h
+generate_until: 79/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+9984/18828  18.2 min  0.11 s/item  eta 0.3 h
+generate_until: 93/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+10112/18828  19.2 min  0.11 s/item  eta 0.3 h
+generate_until: 89/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+10240/18828  20.2 min  0.12 s/item  eta 0.3 h
+generate_until: 85/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+10368/18828  21.2 min  0.12 s/item  eta 0.3 h
+generate_until: 99/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+10496/18828  22.2 min  0.13 s/item  eta 0.3 h
+generate_until: 92/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+10624/18828  23.2 min  0.13 s/item  eta 0.3 h
+generate_until: 80/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+10752/18828  24.2 min  0.14 s/item  eta 0.3 h
+generate_until: 87/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+10880/18828  25.3 min  0.14 s/item  eta 0.3 h
+generate_until: 57/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+11008/18828  26.9 min  0.15 s/item  eta 0.3 h
+generate_until: 24/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+11136/18828  28.3 min  0.15 s/item  eta 0.3 h
+generate_until: 50/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+11264/18828  30.0 min  0.16 s/item  eta 0.3 h
+generate_until: 38/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+11392/18828  31.5 min  0.17 s/item  eta 0.3 h
+generate_until: 17/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+11520/18828  32.6 min  0.17 s/item  eta 0.3 h
+generate_until: 23/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+11648/18828  33.7 min  0.17 s/item  eta 0.3 h
+generate_until: 16/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+11776/18828  34.9 min  0.18 s/item  eta 0.3 h
+generate_until: 15/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+11904/18828  35.9 min  0.18 s/item  eta 0.3 h
+generate_until: 12/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+12032/18828  36.9 min  0.18 s/item  eta 0.3 h
+generate_until: 21/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+12160/18828  38.0 min  0.19 s/item  eta 0.3 h
+generate_until: 11/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+12288/18828  38.9 min  0.19 s/item  eta 0.3 h
+generate_until: 5/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+12416/18828  39.7 min  0.19 s/item  eta 0.3 h
+generate_until: 12/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+12544/18828  40.6 min  0.19 s/item  eta 0.3 h
+generate_until: 15/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+12672/18828  41.8 min  0.20 s/item  eta 0.3 h
+generate_until: 12/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+12800/18828  42.9 min  0.20 s/item  eta 0.3 h
+generate_until: 14/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+12928/18828  44.3 min  0.21 s/item  eta 0.3 h
+generate_until: 31/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+13056/18828  45.8 min  0.21 s/item  eta 0.3 h
+generate_until: 84/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+13184/18828  48.7 min  0.22 s/item  eta 0.3 h
+generate_until: 92/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+13312/18828  51.5 min  0.23 s/item  eta 0.4 h
+generate_until: 73/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+13440/18828  54.3 min  0.24 s/item  eta 0.4 h
+generate_until: 92/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+13568/18828  57.1 min  0.25 s/item  eta 0.4 h
+generate_until: 37/60 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=384)
+generate_until: 1/68 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=416)
+13696/18828  58.6 min  0.26 s/item  eta 0.4 h
+generate_until: 12/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=416)
+13824/18828  59.4 min  0.26 s/item  eta 0.4 h
+13952/18828  59.6 min  0.26 s/item  eta 0.3 h
+generate_until: 1/76 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=416)
+generate_until: 52/52 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=576)
+14080/18828  60.7 min  0.26 s/item  eta 0.3 h
+generate_until: 127/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=576)
+14208/18828  62.8 min  0.27 s/item  eta 0.3 h
+generate_until: 126/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=576)
+14336/18828  64.9 min  0.27 s/item  eta 0.3 h
+generate_until: 127/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=576)
+14464/18828  66.9 min  0.28 s/item  eta 0.3 h
+generate_until: 125/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=576)
+14592/18828  69.0 min  0.28 s/item  eta 0.3 h
+generate_until: 128/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=576)
+14720/18828  71.1 min  0.29 s/item  eta 0.3 h
+generate_until: 109/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=576)
+14848/18828  73.0 min  0.30 s/item  eta 0.3 h
+generate_until: 18/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=576)
+14976/18828  75.1 min  0.30 s/item  eta 0.3 h
+generate_until: 6/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=576)
+15104/18828  76.7 min  0.30 s/item  eta 0.3 h
+generate_until: 9/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=576)
+15232/18828  78.5 min  0.31 s/item  eta 0.3 h
+generate_until: 4/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=576)
+15360/18828  79.6 min  0.31 s/item  eta 0.3 h
+generate_until: 7/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=576)
+15488/18828  81.0 min  0.31 s/item  eta 0.3 h
+generate_until: 2/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=576)
+15616/18828  82.0 min  0.32 s/item  eta 0.3 h
+generate_until: 1/12 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=576)
+generate_until: 110/116 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=768)
+15744/18828  85.4 min  0.33 s/item  eta 0.3 h
+generate_until: 81/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=768)
+15872/18828  88.3 min  0.33 s/item  eta 0.3 h
+generate_until: 5/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=768)
+16000/18828  90.2 min  0.34 s/item  eta 0.3 h
+generate_until: 100/100 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=960)
+16128/18828  95.1 min  0.35 s/item  eta 0.3 h
+generate_until: 100/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=960)
+16256/18828  100.0 min  0.37 s/item  eta 0.3 h
+16384/18828  101.5 min  0.37 s/item  eta 0.3 h
+generate_until: 84/84 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+16512/18828  106.0 min  0.39 s/item  eta 0.2 h
+generate_until: 128/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+16640/18828  112.3 min  0.40 s/item  eta 0.2 h
+generate_until: 128/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+16768/18828  118.6 min  0.42 s/item  eta 0.2 h
+generate_until: 128/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+16896/18828  124.8 min  0.44 s/item  eta 0.2 h
+generate_until: 128/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+17024/18828  131.1 min  0.46 s/item  eta 0.2 h
+generate_until: 128/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+17152/18828  137.3 min  0.48 s/item  eta 0.2 h
+generate_until: 128/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+17280/18828  143.6 min  0.50 s/item  eta 0.2 h
+generate_until: 128/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+17408/18828  149.9 min  0.52 s/item  eta 0.2 h
+generate_until: 128/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+17536/18828  156.1 min  0.53 s/item  eta 0.2 h
+generate_until: 115/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+17664/18828  162.7 min  0.55 s/item  eta 0.2 h
+generate_until: 62/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+17792/18828  170.7 min  0.58 s/item  eta 0.2 h
+generate_until: 25/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+17920/18828  177.3 min  0.59 s/item  eta 0.1 h
+generate_until: 48/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+18048/18828  185.9 min  0.62 s/item  eta 0.1 h
+generate_until: 94/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+18176/18828  196.5 min  0.65 s/item  eta 0.1 h
+generate_until: 95/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+18304/18828  207.0 min  0.68 s/item  eta 0.1 h
+generate_until: 50/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+18432/18828  216.1 min  0.70 s/item  eta 0.1 h
+generate_until: 1/128 generations reached max_gen_len without a stop sequence (possible answer truncation; max_gen_toks=1024)
+18560/18828  218.5 min  0.71 s/item  eta 0.1 h
+18688/18828  220.5 min  0.71 s/item  eta 0.0 h
+18816/18828  222.7 min  0.71 s/item  eta 0.0 h
+18828/18828  222.9 min  0.71 s/item  eta 0.0 h

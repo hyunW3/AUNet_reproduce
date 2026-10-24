@@ -170,6 +170,23 @@ def main():
     if shared:
         section(L, "B. Shared subset (all models): few-shot on every item, few-shot CoT (+ knowledge) on 50 "
                    "questions per split", {k: items[k] for k in items if k in ext}, S, shared, rng)
+    # num2word few-shot diagnostic: every demonstration answer starts "One hundred twenty-three ..." (123, 123456, ...)
+    P = L.append
+    P("\n# C. num2word few-shot: first word and demonstration copying\n")
+    P("first word = first word of the response equals the gold's first word (case/punctuation ignored); "
+      "'One' = response starts with 'one'; copy = response contains 'twenty-three' (from the demonstrations).\n")
+    P("| model | n | first word correct % | starts 'One' % | gold starts 'one' % | copies 'twenty-three' % |")
+    P("|---|---|---|---|---|---|")
+    ks = [k for k, it in items.items() if it["task"] == "num2word" and it["cond"] == "fewshot"]
+    outs = {t: {r["key"]: r["output"] for r in map(json.loads, open(D / f"scored/{t}.jsonl"))} for t, _ in MODELS if t in S}
+    for tag, name in MODELS:
+        if tag not in S:
+            continue
+        o = [outs[tag][k].strip().lower() for k in ks]
+        g = [items[k]["gold"].split()[0] for k in ks]
+        fw = np.mean([(x.split() or [""])[0].strip(",.-") == y for x, y in zip(o, g)])
+        P(f"| {name} | {len(ks)} | {100 * fw:.1f} | {100 * np.mean([x.startswith('one') for x in o]):.1f} | "
+          f"{100 * np.mean([y == 'one' for y in g]):.1f} | {100 * np.mean(['twenty-three' in x for x in o]):.1f} |")
     (D / "tables.md").write_text("\n".join(L) + "\n")
     print("\n".join(L))
 
