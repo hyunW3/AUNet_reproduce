@@ -1,0 +1,15 @@
+task: bb_temporal_cloze_mc
+dataset_path: hails/bigbench
+dataset_name: temporal_sequences_zero_shot
+output_type: multiple_choice
+test_split: default
+process_docs: !function utils.filter_mc
+doc_to_text: !function utils.temporal_cloze_text
+doc_to_target: "{{multiple_choice_targets.index(targets[0])}}"
+doc_to_choice: "{{multiple_choice_targets}}"
+metric_list:
+  - metric: acc
+  - metric: acc_norm
+  - metric: acc_mutual_info
+metadata:
+  version: 1.0

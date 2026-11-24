@@ -77,9 +77,12 @@ def build_generator(family: str, ckpt: str, tok_path: str, max_tokens: int):
         gen_args = PackedHierarchicalCausalTransformerGeneratorArgs(
             temperature=0.0, max_gen_len=1, max_tokens=max_tokens,
         )
-        generator = PackedHierarchicalCausalTransformerGenerator(
-            gen_args, model, tokenizer, regex_pool
-        )
+        try:  # BPEByte: +vocab_norm; AU-Net: official generator (lingua apps/aunet/SCORING_POLICY.md)
+            from apps.aunet.generate_bpebyte import make_generator
+        except ImportError:  # lingua codebase predating the 2026-10-05 scoring policy
+            print("[fflm] apps.aunet.generate_bpebyte missing: BPEByte scored WITHOUT vocab_norm", flush=True)
+            make_generator = PackedHierarchicalCausalTransformerGenerator
+        generator = make_generator(gen_args, model, tokenizer, regex_pool)
         return generator, tokenizer
 
     raise ValueError(f"unknown family {family}")

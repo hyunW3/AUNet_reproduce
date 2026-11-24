@@ -26,11 +26,11 @@
 \midrule
 \multicolumn{6}{l}{\emph{Robustness (five-task suite)}} \\
 \quad Clean & 4.61 {\scriptsize$\pm$2.60} & 4.89 {\scriptsize$\pm$2.83} & 4.59 {\scriptsize$\pm$2.64} & 5.17 {\scriptsize$\pm$4.30} & 4.29 {\scriptsize$\pm$2.66} \\
-\quad Noise & 2.83 {\scriptsize$\pm$1.74} & 4.02 {\scriptsize$\pm$2.88} & 2.89 {\scriptsize$\pm$1.81} & 2.26 {\scriptsize$\pm$2.27} & 2.36 {\scriptsize$\pm$1.88} \\
-\quad Typo & 3.70 {\scriptsize$\pm$2.22} & 4.89 {\scriptsize$\pm$2.85} & 3.81 {\scriptsize$\pm$2.28} & 2.67 {\scriptsize$\pm$2.66} & 3.23 {\scriptsize$\pm$2.35} \\
+\quad Noise & 2.81 {\scriptsize$\pm$1.71} & 4.00 {\scriptsize$\pm$2.88} & 2.87 {\scriptsize$\pm$1.79} & 2.24 {\scriptsize$\pm$2.25} & 2.34 {\scriptsize$\pm$1.85} \\
+\quad Typo & 3.69 {\scriptsize$\pm$2.22} & 4.89 {\scriptsize$\pm$2.87} & 3.79 {\scriptsize$\pm$2.27} & 2.66 {\scriptsize$\pm$2.67} & 3.20 {\scriptsize$\pm$2.34} \\
 \quad Despace & 3.42 {\scriptsize$\pm$1.86} & 18.86 {\scriptsize$\pm$22.55} & 3.65 {\scriptsize$\pm$1.75} & 2.10 {\scriptsize$\pm$2.10} & 2.73 {\scriptsize$\pm$2.09} \\
 \bottomrule
 \end{tabular}
-\caption{Mean patch length in bytes ($\pm$ standard deviation over patches) on the exact byte sequences each evaluation scores (context followed by the gold answer; BOS excluded). Because patches tile the input, the mean patch length equals the compression ratio, i.e.\ the number of input bytes per position of the global model; for the subword Transformer the unit is a Llama-3 token. Patches come from each model's own parser: Llama-3 BPE tokens, AUNet's whitespace/word regex, BPEByte's OnlineBPE, BLT's entropy patcher at its released threshold ($1.335$), and H-Net's learned router (1-stage XL). Robustness rows pool the five tasks of Table~\ref{tab:main_13b} (Noise: $15$ variants and Typo: $8$ variants, first $400$ items each; Despace: all spaces removed, up to $2{,}000$ items; Clean: the unperturbed items). $^{\dagger}$BLT and $^{\ddagger}$H-Net are external references.}
+\caption{\hyun{Mean patch length in bytes ($\pm$ standard deviation over patches) on the exact byte sequences each evaluation scores (context followed by the gold answer; BOS excluded). Because patches tile the input, the mean patch length equals the compression ratio, i.e.\ the number of input bytes per position of the global model; for the subword Transformer the unit is a Llama-3 token. Patches come from each model's own parser: Llama-3 BPE tokens, AUNet's whitespace/word regex, BPEByte's OnlineBPE, BLT's entropy patcher at its released threshold ($1.335$), and H-Net's learned router (1-stage XL). Robustness rows pool the five tasks of Table~\ref{tab:main_13b} (Noise: $15$ variants and Typo: $8$ variants, up to $2{,}000$ items each; Despace: all spaces removed, up to $2{,}000$ items; Clean: the unperturbed items). $^{\dagger}$BLT and $^{\ddagger}$H-Net are external references.}}
 \label{tab:patch_stats}
 \end{table*}

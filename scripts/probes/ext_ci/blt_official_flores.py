@@ -29,6 +29,10 @@ def main():
     ap.add_argument("--blt_weights", default="/mnt/ssd2/hyun2/AUNet/runs/ext_ci_snu55/blt_weights")
     ap.add_argument("--tasks_dir", default="/mnt/ssd2/hyun2/AUNet/lingua/eval_tasks")
     ap.add_argument("--split", choices=["dev", "devtest"], default="dev")
+    # The AU-Net-paper language set lives in eval_tasks/flores_aunet/ as `floresA_<iso3>-en` on
+    # devtest. Pass --task_prefix floresA_ with 3-letter codes to score that set instead of the
+    # 6-language one. Default keeps the old behaviour.
+    ap.add_argument("--task_prefix", default=None)
     ap.add_argument("--langs", default=",".join(LANGS))
     ap.add_argument("--limit", type=int, default=200)
     ap.add_argument("--num_fewshot", type=int, default=5)
@@ -45,7 +49,7 @@ def main():
     from lm_eval.tasks import TaskManager
 
     langs = [x.strip() for x in a.langs.split(",") if x.strip()]
-    pre = "flores_dev_" if a.split == "dev" else "flores_"
+    pre = a.task_prefix or ("flores_dev_" if a.split == "dev" else "flores_")
     tasks = [f"{pre}{l}-en" for l in langs]
 
     lm = build_blt_official(a.blt_weights, a.max_len, a.threshold)

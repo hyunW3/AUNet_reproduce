@@ -27,8 +27,8 @@ LENS = (512, 1024, 2048, 4096)
 TASKS = ("sniah1", "sniah2", "sniah3")
 REP = ("sniah1r", "sniah2r", "sniah3r")
 TNAME = {"sniah1": "S-NIAH-1 (repeated noise)", "sniah2": "S-NIAH-2 (essay)", "sniah3": "S-NIAH-3 (essay, UUID)",
-         "sniah1r": "S-NIAH-1-rep (noise, 64 B repeated)", "sniah2r": "S-NIAH-2-rep (essay, 64 B repeated)",
-         "sniah3r": "S-NIAH-3-rep (UUID, 64 B repeated)"}
+         "sniah1r": "S-NIAH-1 (noise, 64 B repeated)", "sniah2r": "S-NIAH-2 (essay, 64 B repeated)",
+         "sniah3r": "S-NIAH-3 (UUID, 64 B repeated)"}
 REP_TAG = {"Transformer": "llama", "AUNet": "aunet", "BPEByte (ours)": "bpebyte", "BLT ($\\theta$=1.34)": "blt",
            "BLT ($\\theta$=1.61)": "blt161", "H-Net": "hnet"}
 NB = 10

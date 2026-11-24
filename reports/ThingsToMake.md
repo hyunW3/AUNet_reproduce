@@ -137,13 +137,15 @@ byte-seq). Source: `forward_parsing_benchmark.html`.
 | BPEByte-rg (byte-trie) | 0.166 | 59.0 | ~509 |
 | AU-Net (regex word) | 0.223 | 59.0 | ~495 |
 | ByteFlow | 0.226 | 59.0 | ~495 |
-| BLT (entropy, fp16 default) | 2.47 (GPU) | 138.1 ⁵ | ~237 |
+| BLT (entropy, fp16 default) | — (folded into forward) ⁵ | 138.1 ⁵ | ~237 |
 
 ³ throughput = **text-bytes processed per wall-second** (bytes ÷ (parse·KB + forward)) — the fair cross-tokenizer
 axis. Byte models: bsz4·8192 B = 32 KB/step. ⁴ Llama: seq 2048 tok × 4.541 B/tok × bsz4 = **36.3 KB/step**, parse+fwd
 53.8 ms → **~675 KB/s** (forward-only ~748) — **fastest**, because subword packs 4.541 B/tok, so its 2048-tok
 window covers ≈9.3 KB of text (vs the byte models' 8 KB) and clears more text per step at similar latency. Not
-iso-FLOP. ⁵ BLT forward = 58.9 base + 79.2 entropy-model = 138.1 ms (fp32 old = 451.9 ms).
+iso-FLOP. ⁵ BLT's "parser" IS the entropy-model forward (2.47 ms/KB GPU × 32 KB = 79.2 ms), counted **once**,
+folded into the forward: 58.9 base + 79.2 entropy = 138.1 ms (fp32 old = 451.9 ms). Its throughput is therefore
+bytes ÷ forward alone — adding a parse term again would double-count the entropy model.
 
 **Read:** Llama leads downstream (47.4 avg3) **and** throughput (~675 KB/s vs byte ~495–509) — subword packs
 4.541 B/tok, so it clears more text per step, though at a different (non-iso-FLOP) compute-per-byte axis. Among
@@ -178,25 +180,37 @@ AU-Net 38.7 > BLT 37.0 avg over HS·ARC-E·PIQA·ARC-C.)_
 _Δ = degraded − clean. rg degrades **least** on all three (smallest |Δ|). No separate "Arc-c-noise" split exists:
 only a 15-variant HellaSwag-Noise suite and an 8-op typo suite (applied to both HS and ARC-C questions)._
 
-### 4c. Despace (macro-avg accuracy over 5 tasks incl. HellaSwag & ARC-Easy; independent space-removal prob p)
+### 4c. Despace — FULL grid: ctx / ans / all × p ∈ {10,20,40,70,100}% (macro-avg accuracy over 5 tasks)
 
-Degraded value **(Δ vs clean)**, bold = smallest drop = most robust:
+Degraded value **(Δ vs clean)**, bold = smallest drop = most robust. Source: `statetrack/despace_grid/` (single
+sweep, n=500/task):
 
 | Condition | Llama | AU-Net | BPEByte-rg |
 |---|---:|---:|---:|
-| clean | 0.557 | 0.568 | 0.557 |
-| ctx10 | **0.548 (−.009)** | 0.551 (−.017) | 0.545 (−.012) |
-| ctx40 | 0.526 (−.031) | 0.501 (−.067) | **0.530 (−.027)** |
-| ctx70 | **0.523 (−.034)** | 0.464 (−.104) | 0.509 (−.048) |
-| ctx100 | — ⁶ | — ⁶ | — ⁶ |
-| all10 | 0.499 (−.058) | 0.496 (−.072) | **0.504 (−.053)** |
-| all40 | 0.457 (−.100) | 0.431 (−.137) | **0.462 (−.095)** |
-| all70 | 0.435 (−.122) | 0.382 (−.186) | **0.438 (−.119)** |
-| all100 | — ⁶ | — ⁶ | — ⁶ |
+| clean | 0.558 | 0.569 | 0.553 |
+| ctx10 | 0.547 (−.011) | 0.549 (−.020) | **0.543 (−.010)** |
+| ctx20 | 0.542 (−.017) | 0.538 (−.031) | **0.538 (−.014)** |
+| ctx40 | 0.526 (−.032) | 0.500 (−.070) | **0.530 (−.023)** |
+| ctx70 | **0.522 (−.036)** | 0.462 (−.107) | 0.508 (−.045) |
+| ctx100 | 0.501 (−.057) | 0.418 (−.152) | **0.497 (−.056)** |
+| ans10 | 0.487 (−.071) | 0.494 (−.075) | **0.490 (−.063)** |
+| ans20 | 0.470 (−.088) | 0.463 (−.106) | **0.480 (−.072)** |
+| ans40 | 0.466 (−.093) | 0.446 (−.124) | **0.465 (−.088)** |
+| ans70 | 0.460 (−.098) | 0.431 (−.138) | **0.456 (−.097)** |
+| ans100 | 0.447 (−.112) | 0.390 (−.179) | **0.451 (−.102)** |
+| all10 | 0.500 (−.058) | 0.492 (−.077) | **0.503 (−.050)** |
+| all20 | 0.480 (−.079) | 0.463 (−.106) | **0.481 (−.072)** |
+| all40 | 0.455 (−.103) | 0.430 (−.139) | **0.460 (−.092)** |
+| all70 | 0.432 (−.126) | 0.383 (−.186) | **0.436 (−.117)** |
+| all100 | 0.414 (−.144) | 0.345 (−.224) | **0.428 (−.125)** |
 
-⁶ ctx100 / all100 not run (eval stopped at p=70%). ctx = spaces removed from context only; all = context + choices.
-Δ = condition − clean. rg has the smallest drop in every "all" (both-sides) condition; AU-Net degrades most under
-heavy context-despace (ctx70 −.104).
+ctx = spaces removed from context only; ans = answer/choices only; all = both. Δ = condition − clean. Three reads:
+(1) answer-side despacing hurts far more than context-side at every p (Llama ctx20 −.017 vs ans20 −.088) — it
+corrupts the very option tokens being scored; (2) AU-Net collapses under context despace (ctx100 0.418, −.152)
+since whitespace defines its pooling boundaries; (3) rg has the smallest drop in almost every cell — all "ans" and
+"all" conditions, and ctx except ctx70.
+
+![Despace robustness by region: 1x3 line panels (ctx / ans / all), acc vs space-removal probability](despace/despace_grid_1x3.png)
 
 **Read:** the byte models are **boundary-robust** where Llama is not — PBP-mc ΔAcc −8.9 (Llama, driven by
 ARC-Easy −21.5) vs ≈0 for both byte models; cut-point ΔBPC +0.71 vs 0.00. rg leads on noise/typo (HS-Noise 42.3,

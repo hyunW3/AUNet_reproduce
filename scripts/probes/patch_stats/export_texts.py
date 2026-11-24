@@ -12,7 +12,7 @@ Sources (every text is byte-identical to what the paper's evaluations scored):
   winogrande / mmlu_text
               lm-eval 0.4 requests, 0-shot                      (not in the robustness runs;
               mmlu_text = the paper's cloze MMLU: bare question + "Answer:" + answer text)
-  sniah1/2/3  reports/niah/sniah123_n250_le4096_pairs.jsonl    (tab:sniah_full, 4 lengths x 250)
+  sniah1/2/3  reports/niah/sniah123_n250_final_pairs.jsonl     (tab:sniah_full: 0.5k/1k/2k + fit-4k, 250 each)
   noise / typo
               the same robustness samples for every variant    (first --pert_limit items per variant)
   despace     apps.aunet.eval_despace_mc builder, variant despaceall (limit 2000)
@@ -80,7 +80,7 @@ def lm_eval_texts(task_names, limit):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--pert_limit", type=int, default=400,
+    ap.add_argument("--pert_limit", type=int, default=2000,
                     help="items per noise/typo variant (15 noise + 8 typo variants x 5 tasks)")
     ap.add_argument("--limit", type=int, default=2000)
     a = ap.parse_args()
@@ -97,7 +97,7 @@ def main():
     for t, key, text in lm_eval_texts(["winogrande", "mmlu_text"], None):
         rows.append(("downstream", t, key, text))
 
-    for p in map(json.loads, open(f"{L}/reports/niah/sniah123_n250_le4096_pairs.jsonl")):
+    for p in map(json.loads, open(f"{L}/reports/niah/sniah123_n250_final_pairs.jsonl")):
         rows.append(("sniah", p["probe"], p["cell"], p["prompt"] + " " + p["values"][0]))
 
     for axis in ("noise", "typo"):

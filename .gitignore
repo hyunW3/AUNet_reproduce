@@ -37,3 +37,34 @@ paper_overleaf/
 # anonymised submission bundle — generated from the repo, not a source of truth
 code_appendix/
 code_appendix.zip
+
+# structured-locality suite: regenerable intermediates (dump.py / analyze_perturb.py).
+# The aggregate JSON, the tables and the per-example downstream rows are kept.
+reports_afterAAAIsub/whybpebyte/cache/
+reports_afterAAAIsub/whybpebyte/logs/
+reports_afterAAAIsub/whybpebyte/results/perturb_*.jsonl
+
+# large local artifacts / separate projects / personal clutter — never commit
+/main/
+/spec_dec/
+/PoC/loopedBPEByte/
+/hf_release/
+/benchmarks/
+/_tmp_robustness_old/
+/lingua_agpu18/
+/.trash/
+/.vscode/
+/.claude/
+/seat_example.png
+/seats_301-118.jpg
+/supabase_logs.csv
+/result.txt
+# heavy regenerable report outputs
+reports/patch_lag/
+reports/niah/probe_pooled/
+reports/charbench/
+reports/fmt_robust/
+reports/global_ablation/
+reports/fewshot_probe/
+reports/patch_stats/texts.jsonl
+scripts/*.log

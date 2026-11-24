@@ -25,7 +25,7 @@ flattening entropy call has (see eval_suite/blt_eval/harness.py::_row_entropies)
   source scripts/probes/patch_stats/env.sh
   CUDA_VISIBLE_DEVICES=2 lingua/.venv/bin/python scripts/probes/patch_stats/measure_blt.py [--gate_only]
 """
-import argparse, glob, sys, time
+import argparse, glob, os, sys, time
 from pathlib import Path
 
 import torch
@@ -36,6 +36,7 @@ from patch_common import Hist, check_gate, lengths_from_starts, load_texts  # no
 
 SNAP = glob.glob("/home/hyunw3/.cache/huggingface/hub/models--itazap--blt-1b-hf/snapshots/*")[0]
 BOS, OFFSET = 1, 4          # HF/bytelatent BLT ids: BOS=1, byte b -> b + 4
+DEV = os.environ.get("BLT_DEVICE", "cuda")   # "cpu" works for small analyses (entropy model is ~100M)
 
 
 def load_patcher(dtype):
@@ -51,7 +52,7 @@ def load_patcher(dtype):
     missing, unexpected = patcher.load_state_dict(sd, strict=False)
     missing = [m for m in missing if "rotary" not in m]      # buffers, rebuilt from config
     assert not missing and not unexpected, (missing, unexpected)
-    return patcher.to("cuda", dtype).eval(), float(cfg.patching_threshold)
+    return patcher.to(DEV, dtype).eval(), float(cfg.patching_threshold)
 
 
 @torch.inference_mode()
@@ -60,14 +61,14 @@ def entropies(patcher, batch_ids, window=0):
     query i iff i - window < j <= i, as xformers make_local_attention); only rows longer than the
     window differ from plain causal attention."""
     L = max(len(x) for x in batch_ids)
-    toks = torch.zeros((len(batch_ids), L), dtype=torch.long, device="cuda")
+    toks = torch.zeros((len(batch_ids), L), dtype=torch.long, device=DEV)
     for i, x in enumerate(batch_ids):
-        toks[i, :len(x)] = torch.tensor(x, device="cuda")
+        toks[i, :len(x)] = torch.tensor(x, device=DEV)
     mask = None
     if window and L > window:
-        i = torch.arange(L, device="cuda")
+        i = torch.arange(L, device=DEV)
         allowed = (i[None, :] <= i[:, None]) & (i[:, None] - i[None, :] < window)
-        mask = torch.zeros((1, 1, L, L), device="cuda", dtype=patcher.dtype)
+        mask = torch.zeros((1, 1, L, L), device=DEV, dtype=patcher.dtype)
         mask = mask.masked_fill(~allowed, float("-inf")).expand(len(batch_ids), 1, L, L)
     ent, _, _ = patcher(input_ids=toks, attention_mask=mask)   # [B, L] next-token entropy
     return ent.float().cpu()

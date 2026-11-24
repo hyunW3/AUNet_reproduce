@@ -25,17 +25,17 @@ S-NIAH & Transformer & 4 & 7 & 11 & 77 & 15.8 & 0.0 \\
  & BLT$^{\dagger}$ & 4 & 10 & 19 & 3987 & 28.7 & 31.0 \\
  & H-Net$^{\ddagger}$ & 4 & 7 & 12 & 74 & 17.9 & 0.1 \\
 \midrule
-Noise & Transformer & 2 & 5 & 9 & 18 & 11.8 & 0.0 \\
- & AUNet & 3 & 8 & 14 & 34 & 11.4 & 1.5 \\
- & BPEByte & 2 & 5 & 9 & 19 & 18.2 & 0.0 \\
- & BLT$^{\dagger}$ & 1 & 5 & 11 & 110 & 51.3 & 1.8 \\
- & H-Net$^{\ddagger}$ & 2 & 5 & 9 & 21 & 39.5 & 0.0 \\
+Noise & Transformer & 2 & 5 & 9 & 19 & 11.8 & 0.0 \\
+ & AUNet & 3 & 8 & 14 & 49 & 11.5 & 1.5 \\
+ & BPEByte & 2 & 5 & 9 & 19 & 18.3 & 0.0 \\
+ & BLT$^{\dagger}$ & 1 & 5 & 11 & 273 & 51.5 & 1.8 \\
+ & H-Net$^{\ddagger}$ & 2 & 5 & 9 & 21 & 39.7 & 0.0 \\
 \midrule
-Typo & Transformer & 3 & 7 & 11 & 17 & 14.4 & 0.0 \\
- & AUNet & 4 & 9 & 13 & 24 & 15.3 & 0.2 \\
- & BPEByte & 3 & 7 & 11 & 17 & 16.3 & 0.0 \\
- & BLT$^{\dagger}$ & 1 & 6 & 12 & 52 & 53.6 & 1.9 \\
- & H-Net$^{\ddagger}$ & 3 & 7 & 11 & 21 & 31.3 & 0.0 \\
+Typo & Transformer & 3 & 7 & 11 & 19 & 14.4 & 0.0 \\
+ & AUNet & 4 & 9 & 13 & 46 & 15.4 & 0.2 \\
+ & BPEByte & 3 & 7 & 11 & 19 & 16.3 & 0.0 \\
+ & BLT$^{\dagger}$ & 1 & 6 & 12 & 155 & 53.8 & 2.0 \\
+ & H-Net$^{\ddagger}$ & 3 & 7 & 11 & 21 & 31.5 & 0.0 \\
 \midrule
 Despace & Transformer & 3 & 6 & 9 & 16 & 11.1 & 0.0 \\
  & AUNet & 9 & 51 & 97 & 223 & 22.6 & 81.9 \\
@@ -44,6 +44,6 @@ Despace & Transformer & 3 & 6 & 9 & 16 & 11.1 & 0.0 \\
  & H-Net$^{\ddagger}$ & 2 & 6 & 10 & 17 & 36.0 & 0.0 \\
 \bottomrule
 \end{tabular}
-\caption{Patch-length distribution (bytes) per evaluation family, pooled over the benchmarks of Table~\ref{tab:patch_stats}. P90/P99 are percentiles over patches; \emph{1-byte} is the share of patches that hold a single byte (no compression at that position), and \emph{Bytes in $>$16\,B} is the share of input bytes that land in patches longer than $16$ bytes (information pooled into one global position). Figure~\ref{fig:patch_len_hist} plots the full distributions. $^{\dagger}$BLT and $^{\ddagger}$H-Net are external references.}
+\caption{\hyun{Patch-length distribution (bytes) per evaluation family, pooled over the benchmarks of Table~\ref{tab:patch_stats}. P90/P99 are percentiles over patches; \emph{1-byte} is the share of patches that hold a single byte (no compression at that position), and \emph{Bytes in $>$16\,B} is the share of input bytes that land in patches longer than $16$ bytes (information pooled into one global position). Figure~\ref{fig:patch_len_hist} plots the full distributions. $^{\dagger}$BLT and $^{\ddagger}$H-Net are external references.}}
 \label{tab:patch_dist}
 \end{table*}
