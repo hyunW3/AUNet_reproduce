@@ -1,0 +1,20 @@
+\begin{table*}[t]
+\centering
+\small
+\caption{Robustness by perturbation region: mean $\Delta$Acc (pp, perturbed $-$ clean) over HellaSwag, ARC-Easy, ARC-Challenge and PIQA (acc\_norm; PIQA acc). \textit{Context}: only the context is perturbed; \textit{Options}: only the answer options; \textit{Both}: context and options (the setting of Table~\ref{tab:main_13b}). $^{\dagger}$BLT and $^{\ddagger}$H-Net are external references.}
+\label{tab:robust_region}
+\begin{tabular}{l|rrr|rrr|rrr|rrr}
+\toprule
+ & \multicolumn{3}{c}{Noise} & \multicolumn{3}{c}{Typo} & \multicolumn{3}{c}{Despace} & \multicolumn{3}{c}{Leet} \\
+Model & Con. & Opt. & Both & Con. & Opt. & Both & Con. & Opt. & Both & Con. & Opt. & Both \\
+\midrule
+Llama (BPE) & $-$10.0 & $-$20.8 & $-$20.7 & $-$6.1 & $-$17.6 & $-$18.8 & $-$7.5 & $-$13.6 & $-$17.4 & $-$15.3 & $-$24.3 & $-$24.8 \\
+AU-Net & $-$7.8 & $-$17.3 & $-$16.2 & $-$4.6 & $-$16.4 & $-$16.8 & $-$16.0 & $-$18.5 & $-$23.3 & $-$16.3 & $-$24.0 & $-$24.6 \\
+BPEByte & $-$7.7 & $-$16.9 & $-$16.2 & $-$4.2 & $-$16.2 & $-$16.6 & $-$7.9 & $-$13.8 & $-$16.7 & $-$14.8 & $-$23.2 & $-$24.3 \\
+\midrule
+BLT$^{\dagger}$ ($\theta{=}1.335$) & $-$8.9 & $-$16.0 & $-$17.4 & $-$4.6 & $-$16.3 & $-$16.8 & $-$6.1 & $-$8.3 & $-$8.5 & $-$14.3 & $-$22.8 & $-$24.1 \\
+BLT$^{\dagger}$ ($\theta{=}1.609$) & $-$8.3 & $-$15.5 & $-$16.9 & $-$3.9 & $-$15.5 & $-$15.9 & $-$4.8 & $-$8.5 & $-$8.1 & $-$12.7 & $-$21.5 & $-$23.3 \\
+H-Net$^{\ddagger}$ & $-$7.9 & $-$17.6 & $-$16.6 & $-$4.8 & $-$16.3 & $-$17.0 & $-$8.1 & $-$13.4 & $-$16.4 & $-$14.6 & $-$22.9 & $-$24.1 \\
+\bottomrule
+\end{tabular}
+\end{table*}

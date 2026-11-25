@@ -74,7 +74,7 @@ c["name"] = c["name"].split("_robustness")[0] + f"_robustness_typo{r}"; c["dump_
 c["harness"].update(tasks=T4 + [f"{t}_typo{r}" for t in T4], limit=int(sys.argv[5]))
 yaml.safe_dump(c, open(sys.argv[2], "w"), sort_keys=False)
 EOF
-      ( cd $LW && export LD_LIBRARY_PATH="$LDP:${LD_LIBRARY_PATH:-}" TRITON_CACHE_DIR=/tmp/tr_tr_$g TORCHINDUCTOR_CACHE_DIR=/tmp/ti_tr_$g \
+      ( cd $LW && export LD_LIBRARY_PATH="$LDP:${LD_LIBRARY_PATH:-}" TRITON_CACHE_DIR=/tmp/tr_tr_${g}_$BASHPID TORCHINDUCTOR_CACHE_DIR=/tmp/ti_tr_${g}_$BASHPID \
           CUDA_VISIBLE_DEVICES=$g PYTHONPATH=$LW && \
         "$VPY" -m torch.distributed.run --nproc-per-node 1 --master-port $((29900 + g)) -m ${APP[$a]} \
           config=$O/cfg/typo${b}_$a.yaml ckpt_dir=${CK[$a]} dump_dir=$O/trio_typo${b}_$a ) ;;
