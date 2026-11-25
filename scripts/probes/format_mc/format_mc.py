@@ -237,6 +237,9 @@ NLA = {"nla_whitespace": nla_whitespace, "nla_underscore": nla_underscore,
 # matching the both-region Noise/Despace/Typo axes. The context is byte-identical to the base variant. Not part of
 # all_variants(); request them explicitly (e.g. FORMAT_VARIANTS=clean,nla_leet_both).
 BOTH = {"nla_leet_both": "nla_leet"}
+# "_opt" variants (2026-11-25): the transformation on the answer options ONLY (context clean), the option half of
+# "_both"; with the context-only base variant (nla_leet) it splits the both-region Leet axis by region.
+OPT = {"nla_leet_opt": "nla_leet"}
 
 # ----------------------------------------------------------------------------- FormatSpread
 # Value lists from msclar/formatspread grammar_definition.py. sep '' is excluded: upstream notes it
@@ -327,6 +330,8 @@ def perturb(task: str, ctx: str, variant: str, idx: int, fs_formats) -> str:
     if variant.startswith("fs"):
         return render_format(task, ctx, fs_formats[int(variant[2:])])
     block, cue = _split_cue(ctx)
+    if variant in OPT:
+        return ctx
     variant = BOTH.get(variant, variant)
     if variant in NLA:
         block = NLA[variant](block)
@@ -401,8 +406,8 @@ def run_format_mc(loglikelihood, tasks=TASKS, variants=None, limit=2000, items_d
                 ks, lens = [], []
                 for opt in it["choices"]:
                     o = " " + (opt[1:] if opt.startswith(" ") else opt)
-                    if v in BOTH:
-                        o = " " + NLA[BOTH[v]](o[1:])
+                    if v in BOTH or v in OPT:
+                        o = " " + NLA[BOTH.get(v) or OPT[v]](o[1:])
                     ks.append(_key(ctx, o))
                     lens.append(max(1, len(o.encode("utf-8"))))
                     pairs.append((ctx, o))
