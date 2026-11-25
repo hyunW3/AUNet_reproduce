@@ -21,7 +21,7 @@ outname(){ set -- $1; [ $1 = blt_typo ] && echo blt${2}_typo${4}_$3.json || echo
 
 remote_cmd(){ local g=$1; set -- $2
   local env="cd /tmp && CUDA_VISIBLE_DEVICES=$g PYTHONPATH=$R/extra_site:$R/blt_official AUNET_LINGUA=$R/AUNet/lingua \
-EVAL_SUITE=$R/eval_suite HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1 BLT_SUPPRESS_ATTN_ERROR=1"
+EVAL_SUITE=$R/eval_suite HF_DATASETS_CACHE=$R/hf_datasets HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1 BLT_SUPPRESS_ATTN_ERROR=1"
   if [ $1 = blt_typo ]; then
     echo "$env $R/venv_blt/bin/python $R/AUNet/scripts/probes/ext_ci/run_ext.py --family blt_official --threshold $(thr $2) \
 --blt_weights $R/blt_weights --axis typo$4 --tasks $3 --limit $LIMIT --out $R/out/$(outname "$*")"
